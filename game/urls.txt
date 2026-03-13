@@ -1,0 +1,5 @@
+# Game product URLs (one per line)
+# Example: https://www.game.co.za/Electronics-Entertainment/Television/TVs/p/000000000850037087
+
+https://www.game.co.za/Sports-Outdoors-Healthy-Living/Camping-Braai/Cooler-Bags-Boxes/p/000000000850020581
+https://www.game.co.za/Groceries-Beverages/Pantry/Soups-Soup-Thickeners/p/000000000000577101

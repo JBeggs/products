@@ -1,0 +1,4 @@
+# Matrix Warehouse product URLs (one per line)
+# Example: https://matrixwarehouse.co.za/products/kalobee-sk7-ultra-hd-smartwatch
+
+https://matrixwarehouse.co.za/products/lenovo-thinkbook-21kk0041sa-16-wuxga-ips-ryzen-5-7530u-16gb-512gb-ssd-win-11-pro

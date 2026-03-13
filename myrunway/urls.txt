@@ -1,0 +1,3 @@
+# Add MyRunway product URLs (one per line)
+# Example: https://myrunway.co.za/product/PUM_02365702_RED
+

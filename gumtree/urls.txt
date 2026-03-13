@@ -1,0 +1,4 @@
+# Add Gumtree listing URLs (one per line)
+# Example: https://www.gumtree.co.za/a-cars-bakkies/diep-river/listing-title/10013494682001010915604009
+
+https://www.gumtree.co.za/a-refrigerators-freezers/fochville/195l-defy-chest-freezer-for-sale-as-good-as-new/10013489181861010889245309

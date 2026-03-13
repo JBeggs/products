@@ -1,0 +1,4 @@
+# Perfect Dealz product URLs (one per line)
+# Example: https://perfectdealz.co.za/products/v8-chrome-rear-badge-sticker
+
+https://perfectdealz.co.za/collections/new-arrivals/products/acrylic-beverage-dispenser-5-5l

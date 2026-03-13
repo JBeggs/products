@@ -1,0 +1,6 @@
+# Add OneDayOnly product URLs (one per line)
+# Example: https://www.onedayonly.co.za/products/l2s-home-theatre-projector-with-wifi-and-bluetooth-lunar-rock-20260303
+
+https://www.onedayonly.co.za/products/2-tier-lazy-susan-storage-rack-20260311
+https://www.onedayonly.co.za/products/3x-reusable-food-preservation-trays-20260311
+https://www.onedayonly.co.za/products/silicone-tumbler-cup-sling-pouch-20260311

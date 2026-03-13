@@ -1,0 +1,5 @@
+# Takealot product URLs (one per line)
+# Example: https://www.takealot.com/product-name/PLID99812186
+
+https://www.takealot.com/samyang-hot-chicken-noodle-assorted-10-pack/PLID71293338
+https://www.takealot.com/samyang-hot-chicken-noodle-carbonara/PLID55083661

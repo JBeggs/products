@@ -1,0 +1,8 @@
+# Makro product URLs (one per line)
+# Example: https://www.makro.co.za/honor-x7c-4g-dual-sim-256gb-black-256-gb/p/itm0975edb559f7a?pid=MOBH7E4A9DDBCMGQ
+
+https://www.makro.co.za/nescafe-classic-instant-coffee/p/itmd94e91cacc81b
+https://www.makro.co.za/jacobs-kronung-instant-coffee/p/itmb371e9fa288f5
+https://www.makro.co.za/douwe-egberts-mocha-kenya-style-instant-coffee/p/itm15b792eef7c78
+https://www.makro.co.za/nescafe-gold-roast-ground-coffee/p/itm95c5e73cd5e8b
+https://www.makro.co.za/doritos-snack-hamper-chips/p/itmd00256f135827

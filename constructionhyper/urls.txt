@@ -1,0 +1,5 @@
+# Construction Hyper product URLs (one per line)
+# Example: https://constructionhyper.co.za/products/ingco-cordless-impact-drill-angle-grinder-115mm-and-rotary-drill-20v-kit
+
+https://constructionhyper.co.za/collections/black-friday-sale/products/ingco-angle-grinder-115mm-20v-brushless-cagli221153
+https://constructionhyper.co.za/collections/black-friday-sale/products/battery-20v-8ah-ingco-fbli2108

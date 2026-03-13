@@ -1,0 +1,4 @@
+# Add AliExpress product URLs (one per line)
+# Example: https://www.aliexpress.com/item/1005009532378267.html
+
+https://www.aliexpress.com/item/1005010520547452.html

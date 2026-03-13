@@ -1,0 +1,4 @@
+# Loot product URLs (one per line)
+# Example: https://www.loot.co.za/product/tunturi-cardio-fit-t50-treadmill_vdjj-8559-g050
+
+https://www.loot.co.za/product/antihero/ddvr-8479-g930

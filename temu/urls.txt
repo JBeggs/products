@@ -1,0 +1,9 @@
+# Add Temu product URLs (one per line)
+# Example: https://www.temu.com/za/your-product-name-g-123456789.html
+
+https://www.temu.com/za/-food-processor-electric-meat-grinder-with-4-stainless-steel--2-chopper-small-grinder-meat-processor-with-2--for-vegetable-fruits-baby-food-meat-garlic--g-601105181379083.html
+https://www.temu.com/za/a-multifunctional-automatic-sealing-machine-portable-wireless-vacuum-device--with-snack-sealing-capabilities-can-connect-to-external-suction-and-inflation-for-long--food-preservation-compact-and--g-601103357352888.html
+https://www.temu.com/za/1-2l-stainless-steel-deep-fryer-a-multifunctional-oil-saving-mini-fryer-for-home-use-ideal-for-heating-milk-and-preparing-food-suitable-for-crispy-fries--fish-and-chicken-an-essential-kitchen-tool-for-family-cooking-g-601100127576428.html
+https://www.temu.com/za/3-stainless-steel-cutting-board-set-durable-easy-to-clean-kitchen-prep-space-saving-rust-resistant-ensures--preparation-g-601102187285283.html
+https://www.temu.com/za/20cm-handmade-bamboo-steamer-with-lid-multi-purpose-suitable-for-vegetables-dumplings-fish-durable-kitchen-gadget--used-for-outdoor-rv-camping-dinners-g-601099801569015.html
+https://www.temu.com/za/28cm-multi-layer-non-stick-steamer-pot-set-3-tier-stainless-steel-cooker-for-gas-induction--with-lid-safe-for-dishwasher-g-601101844425936.html

@@ -1,0 +1,4 @@
+# Add Ubuy product URLs (one per line)
+# Example: https://www.ubuy.co.za/product/5D6YSW-south-beach-neck-firming-serum-south-beach-skin-care-45ml
+
+https://www.ubuy.co.za/product/MRBIP5FV4-dji-mic-mini-1-tx-1-rx-ultralight-detail-rich-audio-noise-cancelling-automatic-limiting-wireless-microphone-for-camera-iphone-android-vlog
