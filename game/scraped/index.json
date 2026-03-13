@@ -1,0 +1,16 @@
+{
+  "products": [
+    {
+      "name": "CAMP MASTER COOLER BOX",
+      "price": 190.8,
+      "game_price": 159,
+      "goods_id": "000000000850020581"
+    },
+    {
+      "name": "KNORR Cup-A-Soup Thick Chicken &",
+      "price": 27.59,
+      "game_price": 22.99,
+      "goods_id": "000000000000577101"
+    }
+  ]
+}

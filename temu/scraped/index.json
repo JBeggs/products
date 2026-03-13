@@ -1,0 +1,34 @@
+{
+  "updated": "2026-03-12T12:47:35.457988",
+  "product_count": 4,
+  "products": [
+    {
+      "name": "JUMPERKITS Food Processor, Electric Meat",
+      "price": 531,
+      "temu_price": 295,
+      "goods_id": "601105181379083",
+      "variant": null
+    },
+    {
+      "name": "A Multifunctional Automatic Sealing Machine,",
+      "price": 372.6,
+      "temu_price": 138,
+      "goods_id": "601103357352888",
+      "variant": null
+    },
+    {
+      "name": "1.2L Stainless Steel Deep Fryer,",
+      "price": 280.8,
+      "temu_price": 104,
+      "goods_id": "601100127576428",
+      "variant": null
+    },
+    {
+      "name": "3pcs Premium Stainless Steel Cutting",
+      "price": 347.4,
+      "temu_price": 193,
+      "goods_id": "601102187285283",
+      "variant": null
+    }
+  ]
+}

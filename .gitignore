@@ -20,8 +20,8 @@ build/
 chrome_profile/
 
 # Scraped output
-scraped/
-**/scraped/
+# scraped/
+# **/scraped/
 **/debug_html/
 
 # IDE & OS

@@ -1,0 +1,64 @@
+{
+  "products": [
+    {
+      "category_id": "e1b49ce3-86e7-4ff2-93ca-5263c90ac4bd",
+      "compare_at_price": 209.27,
+      "cost": 159,
+      "description": "CAMP MASTER COOLER BOX",
+      "dimension_height": 18,
+      "dimension_length": 30,
+      "dimension_width": 30,
+      "game_price": 159,
+      "goods_id": "000000000850020581",
+      "images": [
+        "images/camp_master_cooler_b_000000000850020581_01.jpg"
+      ],
+      "in_stock": false,
+      "name": "CAMP MASTER COOLER BOX",
+      "price": 190.8,
+      "production_ids": {
+        "javamellow": "5bfbaad0-5fd6-464a-8824-d375ed96cfb2"
+      },
+      "short_description": "CAMP MASTER COOLER BOX",
+      "status": "active",
+      "stock_quantity": 0,
+      "tags": [
+        "game"
+      ],
+      "url": "https://www.game.co.za/Sports-Outdoors-Healthy-Living/Camping-Braai/Cooler-Bags-Boxes/p/000000000850020581",
+      "variants": [],
+      "weight": 1000
+    },
+    {
+      "compare_at_price": 30.47,
+      "cost": 22.99,
+      "description": "KNORR Cup-A-Soup Thick Chicken & Veg 93, G",
+      "dimension_height": 8,
+      "dimension_length": 5,
+      "dimension_width": 5,
+      "game_price": 22.99,
+      "goods_id": "000000000000577101",
+      "images": [
+        "images/knorr_cup_a_soup_thi_000000000000577101_01.jpg",
+        "images/knorr_cup_a_soup_thi_000000000000577101_02.jpg"
+      ],
+      "in_stock": false,
+      "name": "KNORR Cup-A-Soup Thick Chicken &",
+      "price": 27.59,
+      "short_description": "KNORR Cup-A-Soup Thick Chicken & Veg 93, G",
+      "status": "active",
+      "stock_quantity": 0,
+      "tags": [
+        "game"
+      ],
+      "url": "https://www.game.co.za/Groceries-Beverages/Pantry/Soups-Soup-Thickeners/p/000000000000577101",
+      "variants": [],
+      "weight": 15,
+      "category_id": "59935cf7-08c0-4776-8ae2-800beb19a0db",
+      "production_ids": {
+        "javamellow": "e1f46269-a14f-4062-bd56-ae6c90870c92"
+      }
+    }
+  ],
+  "updated": "2026-03-13T15:26:34.938447"
+}

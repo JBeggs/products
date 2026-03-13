@@ -1,0 +1,40 @@
+{
+  "products": [
+    {
+      "name": "Nescafe Classic Instant Coffee (1",
+      "price": 609.07,
+      "makro_price": 563.95,
+      "goods_id": "COFHFSYF6WZ2JFME"
+    },
+    {
+      "name": "Jacobs Kronung Instant Coffee (200",
+      "price": 213.79,
+      "makro_price": 197.95,
+      "goods_id": "COFHFSYFAYQUHSGX"
+    },
+    {
+      "name": "Douwe Egberts Mocha Kenya Style",
+      "price": 205.15,
+      "makro_price": 189.95,
+      "goods_id": "COFHFSYHQWUGJF9M"
+    },
+    {
+      "name": "Nescafe Gold Roast & Ground",
+      "price": 215.95,
+      "makro_price": 199.95,
+      "goods_id": "COFHFSYFGBBNYCZJ"
+    },
+    {
+      "name": "Jacobs Kronung Instant Coffee + Douwe Egberts Mocha Kenya Style + Nescafe Gold Roast & Ground",
+      "price": 705.42,
+      "makro_price": null,
+      "goods_id": ""
+    },
+    {
+      "name": "Doritos Snack Hamper Chips ",
+      "price": 1210,
+      "makro_price": 1100,
+      "goods_id": "CPSH8G77NDNKRGE4"
+    }
+  ]
+}
