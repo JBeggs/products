@@ -116,13 +116,25 @@ def _floating_button_script(
 if (!location.hostname.includes('{hostname_pattern}')) void 0;
 else if ({skip_cond}) void 0;
 else {{
+  if (!window._scraperKbdBound) {{
+    window._scraperKbdBound = true;
+    document.addEventListener('keydown', function(e) {{
+      if (e.ctrlKey && e.shiftKey && e.key === 'S') {{
+        e.preventDefault();
+        window.{trigger_var}TargetUrl = window.location.href || '';
+        window.{trigger_var}ClickedAt = Date.now();
+        window.{trigger_var} = true;
+      }}
+    }}, true);
+  }}
   function ensureBtn() {{
     if (!document.body) return;
     if (document.getElementById('{btn_id}')) return;
-    const btn = document.createElement('button');
-    btn.id = '{btn_id}';
-    btn.textContent = 'Save product';
-    btn.style.cssText = 'position:fixed!important;bottom:20px!important;{pos_css}!important;z-index:2147483647!important;padding:8px 16px!important;background:#2a7!important;color:white!important;border:none!important;border-radius:6px!important;cursor:pointer!important;font-size:14px!important;box-shadow:0 2px 8px rgba(0,0,0,0.3)!important;display:block!important;visibility:visible!important;opacity:1!important;pointer-events:auto!important;';
+    var bar = document.createElement('div');
+    bar.id = '{btn_id}';
+    bar.style.cssText = 'position:fixed!important;top:0!important;left:0!important;right:0!important;z-index:2147483647!important;background:#1a5!important;color:white!important;padding:10px 20px!important;font-family:sans-serif!important;font-size:16px!important;font-weight:bold!important;display:flex!important;align-items:center!important;justify-content:center!important;gap:16px!important;box-shadow:0 2px 10px rgba(0,0,0,0.4)!important;';
+    bar.innerHTML = '<span>SCRAPER ACTIVE</span><button style="padding:10px 24px!important;background:#fff!important;color:#1a5!important;border:none!important;border-radius:6px!important;cursor:pointer!important;font-size:16px!important;font-weight:bold!important;">Save product</button><span style="font-size:12px!important;font-weight:normal!important;">(or Ctrl+Shift+S)</span>';
+    var btn = bar.querySelector('button');
     btn.onclick = function() {{
       try {{
         window.{trigger_var}TargetUrl = window.location.href || '';
@@ -132,7 +144,7 @@ else {{
         setTimeout(function(){{ btn.textContent = 'Save product'; }}, 1500);
       }} catch (e) {{ btn.textContent = 'Error'; setTimeout(function(){{ btn.textContent = 'Save product'; }}, 2000); }}
     }};
-    document.body.appendChild(btn);
+    document.body.insertBefore(bar, document.body.firstChild);
   }}
   function scheduleAdd() {{
     if (document.body) {{
@@ -209,6 +221,7 @@ def run_generic_scrape_session(
     proxy = {"server": opts["proxy_server"]} if opts.get("proxy_server") else None
 
     LOG.info("Starting %s scraper (persistent=%s)", config.supplier_slug, use_persistent)
+    print(f"  [scraper] Starting {config.supplier_slug}... Save: click button or press Ctrl+Shift+S", flush=True)
 
     with sync_playwright() as p:
         launch_opts = {
@@ -267,18 +280,24 @@ def run_generic_scrape_session(
             context.on("page", close_blank_popup)
             try:
                 page.evaluate("(function(){ " + prevent_script + button_script + " })()")
-            except Exception:
-                pass
+            except Exception as e:
+                LOG.warning("Initial button inject failed: %s", e)
+                print(f"  [scraper] Initial inject failed: {e}", flush=True)
 
             inject_count = 0
+            print("  [scraper] Loop started. Press Ctrl+Shift+S in browser to save (button fallback).", flush=True)
             while not stop_flag.is_set():
                 inject_count += 1
                 for pg in context.pages:
                     try:
                         if pg.url and "about:blank" not in pg.url and config.hostname_pattern in pg.url:
                             skip = any(sp in (pg.url or "").lower() for sp in skip_paths) if skip_paths else False
-                            if not skip and (inject_count <= 10 or inject_count % 10 == 0):
-                                pg.evaluate("(function(){ " + button_script + " })()")
+                            if not skip:
+                                try:
+                                    pg.evaluate("(function(){ " + button_script + " })()")
+                                except Exception as inj_err:
+                                    if inject_count <= 3 or inject_count % 50 == 0:
+                                        LOG.debug("Button inject on %s: %s", pg.url[:50], inj_err)
                     except Exception:
                         pass
                     try:

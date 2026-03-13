@@ -255,7 +255,7 @@ SCRAPE_HTML = """
     <div id="msg" class="msg"></div>
   </div>
   <p class="help" id="helpText">
-    Select a supplier above, then click Start scrape. A browser will open. For Temu/Gumtree: browse and click the floating Save button to add products. For AliExpress: add URLs to urls.txt first, then start. Check <strong>Debug mode</strong> for verbose logs or run <code>python app.py --debug</code>.
+    Select a supplier above, then click Start scrape. A browser will open. Save products: click the floating <strong>Save product</strong> button, or press <strong>Ctrl+Shift+S</strong>. For AliExpress: add URLs to urls.txt first. Check Debug mode for verbose logs.
   </p>
   <script>
     let suppliers = [];
@@ -589,10 +589,13 @@ def api_scrape_start():
     def _run():
         global scrape_running
         try:
+            print(f"  [scraper] Starting {slug} -> {info.output_dir}", flush=True)
             LOG.info("Starting scrape: %s -> %s", slug, info.output_dir)
             run_supplier_scrape(slug, info.output_dir, scrape_stop_flag, scrape_save_session_flag, scrape_options)
+            print(f"  [scraper] Finished {slug}", flush=True)
             LOG.info("Scrape finished: %s", slug)
         except Exception as e:
+            print(f"  [scraper] ERROR: {e}", flush=True)
             LOG.exception("Scrape error for %s: %s", slug, e)
         finally:
             scrape_running = False
