@@ -108,19 +108,21 @@ def _floating_button_script(
     skip_paths: tuple[str, ...] = (),
     button_position: str = "right",
 ) -> str:
-    """Generate floating Save button script for the given hostname."""
+    """Generate floating Save button script for the given hostname.
+    Uses deferred injection + MutationObserver to handle Linux timing and SPA content replacement."""
     skip_cond = _path_skip_check(skip_paths) if skip_paths else "false"
     pos_css = "left:20px" if button_position == "left" else "right:20px"
     return f"""
 if (!location.hostname.includes('{hostname_pattern}')) void 0;
 else if ({skip_cond}) void 0;
 else {{
-  function addBtn() {{
-    if (!document.body || document.getElementById('{btn_id}')) return;
+  function ensureBtn() {{
+    if (!document.body) return;
+    if (document.getElementById('{btn_id}')) return;
     const btn = document.createElement('button');
     btn.id = '{btn_id}';
     btn.textContent = 'Save product';
-    btn.style.cssText = 'position:fixed;bottom:20px;{pos_css};z-index:99999;padding:8px 16px;background:#2a7;color:white;border:none;border-radius:6px;cursor:pointer;font-size:14px;box-shadow:0 2px 8px rgba(0,0,0,0.3)';
+    btn.style.cssText = 'position:fixed!important;bottom:20px!important;{pos_css}!important;z-index:2147483647!important;padding:8px 16px!important;background:#2a7!important;color:white!important;border:none!important;border-radius:6px!important;cursor:pointer!important;font-size:14px!important;box-shadow:0 2px 8px rgba(0,0,0,0.3)!important;display:block!important;visibility:visible!important;opacity:1!important;pointer-events:auto!important;';
     btn.onclick = function() {{
       try {{
         window.{trigger_var}TargetUrl = window.location.href || '';
@@ -132,8 +134,20 @@ else {{
     }};
     document.body.appendChild(btn);
   }}
-  if (document.body) addBtn();
-  else document.addEventListener('DOMContentLoaded', addBtn);
+  function scheduleAdd() {{
+    if (document.body) {{
+      ensureBtn();
+      var obs = new MutationObserver(function() {{ if (!document.getElementById('{btn_id}')) ensureBtn(); }});
+      obs.observe(document.body, {{ childList: true, subtree: true }});
+    }} else {{
+      document.addEventListener('DOMContentLoaded', function() {{ scheduleAdd(); }}, {{ once: true }});
+    }}
+  }}
+  if (document.readyState === 'loading') {{
+    document.addEventListener('DOMContentLoaded', function() {{ setTimeout(scheduleAdd, 100); }}, {{ once: true }});
+  }} else {{
+    setTimeout(scheduleAdd, 100);
+  }}
 }}
 """
 
