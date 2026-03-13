@@ -58,10 +58,25 @@ def extract_product_data(page, debug: bool = False) -> dict | None:
                 const titleEl = document.querySelector('h1') || document.querySelector('[class*="Product_product"] h5') || document.querySelector('[itemprop="name"]');
                 const title = titleEl ? (titleEl.textContent || titleEl.innerText || '').trim() : null;
 
-                const priceEl = document.querySelector('[class*="Product_price"]') || document.querySelector('[class*="FeaturedProductCardView_price"]') || document.querySelector('[class*="price"]');
-                let priceText = priceEl ? (priceEl.textContent || priceEl.innerText || '').trim() : '';
-                const priceMatch = priceText.match(/R\\s*([\\d.,]+)/i) || priceText.match(/([\\d.,]+)/);
-                const price = priceMatch ? parseFloat(priceMatch[1].replace(/[,\\s]/g, '')) : null;
+                let price = null;
+                const priceMeta = document.querySelector('meta[itemprop="price"]');
+                if (priceMeta && priceMeta.getAttribute('content')) {
+                    price = parseFloat(priceMeta.getAttribute('content'));
+                }
+                if (price == null || isNaN(price)) {
+                    const offerSpan = document.querySelector('span[itemprop="offers"]');
+                    if (offerSpan) {
+                        const m = (offerSpan.textContent || '').match(/R\\s*([\\d\\s,]+)/i);
+                        if (m) price = parseFloat(m[1].replace(/[,\\s]/g, ''));
+                    }
+                }
+                if (price == null || isNaN(price)) {
+                    const mainPrice = document.querySelector('.text-5xl.font-bold .price, [class*="Product_price"]');
+                    if (mainPrice) {
+                        const m = (mainPrice.textContent || '').match(/R\\s*([\\d\\s,]+)/i);
+                        if (m) price = parseFloat(m[1].replace(/[,\\s]/g, ''));
+                    }
+                }
 
                 const gallery = [];
                 const seen = new Set();
@@ -89,7 +104,7 @@ def extract_product_data(page, debug: bool = False) -> dict | None:
 
                 let warranty = null;
                 const descStr = desc || '';
-                const wMatch = descStr.match(/[Ww]arranty[:\s]+([^.\\n]+)/);
+                const wMatch = descStr.match(/[Ww]arranty[:\\s]+([^.\\n]+)/);
                 if (wMatch) warranty = wMatch[1].trim();
 
                 return { goodsName: title, salePrice: price, gallery, desc, warranty };
@@ -121,9 +136,15 @@ def extract_product_data(page, debug: bool = False) -> dict | None:
             desc = desc.replace("&amp;", "&").replace("&lt;br&gt;", "\n").replace("<br>", "\n")
 
         price = None
-        pm = re.search(r'Product_price[^"]*"[^>]*>R\s*([\d,]+\.?\d*)', content)
+        pm = re.search(r'<meta[^>]*itemprop="price"[^>]*content="([\d.]+)"', content)
+        if not pm:
+            pm = re.search(r'<meta[^>]*content="([\d.]+)"[^>]*itemprop="price"', content)
         if pm:
-            price = float(pm.group(1).replace(",", ""))
+            price = float(pm.group(1))
+        if price is None:
+            pm = re.search(r'Product_price[^"]*"[^>]*>R\s*([\d,]+\.?\d*)', content)
+            if pm:
+                price = float(pm.group(1).replace(",", ""))
         if price is None:
             for pm in re.finditer(r'>R\s*([\d,]+\.?\d*)<', content):
                 pval = float(pm.group(1).replace(",", ""))

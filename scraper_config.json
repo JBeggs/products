@@ -169,6 +169,24 @@
         "threshold": 1000.0,
         "multiplier": 1.2
       }
+    ],
+    "perfectdealz": [
+      {
+        "threshold": 30.0,
+        "multiplier": 1.2
+      },
+      {
+        "threshold": 99.0,
+        "multiplier": 1.2
+      },
+      {
+        "threshold": 199.0,
+        "multiplier": 1.2
+      },
+      {
+        "threshold": null,
+        "multiplier": 1.2
+      }
     ]
   },
   "supplier_delivery": {
