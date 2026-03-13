@@ -270,8 +270,17 @@ def run_generic_scrape_session(
             except Exception:
                 pass
 
+            inject_count = 0
             while not stop_flag.is_set():
+                inject_count += 1
                 for pg in context.pages:
+                    try:
+                        if pg.url and "about:blank" not in pg.url and config.hostname_pattern in pg.url:
+                            skip = any(sp in (pg.url or "").lower() for sp in skip_paths) if skip_paths else False
+                            if not skip and (inject_count <= 10 or inject_count % 10 == 0):
+                                pg.evaluate("(function(){ " + button_script + " })()")
+                    except Exception:
+                        pass
                     try:
                         state = pg.evaluate(check_script)
                         if state and state.get("triggered"):
