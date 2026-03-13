@@ -248,7 +248,7 @@ def _run_url_based_scrape(
                 if stop_flag.is_set():
                     break
                 print(f"  [{i + 1}/{len(urls)}] {url[:70]}...")
-                mod.scrape_url(page, url, output_dir, debug=False)
+                mod.scrape_url(page, url, output_dir, debug=opts.get("debug", False))
                 if i < len(urls) - 1:
                     time.sleep(3)
         finally:

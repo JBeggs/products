@@ -37,7 +37,9 @@ logging.getLogger("werkzeug").setLevel(logging.ERROR)
 
 # Scraper logger - visible in terminal when running app
 LOG = logging.getLogger("products.scraper")
-LOG_LEVEL = os.environ.get("LOG_LEVEL", "INFO").upper()
+LOG_LEVEL = os.environ.get("LOG_LEVEL", "").upper() or (
+    "DEBUG" if os.environ.get("SCRAPER_DEBUG", "").lower() in ("1", "true", "yes") else "INFO"
+)
 LOG.setLevel(getattr(logging, LOG_LEVEL, logging.INFO))
 if not LOG.handlers:
     h = logging.StreamHandler(sys.stderr)
@@ -244,13 +246,16 @@ SCRAPE_HTML = """
     <button id="startBtn" class="primary" onclick="startScrape()">Start scrape</button>
     <button id="stopBtn" class="danger" onclick="stopScrape()" disabled>Stop scrape</button>
     <button id="saveSessionBtn" class="secondary" onclick="saveSession()" disabled>Save session (after login)</button>
+    <label style="display: flex; align-items: center; gap: 0.5rem; margin-left: 1rem; font-size: 0.9rem; color: #888;">
+      <input type="checkbox" id="debugMode"> Debug mode (verbose logs)
+    </label>
   </div>
   <div id="status" class="status stopped">
     <span id="statusText">Stopped</span>
     <div id="msg" class="msg"></div>
   </div>
   <p class="help" id="helpText">
-    Select a supplier above, then click Start scrape. A browser will open. For Temu/Gumtree: browse and click the floating Save button to add products. For AliExpress: add URLs to urls.txt first, then start. If Temu pages stop loading: set SCRAPER_DEBUG=1 and restart – failed pages are saved to scraped/debug_html/.
+    Select a supplier above, then click Start scrape. A browser will open. For Temu/Gumtree: browse and click the floating Save button to add products. For AliExpress: add URLs to urls.txt first, then start. Check <strong>Debug mode</strong> for verbose logs or run <code>python app.py --debug</code>.
   </p>
   <script>
     let suppliers = [];
@@ -282,10 +287,11 @@ SCRAPE_HTML = """
       setMsg('');
       const proxyEnabled = document.getElementById('proxyEnabled') && document.getElementById('proxyEnabled').checked;
       const proxyCountry = (document.getElementById('proxyCountry') && document.getElementById('proxyCountry').value) || 'ZA';
+      const debugMode = document.getElementById('debugMode') && document.getElementById('debugMode').checked;
       const res = await fetch('/api/scrape/start', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ supplier: slug, proxy_enabled: !!proxyEnabled, proxy_country: proxyCountry })
+        body: JSON.stringify({ supplier: slug, proxy_enabled: !!proxyEnabled, proxy_country: proxyCountry, debug: !!debugMode })
       });
       const data = await res.json();
       if (data.ok) { setStatus(true, 'Running'); }
@@ -554,10 +560,17 @@ def api_scrape_start():
                 "error": "Configure pricing tiers for this supplier first. Expand the Tiered markup section, add tiers, and Save.",
             })
 
+    debug_mode = bool(data.get("debug"))
+    if debug_mode:
+        os.environ["LOG_LEVEL"] = "DEBUG"
+        os.environ["SCRAPER_DEBUG"] = "1"
+        LOG.setLevel(logging.DEBUG)
+        LOG.info("Debug mode enabled for this scrape")
     scrape_options = {
         "proxy_enabled": bool(data.get("proxy_enabled")),
         "proxy_country": (data.get("proxy_country") or "ZA").strip().upper()[:2],
         "proxy_server": None,
+        "debug": debug_mode,
     }
     if scrape_options["proxy_enabled"] and scrape_options["proxy_country"]:
         from shared.proxy_utils import fetch_free_proxy
@@ -614,7 +627,13 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--port", type=int, default=5001)
     parser.add_argument("--open", action="store_true", help="Open browser")
+    parser.add_argument("--debug", action="store_true", help="Enable debug logging (LOG_LEVEL=DEBUG, SCRAPER_DEBUG=1)")
     args = parser.parse_args()
+    if args.debug:
+        os.environ["LOG_LEVEL"] = "DEBUG"
+        os.environ["SCRAPER_DEBUG"] = "1"
+        LOG.setLevel(logging.DEBUG)
+        print("Debug mode enabled")
     url = f"http://127.0.0.1:{args.port}"
     print(f"Product scrapers: {url}")
     if args.open:
