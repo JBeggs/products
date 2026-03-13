@@ -66,12 +66,14 @@ def extract_product_data(page, debug: bool = False) -> dict | None:
                 const gallery = [];
                 const seen = new Set();
                 const isSimilarProducts = (node) => node && node.closest && (node.closest('.categoryViewRow') || node.closest('[class*="CategoryViewRow"]'));
+                const isBrowseFeature = (node) => node && node.closest && (node.closest('.browseFeature') || node.closest('.browseFeaturesContainer') || node.closest('.browseFeatures'));
                 const imgs = document.querySelectorAll('img[src]');
                 for (const img of imgs) {
-                    if (isSimilarProducts(img)) continue;
+                    if (isSimilarProducts(img) || isBrowseFeature(img)) continue;
                     let src = (img.getAttribute('src') || img.getAttribute('data-src') || '').trim();
                     if (!src || (img.naturalWidth || img.width || 0) <= 2) continue;
                     if (src.includes('pixel') || src.includes('track') || src.includes('analytics') || src.includes('DeliveryTruck') || src.includes('.svg')) continue;
+                    if (src.includes('/static/images/Banners/')) continue;
                     if (src.includes('loot.co.za') || src.includes('cdnv3.loot') || src.includes('media.loot.co.za')) {
                         let full = src.startsWith('//') ? 'https:' + src : (src.startsWith('/') ? 'https://www.loot.co.za' + src : src);
                         full = full.split('?')[0];
@@ -138,15 +140,15 @@ def extract_product_data(page, debug: bool = False) -> dict | None:
         gallery = []
         for m in re.finditer(r'https?://[^"\s]*media\.loot\.co\.za[^"\s]*\.(?:jpg|jpeg|png|webp)[^"\s]*', content, re.I):
             u = _loot_full_size(m.group(0))
-            if "DeliveryTruck" not in u and "svg" not in u.lower() and u not in gallery:
+            if "DeliveryTruck" not in u and "svg" not in u.lower() and "/static/images/Banners/" not in u and u not in gallery:
                 gallery.append(u)
         for m in re.finditer(r'https?://[^"\s]*loot\.co\.za[^"\s]*\.(?:jpg|jpeg|png|webp)[^"\s]*', content, re.I):
             u = _loot_full_size(m.group(0))
-            if "DeliveryTruck" not in u and "svg" not in u.lower() and "cdnv3" not in u and u not in gallery:
+            if "DeliveryTruck" not in u and "svg" not in u.lower() and "cdnv3" not in u and "/static/images/Banners/" not in u and u not in gallery:
                 gallery.append(u)
         for m in re.finditer(r'//media\.loot\.co\.za[^"\s]*\.(?:jpg|jpeg|png|webp)[^"\s]*', content, re.I):
             u = _loot_full_size("https:" + m.group(0))
-            if "DeliveryTruck" not in u and u not in gallery:
+            if "DeliveryTruck" not in u and "/static/images/Banners/" not in u and u not in gallery:
                 gallery.append(u)
         if not gallery:
             m = re.search(r'property="og:image"[^>]*content="([^"]+)"', content)
