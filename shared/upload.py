@@ -1,4 +1,5 @@
 """Upload products to Django API."""
+import os
 import requests
 from pathlib import Path
 from decimal import Decimal, InvalidOperation
@@ -35,6 +36,55 @@ def _resolve_free_delivery_threshold(data: dict, supplier_delivery: dict | None)
     if threshold is None and supplier_delivery:
         threshold = supplier_delivery.get("free_delivery_threshold")
     return _normalize_non_negative_decimal(threshold)
+
+
+GUMTREE_REQUIRED_PICKUP_FIELDS = (
+    "pickup_street",
+    "pickup_suburb",
+    "pickup_city",
+    "pickup_province",
+    "pickup_postal_code",
+    "pickup_country",
+)
+
+
+def _is_gumtree_source(source: str | None) -> bool:
+    return (source or "").strip().lower() == "gumtree"
+
+
+def _default_gumtree_pickup_origin_from_env() -> dict:
+    """Fallback pickup-origin values for Gumtree products from environment."""
+    return {
+        "pickup_street": (os.environ.get("GUMTREE_PICKUP_STREET") or "").strip(),
+        "pickup_suburb": (os.environ.get("GUMTREE_PICKUP_SUBURB") or "").strip(),
+        "pickup_city": (os.environ.get("GUMTREE_PICKUP_CITY") or "").strip(),
+        "pickup_province": (os.environ.get("GUMTREE_PICKUP_PROVINCE") or "").strip(),
+        "pickup_postal_code": (os.environ.get("GUMTREE_PICKUP_POSTAL_CODE") or "").strip(),
+        "pickup_country": (os.environ.get("GUMTREE_PICKUP_COUNTRY") or "").strip(),
+    }
+
+
+def _extract_pickup_origin(data: dict, with_env_fallback: bool = False) -> dict:
+    pickup = {
+        "pickup_street": (data.get("pickup_street") or "").strip(),
+        "pickup_suburb": (data.get("pickup_suburb") or "").strip(),
+        "pickup_city": (data.get("pickup_city") or "").strip(),
+        "pickup_province": (data.get("pickup_province") or "").strip(),
+        "pickup_postal_code": (data.get("pickup_postal_code") or "").strip(),
+        "pickup_country": (data.get("pickup_country") or "").strip(),
+    }
+    if with_env_fallback:
+        defaults = _default_gumtree_pickup_origin_from_env()
+        for field in GUMTREE_REQUIRED_PICKUP_FIELDS:
+            if not pickup[field]:
+                pickup[field] = defaults[field]
+    return pickup
+
+
+def _validate_gumtree_pickup_origin(data: dict) -> tuple[bool, list[str]]:
+    pickup = _extract_pickup_origin(data, with_env_fallback=True)
+    missing = [field for field in GUMTREE_REQUIRED_PICKUP_FIELDS if not pickup[field]]
+    return (len(missing) == 0, missing)
 
 
 def _resolve_bundle_pids(
@@ -120,6 +170,10 @@ def _upload_images(
     """Upload image files, return (main_image_url, extra_urls) or None."""
     if not images:
         return None
+    # When output_dir is company-scoped (e.g. temu/scraped/companies/xxx), images live in base supplier dir (temu/scraped/images/)
+    base_dir = output_dir
+    if "companies" in output_dir.parts:
+        base_dir = output_dir.parent.parent
     headers = {"Authorization": f"Bearer {token}", "X-Company-Slug": company_slug}
     upload_url = f"{base_url.rstrip('/')}/v1/products/images/upload-multiple/"
     files = []
@@ -133,6 +187,8 @@ def _upload_images(
                 path = output_dir / fname_str
         else:
             path = output_dir / fname_str
+        if not path.exists() and base_dir != output_dir:
+            path = base_dir / fname_str
         if path.exists():
             mime = "image/jpeg"
             if path.suffix.lower() in (".png",):
@@ -173,6 +229,16 @@ def update_product(
     Update existing product via PATCH. When output_dir is passed and data has images,
     re-uploads images and updates image/images on the API.
     """
+    if _is_gumtree_source(source):
+        ok, missing = _validate_gumtree_pickup_origin(data)
+        if not ok:
+            print(
+                "  WARNING: Update skipped for Gumtree product "
+                f"{data.get('name', '')[:40]}... missing pickup-origin fields: {', '.join(missing)} "
+                "(set GUMTREE_PICKUP_* in products/.env or populate fields in product JSON)"
+            )
+            return False
+
     headers = {
         "Authorization": f"Bearer {token}",
         "X-Company-Slug": company_slug,
@@ -211,6 +277,8 @@ def update_product(
         dc = supp.get("delivery_cost")
         payload["supplier_delivery_cost"] = str(dc) if dc is not None and dc > 0 else None
         payload["free_delivery_threshold"] = _resolve_free_delivery_threshold(data, supp)
+    if _is_gumtree_source(source):
+        payload.update(_extract_pickup_origin(data, with_env_fallback=True))
     if data.get("min_quantity") is not None:
         payload["min_quantity"] = int(data["min_quantity"])
     if data.get("weight") is not None:
@@ -265,7 +333,11 @@ def update_product(
         if hasattr(e, "response") and getattr(e, "response", None) is not None:
             status = getattr(e.response, "status_code", None)
             body = (e.response.text or "")[:200]
-        print(f"  WARNING: Update failed for {data.get('name', '')[:40]}... (status={status}): {body}")
+        body_lower = (body or "").lower()
+        if status in (400, 404) and "no ecommerceproduct matches the given query" in body_lower:
+            print(f"  INFO: Existing product id not found for {data.get('name', '')[:40]}... recreating")
+        else:
+            print(f"  WARNING: Update failed for {data.get('name', '')[:40]}... (status={status}): {body}")
         return False
 
 
@@ -392,7 +464,26 @@ def upload_product(
         payload["compare_at_price"] = str(data["compare_at_price"])
     if data.get("cost") is not None:
         payload["cost_price"] = str(data["cost"])
-    supplier_slug = output_dir.parent.name if output_dir else (bundle_source or "")
+    # Derive supplier_slug: prefer bundle_source; when output_dir is company-scoped (path/.../companies/xxx), use parent of scraped dir
+    if bundle_source:
+        supplier_slug = bundle_source
+    elif output_dir:
+        if "companies" in output_dir.parts:
+            idx = list(output_dir.parts).index("companies")
+            supplier_slug = output_dir.parts[idx - 2] if idx >= 2 else output_dir.parent.name
+        else:
+            supplier_slug = output_dir.parent.name
+    else:
+        supplier_slug = ""
+    if _is_gumtree_source(supplier_slug):
+        ok, missing = _validate_gumtree_pickup_origin(data)
+        if not ok:
+            print(
+                "  SKIP: Gumtree product missing pickup-origin fields "
+                f"({', '.join(missing)}): {data.get('name', '')[:50]} "
+                "(set GUMTREE_PICKUP_* in products/.env or populate fields in product JSON)"
+            )
+            return None
     if data.get("delivery_time"):
         payload["delivery_time"] = str(data["delivery_time"])[:100]
     elif supplier_slug:
@@ -405,6 +496,8 @@ def upload_product(
         dc = supp.get("delivery_cost")
         payload["supplier_delivery_cost"] = str(dc) if dc is not None and dc > 0 else None
         payload["free_delivery_threshold"] = _resolve_free_delivery_threshold(data, supp)
+    if _is_gumtree_source(supplier_slug):
+        payload.update(_extract_pickup_origin(data, with_env_fallback=True))
     min_qty = data.get("min_quantity")
     if min_qty is not None:
         payload["min_quantity"] = int(min_qty)

@@ -12,14 +12,17 @@ if str(PRODUCTS_ROOT) not in sys.path:
 from shared.suppliers import get_supplier
 
 
-def _load_product(source: str, index: int) -> dict | None:
-    """Load product at index from products.json. Returns None if invalid."""
-    from shared.suppliers import get_sources_for_edit
+def _load_product(source: str, index: int, company_slug: str = "") -> dict | None:
+    """Load product at index from company-scoped products.json. Returns None if invalid."""
+    if not (company_slug or "").strip():
+        return None
+    from shared.suppliers import get_sources_for_edit, get_company_scoped_dir
     sources = get_sources_for_edit()
     base = sources.get(source)
     if not base:
         return None
-    path = base / "products.json"
+    company_dir = get_company_scoped_dir(base, company_slug)
+    path = company_dir / "products.json"
     if not path.exists():
         return None
     try:
@@ -69,12 +72,12 @@ def fetch_current_pricing(source: str, url: str) -> dict | None:
     return mod.fetch_current_pricing(url)
 
 
-def refresh_product(source: str, index: int) -> dict:
+def refresh_product(source: str, index: int, company_slug: str = "") -> dict:
     """
     Refresh one product: fetch current pricing, compare, build note.
     Returns {valid, new_price, new_cost, price_change_note, error?}
     """
-    product = _load_product(source, index)
+    product = _load_product(source, index, company_slug)
     if not product:
         return {"valid": False, "error": "Product not found"}
 

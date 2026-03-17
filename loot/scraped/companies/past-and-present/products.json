@@ -1,0 +1,36 @@
+{
+  "products": [
+    {
+      "category_id": "acf3a009-486e-49f3-bf11-45e89c24c633",
+      "compare_at_price": 1649.64,
+      "cost": 1199,
+      "description": "Stay warm in style with the Boden Stark Double-Sided Bar Heater-a sleek and powerful heating solution designed to keep your space cozy even on the chilliest days. Featuring a dual-sided heating system, this innovative heater ensures even heat distribution, making it perfect for larger rooms, open-plan spaces, and entertainment areas. Say goodbye to cold spots and hello to consistent, all-around warmth that enhances your comfort in any setting. Designed with both aesthetics and performance in mind, the Boden Stark Bar Heater boasts a modern, streamlined design that complements any home or office d\u00e9cor. Its brushed stainless steel finish adds a touch of sophistication, while its slim profile allows for seamless placement against walls or in the center of a space. Whether you're enjoying a quiet night in or hosting guests, this heater blends effortlessly into your environment while keeping everyone warm. Customization is key, and this heater delivers with its adjustable heat settings, allowing you to find the perfect temperature with ease. Its energy-efficient operation ensures that you stay warm without skyrocketing electricity bills, making it a cost-effective and eco-friendly choice. Plus, with user-friendly controls and a remote, adjusting the heat from the comfort of your couch has never been easier. Safety is a top priority, and the Boden Stark Double-Sided Bar Heater is built with overheat protection and a tip-over safety switch, ensuring worry-free operation. Whether you need extra warmth in your living room, office, or entertainment area, this heater offers versatile placement options for maximum convenience. Upgrade your heating game today with a powerful, stylish, and efficient solution that truly stands out! specifications: - Dual-Sided Heating for Even Heat Distribution - Energy-efficient operation - Brushed Stainless Steel Finish - Adjustable for Custom Comfort - Friendly Controls with Remote Control - Compact and Space-Saving DesignRead More",
+      "dimension_height": 60,
+      "dimension_length": 40,
+      "dimension_width": 40,
+      "goods_id": "unknown",
+      "images": [
+        "images/boden_stark_double_s_unknown_01.jpg",
+        "images/boden_stark_double_s_unknown_03.jpg"
+      ],
+      "in_stock": true,
+      "loot_price": 1199,
+      "name": "Boden Stark Double Sided Bar",
+      "price": 1438.8,
+      "production_ids": {
+        "javamellow": "4e109386-e3f7-4154-b5ad-c708d4bd919d",
+        "past-and-present": "373f0613-741f-4f7d-acd3-1c9f92610175"
+      },
+      "short_description": "Boden Stark Double Sided Bar Heater (200W)",
+      "status": "active",
+      "stock_quantity": 0,
+      "tags": [
+        "loot"
+      ],
+      "url": "https://www.loot.co.za/product/boden-stark-double-sided-bar-heater-200w/wnwb-8359-g590",
+      "variants": [],
+      "weight": 5
+    }
+  ],
+  "updated": "2026-03-15T21:44:27.339998"
+}

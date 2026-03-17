@@ -1,9 +1,21 @@
 """Configuration for product scrapers - company slugs, category IDs, pricing."""
 import json
 import os
+import threading
 from pathlib import Path
 
 from dotenv import load_dotenv
+
+# Thread-local scrape context: company_slug for tiered markup (set by run_supplier_scrape)
+_scrape_ctx = threading.local()
+
+
+def set_scrape_company_slug(slug: str | None) -> None:
+    _scrape_ctx.company_slug = slug
+
+
+def get_scrape_company_slug() -> str | None:
+    return getattr(_scrape_ctx, "company_slug", None)
 
 # Load .env from products/ root
 PRODUCTS_ROOT = Path(__file__).resolve().parent.parent
@@ -46,19 +58,33 @@ def save_scraper_config(config: dict) -> None:
     SCRAPER_CONFIG_FILE.write_text(json.dumps(config, indent=2))
 
 
-def get_tier_multipliers(supplier_slug: str | None = None) -> list[tuple[float, float]]:
+def get_tier_multipliers(supplier_slug: str | None = None, company_slug: str | None = None) -> list[tuple[float, float]]:
     """
     Return tier multipliers as [(threshold, mult), ...] for apply_tiered_markup.
-    supplier_slug: required; returns only that supplier's tiers. No fallback.
-    Returns [] if supplier has no tiers configured.
+    supplier_slug: required.
+    company_slug: when provided, use company-scoped tiers. Else fall back to global supplier_tiers.
+    Returns [] if no tiers configured.
     """
     if not supplier_slug:
         return []
     cfg = load_scraper_config()
+    # Company-scoped first (like products)
+    if company_slug:
+        company_tiers = cfg.get("company_tiers") or {}
+        by_company = company_tiers.get(company_slug.strip())
+        if isinstance(by_company, dict):
+            tiers = by_company.get(supplier_slug)
+            if tiers and isinstance(tiers, list):
+                return _parse_tiers_list(tiers)
+    # Fallback: global supplier_tiers (backward compat, CLI)
     supplier_tiers = cfg.get("supplier_tiers") or {}
     tiers = supplier_tiers.get(supplier_slug)
     if not tiers or not isinstance(tiers, list):
         return []
+    return _parse_tiers_list(tiers)
+
+
+def _parse_tiers_list(tiers: list) -> list[tuple[float, float]]:
     result = []
     for t in tiers:
         if not isinstance(t, dict):
@@ -69,12 +95,20 @@ def get_tier_multipliers(supplier_slug: str | None = None) -> list[tuple[float, 
     return result
 
 
-def save_supplier_tiers(slug: str, tiers: list[dict]) -> None:
-    """Save tier multipliers for a supplier. Merges into existing config."""
+def save_supplier_tiers(slug: str, tiers: list[dict], company_slug: str | None = None) -> None:
+    """Save tier multipliers for a supplier. When company_slug provided, save to company-scoped config."""
     cfg = load_scraper_config()
-    supplier_tiers = cfg.get("supplier_tiers") or {}
-    supplier_tiers[slug] = tiers
-    cfg["supplier_tiers"] = supplier_tiers
+    if company_slug:
+        company_tiers = cfg.get("company_tiers") or {}
+        cs = company_slug.strip()
+        if cs not in company_tiers:
+            company_tiers[cs] = {}
+        company_tiers[cs][slug] = tiers
+        cfg["company_tiers"] = company_tiers
+    else:
+        supplier_tiers = cfg.get("supplier_tiers") or {}
+        supplier_tiers[slug] = tiers
+        cfg["supplier_tiers"] = supplier_tiers
     save_scraper_config(cfg)
 
 
@@ -90,6 +124,52 @@ def get_target_slugs(upload_to: str | None = None) -> list[str]:
     if slug:
         return [slug]
     return []
+
+
+def _parse_credential_lists() -> tuple[list[str], list[str], list[str]]:
+    """
+    Parse COMPANY_SLUGS, API_USERNAMES, API_PASSWORDS as aligned comma-separated lists.
+    Returns (slugs, usernames, passwords). Validates 1:1 mapping by index.
+    Raises ValueError on length mismatch.
+    """
+    slugs_raw = os.environ.get("COMPANY_SLUGS", "").strip()
+    usernames_raw = os.environ.get("API_USERNAMES", "").strip()
+    passwords_raw = os.environ.get("API_PASSWORDS", "").strip()
+    if not slugs_raw:
+        return [], [], []
+    slugs = [s.strip() for s in slugs_raw.split(",") if s.strip()]
+    if not usernames_raw or not passwords_raw:
+        return slugs, [], []
+    usernames = [u.strip() for u in usernames_raw.split(",")]
+    passwords = [p.strip() for p in passwords_raw.split(",")]
+    if len(usernames) != len(slugs) or len(passwords) != len(slugs):
+        raise ValueError(
+            f"COMPANY_SLUGS, API_USERNAMES, API_PASSWORDS must have same count. "
+            f"Got {len(slugs)} slugs, {len(usernames)} usernames, {len(passwords)} passwords"
+        )
+    return slugs, usernames, passwords
+
+
+def get_credentials_for_company(company_slug: str) -> tuple[str | None, str | None]:
+    """
+    Return (username, password) for the given company_slug.
+    Uses COMPANY_SLUGS/API_USERNAMES/API_PASSWORDS when set (1:1 by index).
+    Falls back to API_USERNAME/API_PASSWORD when single company or COMPANY_SLUG.
+    Returns (None, None) if not found.
+    """
+    slugs, usernames, passwords = _parse_credential_lists()
+    if slugs and usernames and passwords:
+        try:
+            idx = slugs.index(company_slug.strip())
+            return usernames[idx], passwords[idx]
+        except ValueError:
+            return None, None
+    single_user = os.environ.get("API_USERNAME", "").strip()
+    single_pass = os.environ.get("API_PASSWORD", "").strip()
+    target = get_target_slugs()
+    if target and company_slug in target and single_user and single_pass:
+        return single_user, single_pass
+    return single_user or None, single_pass or None
 
 
 def get_category_ids() -> dict[str, str]:

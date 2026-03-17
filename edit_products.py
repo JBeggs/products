@@ -41,6 +41,23 @@ def create_edit_blueprint():
         resp.headers["Pragma"] = "no-cache"
         return resp
 
+    @bp.route("/api/countries")
+    def api_countries():
+        """Return countries from Django CRM (public endpoint, no auth)."""
+        base_url = (os.environ.get("API_BASE_URL") or "").strip()
+        if not base_url:
+            return _no_cache(jsonify({"countries": [], "error": "Set API_BASE_URL in .env"}))
+        try:
+            import requests
+            r = requests.get(f"{base_url.rstrip('/')}/v1/countries/", timeout=10)
+            r.raise_for_status()
+            data = r.json()
+            items = data.get("data") or []
+            countries = [{"id": c.get("id"), "name": c.get("name", ""), "url_name": c.get("url_name", "")} for c in items if c.get("name")]
+            return _no_cache(jsonify({"countries": countries}))
+        except Exception as e:
+            return _no_cache(jsonify({"countries": [], "error": str(e)}))
+
     @bp.route("/api/sources")
     def api_sources():
         """Return all suppliers for Edit Products tabs - from get_sources_for_edit (same source as product loading)."""
@@ -56,9 +73,12 @@ def create_edit_blueprint():
     def api_products():
         sources = _get_sources()
         s = request.args.get("source", "temu")
+        company_slug = (request.args.get("company_slug") or "").strip()
         if s not in sources:
             return _no_cache(jsonify({"products": [], "updated": None}))
-        products, updated = load_products_with_meta(s, sources)
+        if not company_slug:
+            return _no_cache(jsonify({"products": [], "updated": None, "error": "company_slug required"}))
+        products, updated = load_products_with_meta(s, sources, company_slug)
         return _no_cache(jsonify({"products": products, "updated": updated}))
 
     def _sync_source_to_company(sources_dict, source: str, company_slug: str, category_id: str) -> tuple[int, list[str]]:
@@ -68,11 +88,14 @@ def create_edit_blueprint():
         if not (category_id or "").strip():
             return 0, ["Select a category"]
         base_url = (os.environ.get("API_BASE_URL") or "").strip()
-        username = (os.environ.get("API_USERNAME") or "").strip()
-        password = (os.environ.get("API_PASSWORD") or "").strip()
+        try:
+            from shared.config import get_credentials_for_company
+            username, password = get_credentials_for_company(company_slug)
+        except ValueError as e:
+            return 0, [str(e)]
         use_email = str(os.environ.get("API_USE_EMAIL", "")).lower() in ("1", "true", "yes")
-        if not all([base_url, username, password]):
-            return 0, ["Set API_BASE_URL, API_USERNAME, API_PASSWORD in .env"]
+        if not base_url or not username or not password:
+            return 0, ["Set API_BASE_URL and COMPANY_SLUGS/API_USERNAMES/API_PASSWORDS (or API_USERNAME/API_PASSWORD) in .env"]
         token = get_auth_token(base_url, username, password, company_slug=company_slug, use_email=use_email)
         if not token:
             return 0, ["Login failed"]
@@ -82,7 +105,9 @@ def create_edit_blueprint():
         output_dir = sources_dict.get(source)
         if not output_dir:
             return 0, ["Invalid source"]
-        products = load_products(source, sources_dict)
+        from shared.suppliers import get_company_scoped_dir
+        company_dir = get_company_scoped_dir(output_dir, company_slug)
+        products = load_products(source, sources_dict, company_slug)
         changed = False
 
         def sync_one(prod):
@@ -94,7 +119,7 @@ def create_edit_blueprint():
             products_by_source = None
             if bundle_items and len(bundle_items) > 0 and isinstance(bundle_items[0], dict):
                 ref_sources = {it.get("source") for it in bundle_items if it.get("source") in sources_dict}
-                products_by_source = {src: load_products(src, sources_dict) for src in ref_sources}
+                products_by_source = {src: load_products(src, sources_dict, company_slug) for src in ref_sources}
             production_ids = prod.get("production_ids") or {}
             existing_id = production_ids.get(company_slug)
             if existing_id:
@@ -102,7 +127,7 @@ def create_edit_blueprint():
                 ok = update_product(
                     prod, base_url, token, company_slug, existing_id,
                     source=source, products=products, products_by_source=products_by_source,
-                    output_dir=output_dir, sources_dict=sources_dict,
+                    output_dir=company_dir, sources_dict=sources_dict,
                     category_id=cat,
                 )
                 if ok:
@@ -121,7 +146,7 @@ def create_edit_blueprint():
                     ok = update_product(
                         prod, base_url, token, company_slug, found_id,
                         source=source, products=products, products_by_source=products_by_source,
-                        output_dir=output_dir, sources_dict=sources_dict,
+                        output_dir=company_dir, sources_dict=sources_dict,
                         category_id=cat,
                     )
                     if ok:
@@ -133,7 +158,7 @@ def create_edit_blueprint():
                         return
                 cat = (prod.get("category_id") or "").strip() or category_id
                 pid = upload_product(
-                    prod, output_dir, base_url, token, company_slug, cat,
+                    prod, company_dir, base_url, token, company_slug, cat,
                     products=products, products_by_source=products_by_source,
                     sources_dict=sources_dict if products_by_source else None,
                     bundle_source=source,
@@ -154,7 +179,7 @@ def create_edit_blueprint():
             sync_one(prod)
 
         if changed:
-            save_products(source, products, sources_dict)
+            save_products(source, products, sources_dict, company_slug)
         return synced, errors
 
     @bp.route("/api/save", methods=["POST"])
@@ -167,36 +192,11 @@ def create_edit_blueprint():
             company_slug = (data.get("company_slug") or "").strip()
             if s not in sources:
                 return jsonify({"ok": False, "error": "Invalid source"})
-            company_slug = (data.get("company_slug") or "").strip()
+            if not company_slug:
+                return jsonify({"ok": False, "error": "company_slug required"})
             category_id = (data.get("category_id") or "").strip()
-            updated = save_products(s, prods, sources)
+            updated = save_products(s, prods, sources, company_slug)
             result = {"ok": True, "updated": updated}
-            if company_slug and category_id:
-                def _ready_for_sync(p):
-                    if p.get("bundle_items"):
-                        return True
-                    for k in ("dimension_length", "dimension_width", "dimension_height"):
-                        try:
-                            if p.get(k) is None or float(p.get(k)) <= 0:
-                                return False
-                        except (TypeError, ValueError):
-                            return False
-                    try:
-                        w = p.get("weight")
-                        if w is None or int(w) <= 0:
-                            return False
-                    except (TypeError, ValueError):
-                        return False
-                    return True
-                missing = [p for p in prods if not _ready_for_sync(p)]
-                if missing:
-                    result["sync_skipped"] = True
-                    result["sync_message"] = f"{len(missing)} product(s) missing packaging dimensions or weight. Add dimensions and weight before syncing."
-                else:
-                    synced, errors = _sync_source_to_company(sources, s, company_slug, category_id)
-                    result["synced"] = synced
-                    if errors:
-                        result["sync_errors"] = errors
             return jsonify(result)
         except Exception as e:
             return jsonify({"ok": False, "error": str(e)})
@@ -220,22 +220,27 @@ def create_edit_blueprint():
                 return jsonify({"ok": False, "error": "Select a category"})
 
             if prods:
-                save_products(s, prods, sources)
+                save_products(s, prods, sources, company_slug)
 
             base_url = (os.environ.get("API_BASE_URL") or "").strip()
-            username = (os.environ.get("API_USERNAME") or "").strip()
-            password = (os.environ.get("API_PASSWORD") or "").strip()
+            try:
+                from shared.config import get_credentials_for_company
+                username, password = get_credentials_for_company(company_slug)
+            except ValueError as e:
+                return jsonify({"ok": False, "error": str(e)})
             use_email = str(os.environ.get("API_USE_EMAIL", "")).lower() in ("1", "true", "yes")
-            if not all([base_url, username, password]):
-                return jsonify({"ok": False, "error": "Set API_BASE_URL, API_USERNAME, API_PASSWORD in .env"})
+            if not base_url or not username or not password:
+                return jsonify({"ok": False, "error": "Set API_BASE_URL and credentials for this company in .env"})
 
-            from shared.upload import get_auth_token, update_product, upload_product
+            from shared.upload import find_product_by_source_url, get_auth_token, update_product, upload_product
+            from shared.suppliers import get_company_scoped_dir
 
-            products = load_products(s, sources)
+            output_dir = sources[s]
+            company_dir = get_company_scoped_dir(output_dir, company_slug)
+            products = load_products(s, sources, company_slug)
             if index < 0 or index >= len(products):
                 return jsonify({"ok": False, "error": "Invalid index"})
             prod = products[index]
-            output_dir = sources[s]
             url = (prod.get("url") or "").strip()
             if not url:
                 return jsonify({"ok": False, "error": "Product has no URL"})
@@ -261,7 +266,7 @@ def create_edit_blueprint():
                 is_cross = len(bundle_items) > 0 and isinstance(bundle_items[0], dict)
                 if is_cross:
                     ref_sources = {it.get("source") for it in bundle_items if it.get("source") in sources}
-                    products_by_source = {src: load_products(src, sources) for src in ref_sources}
+                    products_by_source = {src: load_products(src, sources, company_slug) for src in ref_sources}
                     for it in bundle_items:
                         src, idx = it.get("source"), it.get("index")
                         prods = products_by_source.get(src) or []
@@ -289,18 +294,32 @@ def create_edit_blueprint():
                 if update_product(
                     prod, base_url, token, company_slug, existing_id,
                     source=s, products=products, products_by_source=products_by_source,
-                    output_dir=output_dir, sources_dict=sources,
+                    output_dir=company_dir, sources_dict=sources,
                     category_id=cat,
                 ):
                     return jsonify({"ok": True, "product_id": existing_id})
                 # Product may have been deleted on prod; clear stale id and retry as create
                 del production_ids[company_slug]
                 prod["production_ids"] = production_ids
-                save_products(s, products, sources)
+                save_products(s, products, sources, company_slug)
                 existing_id = None
             if not existing_id:
+                # Fallback: find existing product by source_url to avoid duplicates when production_ids was lost
+                found_id = find_product_by_source_url(base_url, token, company_slug, url)
+                if found_id:
+                    cat = (prod.get("category_id") or "").strip() or category_id
+                    if update_product(
+                        prod, base_url, token, company_slug, found_id,
+                        source=s, products=products, products_by_source=products_by_source,
+                        output_dir=company_dir, sources_dict=sources,
+                        category_id=cat,
+                    ):
+                        production_ids[company_slug] = found_id
+                        prod["production_ids"] = production_ids
+                        save_products(s, products, sources, company_slug)
+                        return jsonify({"ok": True, "product_id": found_id})
                 pid = upload_product(
-                    prod, output_dir, base_url, token, company_slug, category_id,
+                    prod, company_dir, base_url, token, company_slug, category_id,
                     products=products, products_by_source=products_by_source,
                     sources_dict=sources if products_by_source else None,
                     bundle_source=s,
@@ -308,11 +327,15 @@ def create_edit_blueprint():
                 if pid:
                     production_ids[company_slug] = pid
                     prod["production_ids"] = production_ids
-                    save_products(s, products, sources)
+                    save_products(s, products, sources, company_slug)
                     return jsonify({"ok": True, "product_id": pid})
                 return jsonify({"ok": False, "error": "Create failed"})
         except Exception as e:
             return jsonify({"ok": False, "error": str(e)})
+
+    def _get_creds_for_company(cs: str):
+        from shared.config import get_credentials_for_company
+        return get_credentials_for_company(cs)
 
     @bp.route("/api/delete-from-production", methods=["POST"])
     def api_delete_from_production():
@@ -320,15 +343,16 @@ def create_edit_blueprint():
         try:
             sources = _get_sources()
             data = request.get_json() or {}
+            company_slug = (data.get("company_slug") or "").strip()
+            if not company_slug:
+                return jsonify({"ok": False, "error": "company_slug required"})
             base_url = (os.environ.get("API_BASE_URL") or "").strip()
-            username = (os.environ.get("API_USERNAME") or "").strip()
-            password = (os.environ.get("API_PASSWORD") or "").strip()
-            use_email = str(os.environ.get("API_USE_EMAIL", "")).lower() in ("1", "true", "yes")
-            if not all([base_url, username, password]):
-                return jsonify({"ok": False, "error": "Set API_BASE_URL, API_USERNAME, API_PASSWORD in .env"})
+            if not base_url:
+                return jsonify({"ok": False, "error": "Set API_BASE_URL in .env"})
 
             from shared.upload import get_auth_token, deactivate_product_from_api
 
+            use_email = str(os.environ.get("API_USE_EMAIL", "")).lower() in ("1", "true", "yes")
             items = data.get("items")
             if items:
                 deactivated = 0
@@ -337,14 +361,20 @@ def create_edit_blueprint():
                     idx = item.get("index", 0)
                     if s not in sources:
                         continue
-                    products = load_products(s, sources)
+                    products = load_products(s, sources, company_slug)
                     if idx < 0 or idx >= len(products):
                         continue
                     prod = products[idx]
                     production_ids = prod.get("production_ids") or {}
-                    for company_slug, pid in production_ids.items():
-                        token = get_auth_token(base_url, username, password, company_slug=company_slug, use_email=use_email)
-                        if token and deactivate_product_from_api(base_url, token, company_slug, pid):
+                    for cs, pid in production_ids.items():
+                        try:
+                            un, pw = _get_creds_for_company(cs)
+                        except ValueError:
+                            continue
+                        if not un or not pw:
+                            continue
+                        token = get_auth_token(base_url, un, pw, company_slug=cs, use_email=use_email)
+                        if token and deactivate_product_from_api(base_url, token, cs, pid):
                             deactivated += 1
                 return jsonify({"ok": True, "deleted": deactivated})
             s = data.get("source", "temu")
@@ -356,16 +386,22 @@ def create_edit_blueprint():
             if not indices:
                 return jsonify({"ok": True, "deleted": 0})
 
-            products = load_products(s, sources)
+            products = load_products(s, sources, company_slug)
             deactivated = 0
             for idx in indices:
                 if idx < 0 or idx >= len(products):
                     continue
                 prod = products[idx]
                 production_ids = prod.get("production_ids") or {}
-                for company_slug, pid in production_ids.items():
-                    token = get_auth_token(base_url, username, password, company_slug=company_slug, use_email=use_email)
-                    if token and deactivate_product_from_api(base_url, token, company_slug, pid):
+                for cs, pid in production_ids.items():
+                    try:
+                        un, pw = _get_creds_for_company(cs)
+                    except ValueError:
+                        continue
+                    if not un or not pw:
+                        continue
+                    token = get_auth_token(base_url, un, pw, company_slug=cs, use_email=use_email)
+                    if token and deactivate_product_from_api(base_url, token, cs, pid):
                         deactivated += 1
             return jsonify({"ok": True, "deleted": deactivated})
         except Exception as e:
@@ -377,15 +413,16 @@ def create_edit_blueprint():
         try:
             sources = _get_sources()
             data = request.get_json() or {}
+            company_slug = (data.get("company_slug") or "").strip()
+            if not company_slug:
+                return jsonify({"ok": False, "error": "company_slug required"})
             base_url = (os.environ.get("API_BASE_URL") or "").strip()
-            username = (os.environ.get("API_USERNAME") or "").strip()
-            password = (os.environ.get("API_PASSWORD") or "").strip()
-            use_email = str(os.environ.get("API_USE_EMAIL", "")).lower() in ("1", "true", "yes")
-            if not all([base_url, username, password]):
-                return jsonify({"ok": False, "error": "Set API_BASE_URL, API_USERNAME, API_PASSWORD in .env"})
+            if not base_url:
+                return jsonify({"ok": False, "error": "Set API_BASE_URL in .env"})
 
             from shared.upload import get_auth_token, deactivate_product_from_api
 
+            use_email = str(os.environ.get("API_USE_EMAIL", "")).lower() in ("1", "true", "yes")
             items = data.get("items")
             if items:
                 deactivated = 0
@@ -394,14 +431,20 @@ def create_edit_blueprint():
                     idx = item.get("index", 0)
                     if s not in sources:
                         continue
-                    products = load_products(s, sources)
+                    products = load_products(s, sources, company_slug)
                     if idx < 0 or idx >= len(products):
                         continue
                     prod = products[idx]
                     production_ids = prod.get("production_ids") or {}
-                    for company_slug, pid in production_ids.items():
-                        token = get_auth_token(base_url, username, password, company_slug=company_slug, use_email=use_email)
-                        if token and deactivate_product_from_api(base_url, token, company_slug, pid):
+                    for cs, pid in production_ids.items():
+                        try:
+                            un, pw = _get_creds_for_company(cs)
+                        except ValueError:
+                            continue
+                        if not un or not pw:
+                            continue
+                        token = get_auth_token(base_url, un, pw, company_slug=cs, use_email=use_email)
+                        if token and deactivate_product_from_api(base_url, token, cs, pid):
                             deactivated += 1
                 return jsonify({"ok": True, "deactivated": deactivated})
             s = data.get("source", "temu")
@@ -413,16 +456,22 @@ def create_edit_blueprint():
             if not indices:
                 return jsonify({"ok": True, "deactivated": 0})
 
-            products = load_products(s, sources)
+            products = load_products(s, sources, company_slug)
             deactivated = 0
             for idx in indices:
                 if idx < 0 or idx >= len(products):
                     continue
                 prod = products[idx]
                 production_ids = prod.get("production_ids") or {}
-                for company_slug, pid in production_ids.items():
-                    token = get_auth_token(base_url, username, password, company_slug=company_slug, use_email=use_email)
-                    if token and deactivate_product_from_api(base_url, token, company_slug, pid):
+                for cs, pid in production_ids.items():
+                    try:
+                        un, pw = _get_creds_for_company(cs)
+                    except ValueError:
+                        continue
+                    if not un or not pw:
+                        continue
+                    token = get_auth_token(base_url, un, pw, company_slug=cs, use_email=use_email)
+                    if token and deactivate_product_from_api(base_url, token, cs, pid):
                         deactivated += 1
             return jsonify({"ok": True, "deactivated": deactivated})
         except Exception as e:
@@ -434,15 +483,16 @@ def create_edit_blueprint():
         try:
             sources = _get_sources()
             data = request.get_json() or {}
+            company_slug = (data.get("company_slug") or "").strip()
+            if not company_slug:
+                return jsonify({"ok": False, "error": "company_slug required"})
             base_url = (os.environ.get("API_BASE_URL") or "").strip()
-            username = (os.environ.get("API_USERNAME") or "").strip()
-            password = (os.environ.get("API_PASSWORD") or "").strip()
-            use_email = str(os.environ.get("API_USE_EMAIL", "")).lower() in ("1", "true", "yes")
-            if not all([base_url, username, password]):
-                return jsonify({"ok": False, "error": "Set API_BASE_URL, API_USERNAME, API_PASSWORD in .env"})
+            if not base_url:
+                return jsonify({"ok": False, "error": "Set API_BASE_URL in .env"})
 
             from shared.upload import get_auth_token, reactivate_product_from_api
 
+            use_email = str(os.environ.get("API_USE_EMAIL", "")).lower() in ("1", "true", "yes")
             items = data.get("items")
             if items:
                 reactivated = 0
@@ -451,14 +501,20 @@ def create_edit_blueprint():
                     idx = item.get("index", 0)
                     if s not in sources:
                         continue
-                    products = load_products(s, sources)
+                    products = load_products(s, sources, company_slug)
                     if idx < 0 or idx >= len(products):
                         continue
                     prod = products[idx]
                     production_ids = prod.get("production_ids") or {}
-                    for company_slug, pid in production_ids.items():
-                        token = get_auth_token(base_url, username, password, company_slug=company_slug, use_email=use_email)
-                        if token and reactivate_product_from_api(base_url, token, company_slug, pid):
+                    for cs, pid in production_ids.items():
+                        try:
+                            un, pw = _get_creds_for_company(cs)
+                        except ValueError:
+                            continue
+                        if not un or not pw:
+                            continue
+                        token = get_auth_token(base_url, un, pw, company_slug=cs, use_email=use_email)
+                        if token and reactivate_product_from_api(base_url, token, cs, pid):
                             reactivated += 1
                 return jsonify({"ok": True, "reactivated": reactivated})
             s = data.get("source", "temu")
@@ -470,18 +526,75 @@ def create_edit_blueprint():
             if not indices:
                 return jsonify({"ok": True, "reactivated": 0})
 
-            products = load_products(s, sources)
+            products = load_products(s, sources, company_slug)
             reactivated = 0
             for idx in indices:
                 if idx < 0 or idx >= len(products):
                     continue
                 prod = products[idx]
                 production_ids = prod.get("production_ids") or {}
-                for company_slug, pid in production_ids.items():
-                    token = get_auth_token(base_url, username, password, company_slug=company_slug, use_email=use_email)
-                    if token and reactivate_product_from_api(base_url, token, company_slug, pid):
+                for cs, pid in production_ids.items():
+                    try:
+                        un, pw = _get_creds_for_company(cs)
+                    except ValueError:
+                        continue
+                    if not un or not pw:
+                        continue
+                    token = get_auth_token(base_url, un, pw, company_slug=cs, use_email=use_email)
+                    if token and reactivate_product_from_api(base_url, token, cs, pid):
                         reactivated += 1
             return jsonify({"ok": True, "reactivated": reactivated})
+        except Exception as e:
+            return jsonify({"ok": False, "error": str(e)})
+
+    @bp.route("/api/reset-production-ids", methods=["POST"])
+    def api_reset_production_ids():
+        """Clear production_ids for the selected company so products show as unsynced. Does not delete on prod."""
+        try:
+            sources = _get_sources()
+            data = request.get_json() or {}
+            company_slug = (data.get("company_slug") or "").strip()
+            if not company_slug:
+                return jsonify({"ok": False, "error": "company_slug required"})
+            items = data.get("items")
+            if items:
+                by_source = {}
+                for item in items:
+                    s = item.get("source", "temu")
+                    idx = item.get("index", 0)
+                    if s not in sources:
+                        continue
+                    if s not in by_source:
+                        by_source[s] = []
+                    by_source[s].append(idx)
+                reset_count = 0
+                for s, indices in by_source.items():
+                    products = load_products(s, sources, company_slug)
+                    for idx in indices:
+                        if idx < 0 or idx >= len(products):
+                            continue
+                        prod = products[idx]
+                        pids = prod.get("production_ids") or {}
+                        if company_slug in pids:
+                            del pids[company_slug]
+                            prod["production_ids"] = pids if pids else {}
+                            reset_count += 1
+                    save_products(s, products, sources, company_slug)
+                return jsonify({"ok": True, "reset": reset_count})
+            s = data.get("source", "temu")
+            if s not in sources:
+                return jsonify({"ok": False, "error": "Invalid source"})
+            products = load_products(s, sources, company_slug)
+            reset_count = 0
+            for prod in products:
+                pids = prod.get("production_ids") or {}
+                if company_slug in pids:
+                    del pids[company_slug]
+                    prod["production_ids"] = pids if pids else {}
+                    reset_count += 1
+            if reset_count > 0:
+                save_products(s, products, sources, company_slug)
+            return jsonify({"ok": True, "reset": reset_count})
         except Exception as e:
             return jsonify({"ok": False, "error": str(e)})
 
@@ -492,10 +605,13 @@ def create_edit_blueprint():
             data = request.get_json() or {}
             s = data.get("source", "temu")
             index = data.get("index", 0)
+            company_slug = (data.get("company_slug") or "").strip()
             if s not in sources:
                 return jsonify({"ok": False, "error": "Invalid source"})
+            if not company_slug:
+                return jsonify({"ok": False, "error": "company_slug required"})
             from shared.refresh import refresh_product
-            result = refresh_product(s, index)
+            result = refresh_product(s, index, company_slug)
             return jsonify({"ok": True, **result})
         except Exception as e:
             return jsonify({"ok": False, "error": str(e)})
@@ -515,11 +631,14 @@ def create_edit_blueprint():
             return jsonify({"categories": [], "error": "company_slug required"})
 
         base_url = (os.environ.get("API_BASE_URL") or "").strip()
-        username = (os.environ.get("API_USERNAME") or "").strip()
-        password = (os.environ.get("API_PASSWORD") or "").strip()
+        try:
+            from shared.config import get_credentials_for_company
+            username, password = get_credentials_for_company(company_slug)
+        except ValueError as e:
+            return jsonify({"categories": [], "error": str(e)})
         use_email = str(os.environ.get("API_USE_EMAIL", "")).lower() in ("1", "true", "yes")
-        if not all([base_url, username, password]):
-            return jsonify({"categories": [], "error": "Set API_BASE_URL, API_USERNAME, API_PASSWORD in .env"})
+        if not base_url or not username or not password:
+            return jsonify({"categories": [], "error": "Set API_BASE_URL and credentials for this company in .env"})
 
         from shared.upload import get_auth_token
         import requests
@@ -544,10 +663,19 @@ def create_edit_blueprint():
     @bp.route("/images/<source>/<path:filename>")
     def serve_image(source, filename):
         sources = _get_sources()
-        if source in sources:
-            path = sources[source] / filename
+        if source not in sources:
+            return "", 404
+        base = sources[source]
+        company_slug = (request.args.get("company_slug") or "").strip()
+        if company_slug:
+            from shared.suppliers import get_company_scoped_dir
+            company_base = get_company_scoped_dir(base, company_slug)
+            path = company_base / filename
             if path.exists():
                 return send_from_directory(str(path.parent), path.name)
+        path = base / filename
+        if path.exists():
+            return send_from_directory(str(path.parent), path.name)
         return "", 404
 
     @bp.route("/api/create-bundle", methods=["POST"])
@@ -556,6 +684,9 @@ def create_edit_blueprint():
         try:
             sources = _get_sources()
             data = request.get_json() or {}
+            company_slug = (data.get("company_slug") or "").strip()
+            if not company_slug:
+                return jsonify({"ok": False, "error": "company_slug required"})
             items_input = data.get("items")
             if items_input:
                 if not isinstance(items_input, list) or len(items_input) < 2:
@@ -567,7 +698,7 @@ def create_edit_blueprint():
                     src, idx = it.get("source"), it.get("index")
                     if src not in sources or not isinstance(idx, int) or idx < 0:
                         return jsonify({"ok": False, "error": f"Invalid item {it}"})
-                    prods = load_products(src, sources)
+                    prods = load_products(src, sources, company_slug)
                     if idx >= len(prods):
                         return jsonify({"ok": False, "error": f"Index {idx} out of range for {src}"})
                     if prods[idx].get("bundle_items"):
@@ -582,7 +713,7 @@ def create_edit_blueprint():
                     return jsonify({"ok": False, "error": "Invalid source"})
                 if not indices or not isinstance(indices, list):
                     return jsonify({"ok": False, "error": "indices or items required"})
-                products = load_products(s, sources)
+                products = load_products(s, sources, company_slug)
                 n = len(products)
                 for idx in indices:
                     if not isinstance(idx, int) or idx < 0 or idx >= n:
@@ -661,9 +792,9 @@ def create_edit_blueprint():
                 bundle_product["category_slug"] = items[0]["category_slug"]
             if items[0].get("category_id"):
                 bundle_product["category_id"] = items[0]["category_id"]
-            products_to_save = load_products(s, sources)
+            products_to_save = load_products(s, sources, company_slug)
             products_to_save.append(bundle_product)
-            save_products(s, products_to_save, sources)
+            save_products(s, products_to_save, sources, company_slug)
             return jsonify({"ok": True, "product": bundle_product, "index": len(products_to_save) - 1, "source": s})
         except Exception as e:
             return jsonify({"ok": False, "error": str(e)})
@@ -675,20 +806,50 @@ app = Flask(__name__)
 app.register_blueprint(create_edit_blueprint())
 
 
-def load_products(source: str, sources: dict | None = None) -> list:
-    products, _ = load_products_with_meta(source, sources)
+def _get_products_path(source: str, sources: dict, company_slug: str) -> Path | None:
+    """Return path to products.json for company-scoped storage. Returns None if company_slug empty."""
+    if not (company_slug or "").strip():
+        return None
+    from shared.suppliers import get_company_scoped_dir
+    base = sources.get(source)
+    if not base:
+        return None
+    return get_company_scoped_dir(base, company_slug) / "products.json"
+
+
+def load_products(source: str, sources: dict | None = None, company_slug: str = "") -> list:
+    products, _ = load_products_with_meta(source, sources, company_slug)
     return products
 
 
-def load_products_with_meta(source: str, sources: dict | None = None) -> tuple[list, str | None]:
-    """Return (products list, updated timestamp or None)."""
+def _migrate_legacy_to_company_scoped(legacy_path: Path, company_path: Path) -> bool:
+    """Copy legacy products.json to company-scoped path once. Returns True if copied."""
+    if not legacy_path.exists() or company_path.exists():
+        return False
+    try:
+        data = json.loads(legacy_path.read_text(encoding="utf-8"))
+        company_path.parent.mkdir(parents=True, exist_ok=True)
+        company_path.write_text(json.dumps(data, indent=2), encoding="utf-8")
+        return True
+    except Exception:
+        return False
+
+
+def load_products_with_meta(source: str, sources: dict | None = None, company_slug: str = "") -> tuple[list, str | None]:
+    """Return (products list, updated timestamp or None). Uses company-scoped path when company_slug set."""
     sources = sources or _get_sources()
     base = sources.get(source)
     if not base:
         return [], None
-    path = base / "products.json"
-    if not path.exists():
+    path = _get_products_path(source, sources, company_slug) if company_slug else None
+    if not path:
         return [], None
+    if not path.exists():
+        legacy_path = base / "products.json"
+        if _migrate_legacy_to_company_scoped(legacy_path, path):
+            pass
+        else:
+            return [], None
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
         return data.get("products", []), data.get("updated")
@@ -696,12 +857,17 @@ def load_products_with_meta(source: str, sources: dict | None = None) -> tuple[l
         return [], None
 
 
-def save_products(source: str, products: list, sources: dict | None = None) -> str:
+def save_products(source: str, products: list, sources: dict | None = None, company_slug: str = "") -> str:
+    """Save products to company-scoped path. company_slug required."""
     sources = sources or _get_sources()
     base = sources.get(source)
     if not base:
         raise ValueError(f"Invalid source: {source}")
-    path = base / "products.json"
+    if not (company_slug or "").strip():
+        raise ValueError("company_slug required for save")
+    from shared.suppliers import get_company_scoped_dir
+    company_dir = get_company_scoped_dir(base, company_slug)
+    path = company_dir / "products.json"
     path.parent.mkdir(parents=True, exist_ok=True)
     try:
         data = json.loads(path.read_text(encoding="utf-8")) if path.exists() else {}
@@ -755,6 +921,8 @@ HTML = """
     input, textarea { width: 100%; padding: 0.5rem; background: #1a1a1a; border: 1px solid #444; border-radius: 4px; color: #e0e0e0; }
     .save-btn { padding: 0.5rem 1.5rem; background: #2a7; color: white; border: none; border-radius: 6px; cursor: pointer; margin-top: 1rem; }
     .save-btn:hover { background: #3b8; }
+    .reset-btn { padding: 0.5rem 1rem; background: #844; color: white; border: none; border-radius: 6px; cursor: pointer; margin-top: 1rem; margin-left: 0.5rem; font-size: 0.9rem; }
+    .reset-btn:hover { background: #a55; }
     .msg { margin-top: 0.5rem; }
     .msg.ok { color: #6c6; }
     .msg.err { color: #c66; }
@@ -770,9 +938,12 @@ HTML = """
     .reactivate-btn:hover { background: #3a5; }
     .reactivate-selected { background: #284; color: white; }
     .reactivate-selected:hover { background: #3a5; }
+    .sync-selected { background: #2a5; color: white; }
+    .sync-selected:hover { background: #3b6; }
+    .sync-selected:disabled { opacity: 0.5; cursor: not-allowed; pointer-events: none; }
     .sync-btn { background: #2a5; color: white; font-size: 0.8rem; padding: 0.3rem 0.6rem; }
     .sync-btn:hover { background: #3b6; }
-    .sync-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .sync-btn:disabled { opacity: 0.5; cursor: not-allowed; pointer-events: none; }
     .sync-status { font-size: 0.75rem; color: #6c6; margin-top: 0.25rem; }
     .refresh-btn { background: #444; color: #e0e0e0; }
     .refresh-btn:hover { background: #555; }
@@ -828,6 +999,8 @@ HTML = """
     .packaging-field .dimension-text { font-size: 0.8rem; color: #888; }
     .packaging-field .dimension-text.empty { color: #555; font-style: italic; }
     .modal-link:hover { text-decoration: underline; }
+    .company-bar a { color: #2a7; text-decoration: none; }
+    .company-bar a:hover { text-decoration: underline; }
     @media (max-width: 640px) {
       body { margin: 0.5rem; padding-bottom: max(2rem, env(safe-area-inset-bottom, 0px)); -webkit-text-size-adjust: 100%; }
       h1 { font-size: 1.1rem; }
@@ -868,6 +1041,7 @@ HTML = """
 <body>
   <div class="top-nav"><a href="/">← Dashboard</a></div>
   <h1>Edit Products</h1>
+  <div id="companyBar" class="company-bar" style="margin-bottom: 1rem; font-size: 0.9rem; color: #888;"></div>
   <div class="tabs" id="tabs">
     <span class="tab-placeholder">Loading suppliers...</span>
   </div>
@@ -884,12 +1058,9 @@ HTML = """
       <button type="button" class="create-bundle-btn" id="createBundleBtn" onclick="createBundle()" disabled>Create bundle</button>
       <button type="button" class="deactivate-selected" id="deactivateSelectedBtn" onclick="deactivateSelected()" disabled>Deactivate</button>
       <button type="button" class="reactivate-selected" id="reactivateSelectedBtn" onclick="reactivateSelected()" disabled>Reactivate</button>
+      <button type="button" class="sync-selected" id="syncSelectedBtn" onclick="syncSelected()" disabled>Sync</button>
       <button type="button" class="delete-selected" id="deleteSelectedBtn" onclick="deleteSelected()" disabled>Delete</button>
     </div>
-  </div>
-  <div class="update-section">
-    <label>Sync to company (required for Sync/Save)</label>
-    <select id="companySelect"><option value="">Loading...</option></select>
   </div>
   <div id="products"></div>
   <div id="modalOverlay" class="modal-overlay hidden">
@@ -904,6 +1075,7 @@ HTML = """
     </div>
   </div>
   <button class="save-btn" id="saveBtn">Save</button>
+  <button class="reset-btn" id="resetBtn" title="Clear sync status for selected company — products will show as unsynced">Reset to unsynced</button>
   <div class="msg" id="msg"></div>
 
   <script>
@@ -917,6 +1089,7 @@ HTML = """
     let refreshLoading = {};
     let syncLoading = {};
     let syncNotes = {};
+    let syncSelectedRunning = false;
     let sources = [];
     let categories = [];
 
@@ -940,6 +1113,9 @@ HTML = """
       { value: 570, label: '9h 30m' },
       { value: 600, label: '10 hours' },
     ];
+
+    const SA_PROVINCES = ['Eastern Cape', 'Free State', 'Gauteng', 'KwaZulu-Natal', 'Limpopo', 'Mpumalanga', 'Northern Cape', 'North West', 'Western Cape'];
+    let countries = [];
 
     const PACKAGING_PRESETS = [
       { value: '', label: '— Select or enter manually' },
@@ -972,9 +1148,19 @@ HTML = """
       return w != null && !isNaN(parseInt(w, 10)) && parseInt(w, 10) > 0;
     }
 
+    const COMPANY_STORAGE_KEY = 'edit_products_company_slug';
+    function getCompany() { return (localStorage.getItem(COMPANY_STORAGE_KEY) || '').trim(); }
+    function updateCompanyBar() {
+      const bar = document.getElementById('companyBar');
+      const company = getCompany();
+      bar.innerHTML = company ? 'Company: <strong>' + escapeHtml(company) + '</strong> — <a href="/">Change on Dashboard</a>' : '<a href="/">Select company on Dashboard first</a>';
+    }
+
     async function initTabs() {
       const r = await fetch(cacheBust(apiUrl('api/sources')));
       sources = await r.json();
+      updateCompanyBar();
+      loadCategories();
       const tabsEl = document.getElementById('tabs');
       if (!sources.length) {
         tabsEl.innerHTML = '<span class="tab-placeholder">No suppliers</span>';
@@ -988,13 +1174,28 @@ HTML = """
       tabsEl.querySelectorAll('.tab').forEach(b => {
         b.onclick = () => loadSource(b.dataset.source);
       });
-      loadSource(source);
+      const company = getCompany();
+      if (company) loadSource(source); else products = [];
+      loadCountries();
       const viewAllBtn = document.getElementById('viewAllBtn');
       if (viewAllBtn) viewAllBtn.addEventListener('click', viewAll);
     }
 
+    async function loadCountries() {
+      try {
+        const r = await fetch(apiUrl('api/countries'));
+        const d = await r.json();
+        const list = d.countries || [];
+        const sa = list.find(c => (c.name || '').toLowerCase() === 'south africa');
+        countries = sa ? [sa, ...list.filter(c => (c.name || '').toLowerCase() !== 'south africa')] : list;
+        render();
+      } catch (e) {
+        countries = [];
+      }
+    }
+
     function apiUrl(path) {
-      const base = (document.location.pathname || '/edit').replace(/\/$/, '') || '/edit';
+      const base = (document.location.pathname || '/edit').replace(/\\/$/, '') || '/edit';
       return base + (path.startsWith('/') ? path : '/' + path);
     }
     function cacheBust(url) { return url + (url.includes('?') ? '&' : '?') + '_=' + Date.now(); }
@@ -1006,29 +1207,22 @@ HTML = """
       refreshNotes = {};
       syncNotes = {};
       document.querySelectorAll('.tab').forEach(b => { b.classList.toggle('active', b.dataset.source === source); });
-      const r = await fetch(cacheBust(apiUrl('api/products?source=' + source)));
+      const company = getCompany();
+      if (!company) {
+        products = [];
+        lastUpdated = null;
+        render();
+        return;
+      }
+      const r = await fetch(cacheBust(apiUrl('api/products?source=' + source + '&company_slug=' + encodeURIComponent(company))));
       const data = await r.json();
       products = data.products || [];
       lastUpdated = data.updated || null;
       render();
-      loadCompanies();
-    }
-
-    async function loadCompanies() {
-      try {
-        const r = await fetch(apiUrl('api/companies'));
-        const d = await r.json();
-        const sel = document.getElementById('companySelect');
-        const companies = d.companies || [];
-        sel.innerHTML = companies.length ? '<option value="">Select company</option>' + companies.map(c => '<option value="' + c + '">' + c + '</option>').join('') : '<option value="">Set COMPANY_SLUG in .env</option>';
-        if (companies.length === 1) sel.value = companies[0];
-        sel.onchange = loadCategories;
-        loadCategories();
-      } catch (e) {}
     }
 
     async function loadCategories() {
-      const company = (document.getElementById('companySelect') || {}).value;
+      const company = getCompany();
       if (!company) {
         categories = [];
         render();
@@ -1081,6 +1275,12 @@ HTML = """
 
     async function viewAll(e) {
       if (e) { e.preventDefault(); e.stopPropagation(); }
+      const company = getCompany();
+      if (!company) {
+        products = [];
+        render();
+        return;
+      }
       const btn = document.getElementById('viewAllBtn');
       if (btn) { btn.disabled = true; btn.textContent = 'Loading…'; }
       viewAllSuppliers = true;
@@ -1089,7 +1289,7 @@ HTML = """
       const combined = [];
       for (const s of sources) {
         try {
-          const r = await fetch(cacheBust(apiUrl('api/products?source=' + encodeURIComponent(s.slug))));
+          const r = await fetch(cacheBust(apiUrl('api/products?source=' + encodeURIComponent(s.slug) + '&company_slug=' + encodeURIComponent(company))));
           const data = await r.json();
           const prods = data.products || [];
           prods.forEach((p, j) => combined.push({ ...p, _source: s.slug, _sourceIndex: j }));
@@ -1116,13 +1316,13 @@ HTML = """
       if (dsb) dsb.disabled = selectedIndices.size === 0;
       if (deactBtn) deactBtn.disabled = selectedIndices.size === 0;
       if (reactBtn) reactBtn.disabled = selectedIndices.size === 0;
+      const syncSelBtn = document.getElementById('syncSelectedBtn');
+      if (syncSelBtn) syncSelBtn.disabled = selectedIndices.size === 0 || syncSelectedRunning;
       const createBundleBtn = document.getElementById('createBundleBtn');
       if (createBundleBtn) createBundleBtn.disabled = selectedIndices.size < 2;
       const filtered = getFiltered();
       const pc = document.getElementById('productCount');
       if (pc) pc.textContent = filtered.length + ' of ' + products.length + ' products';
-      const updateSection = document.querySelector('.update-section');
-      if (updateSection) updateSection.style.display = '';
       const el = document.getElementById('products');
       const goodsColHeader = viewAllSuppliers ? 'Supplier' : 'ID';
       const headerRow = '<div class="row list-header"><span class="col-select"></span><span class="expand-btn"></span><span class="col-name">Name</span><span class="col-cost">Cost</span><span class="col-price">Price</span><span class="col-goods">' + goodsColHeader + '</span><span class="col-category">Category</span><span class="col-sync">Sync</span></div>';
@@ -1135,7 +1335,7 @@ HTML = """
         const loading = refreshLoading[i];
         const syncLoad = syncLoading[i];
         const syncNote = syncNotes[i];
-        const company = (document.getElementById('companySelect') || {}).value || '';
+        const company = getCompany() || '';
         const isSynced = company && (p.production_ids || {})[company];
         const noteClass = note && !note.valid ? 'invalid' : (note && note.price_change_note && note.price_change_note !== 'No change' ? 'up' : '');
         const checked = selectedIndices.has(i) ? ' checked' : '';
@@ -1182,7 +1382,7 @@ HTML = """
             <span class="col-sync" onclick="event.stopPropagation()"><button class="sync-btn" onclick="syncProduct(${i})" ${syncLoad ? 'disabled' : ''}>${syncLoad ? '…' : (isSynced ? '✓' : 'Sync')}</button></span>
             <div class="expand-panel" onclick="event.stopPropagation()">
               ${linksHtml ? '<div class="supplier-links">' + linksHtml + '</div>' : ''}
-              ${(p.images || []).length ? '<div class="field"><label>Images</label><div class="image-thumbs' + (p.bundle_items ? ' bundle-images' : '') + '">' + (p.images || []).map((img, imgIdx) => { const hasSourcePrefix = sources.some(s => (img || '').startsWith(s.slug + '/')); const imgSrc = hasSourcePrefix ? 'images/' + img : 'images/' + pSource + '/' + img; return '<div class="thumb-wrap"><img src="' + escapeAttr(imgSrc) + '" alt="" class="thumb" onerror="this.style.display=\\'none\\'"><button type="button" class="thumb-remove" onclick="event.stopPropagation(); removeImage(' + i + ',' + imgIdx + ')">×</button></div>'; }).join('') + '</div></div>' : ''}
+              ${(p.images || []).length ? '<div class="field"><label>Images</label><div class="image-thumbs' + (p.bundle_items ? ' bundle-images' : '') + '">' + (p.images || []).map((img, imgIdx) => { const hasSourcePrefix = sources.some(s => (img || '').startsWith(s.slug + '/')); const imgPath = hasSourcePrefix ? 'images/' + img : 'images/' + pSource + '/' + img; const imgSrc = company ? imgPath + (imgPath.includes('?') ? '&' : '?') + 'company_slug=' + encodeURIComponent(company) : imgPath; return '<div class="thumb-wrap"><img src="' + escapeAttr(imgSrc) + '" alt="" class="thumb" onerror="this.style.display=\\'none\\'"><button type="button" class="thumb-remove" onclick="event.stopPropagation(); removeImage(' + i + ',' + imgIdx + ')">×</button></div>'; }).join('') + '</div></div>' : ''}
               <div class="field"><label>Name</label><input type="text" value="${name}" oninput="updateField(${i}, 'name', this.value)"></div>
               <div class="field"><label>Short description</label><input type="text" value="${shortDesc}" oninput="updateField(${i}, 'short_description', this.value)"></div>
               <div class="field"><label>Description</label><textarea rows="4" oninput="updateField(${i}, 'description', this.value)">${desc}</textarea></div>
@@ -1190,6 +1390,21 @@ HTML = """
               <div class="field"><label>Cost</label><input type="number" step="0.01" value="${p.cost ?? ''}" oninput="updateField(${i}, 'cost', parseFloat(this.value) || 0)"></div>
               <div class="field"><label>Units (stock)</label><input type="number" min="0" step="1" value="${p.stock_quantity ?? ''}" placeholder="0" oninput="const v = parseInt(this.value, 10); updateField(${i}, 'stock_quantity', isNaN(v) ? 0 : v); updateField(${i}, 'in_stock', !isNaN(v) && v > 0)"></div>
               <div class="field"><label>Delivery time</label><input type="text" value="${escapeAttr(p.delivery_time || '')}" placeholder="e.g. 7-13 days (from supplier)" oninput="updateField(${i}, 'delivery_time', this.value.trim() || null)"></div>
+              ${pSource === 'gumtree' ? (function() {
+                if (!(p.pickup_province || '').trim()) p.pickup_province = 'Gauteng';
+                if (!(p.pickup_country || '').trim()) p.pickup_country = 'South Africa';
+                var rawCountry = (p.pickup_country || 'South Africa').trim();
+                var defCountry = (rawCountry === 'ZA' || rawCountry === 'ZAF') ? 'South Africa' : rawCountry;
+                var countryOpts = countries.length ? countries.map(function(c) { return '<option value="' + escapeAttr(c.name) + '"' + (defCountry === (c.name || '').trim() ? ' selected' : '') + '>' + escapeHtml(c.name || '') + '</option>'; }).join('') : '<option value="South Africa" selected>South Africa</option>';
+                var q = String.fromCharCode(39);
+                return '<div class="field" style="margin-top:0.75rem;padding-top:0.75rem;border-top:1px solid #333;"><label style="color:#8af;">Gumtree pickup address (required for sync)</label></div>' +
+                  '<div class="field"><label>Street</label><input type="text" value="' + escapeAttr(p.pickup_street || '') + '" placeholder="e.g. 123 Main Rd" oninput="updateField(' + i + ', ' + q + 'pickup_street' + q + ', this.value.trim() || null)"></div>' +
+                  '<div class="field"><label>Suburb</label><input type="text" value="' + escapeAttr(p.pickup_suburb || '') + '" placeholder="e.g. Fochville" oninput="updateField(' + i + ', ' + q + 'pickup_suburb' + q + ', this.value.trim() || null)"></div>' +
+                  '<div class="field"><label>City</label><input type="text" value="' + escapeAttr(p.pickup_city || '') + '" placeholder="e.g. Johannesburg" oninput="updateField(' + i + ', ' + q + 'pickup_city' + q + ', this.value.trim() || null)"></div>' +
+                  '<div class="field"><label>Province</label><select onchange="updateField(' + i + ', ' + q + 'pickup_province' + q + ', this.value || null)">' + SA_PROVINCES.map(function(prov) { return '<option value="' + escapeAttr(prov) + '"' + ((p.pickup_province || 'Gauteng') === prov ? ' selected' : '') + '>' + escapeHtml(prov) + '</option>'; }).join('') + '</select></div>' +
+                  '<div class="field"><label>Postal code</label><input type="text" value="' + escapeAttr(p.pickup_postal_code || '') + '" placeholder="e.g. 2515" oninput="updateField(' + i + ', ' + q + 'pickup_postal_code' + q + ', this.value.trim() || null)"></div>' +
+                  '<div class="field"><label>Country</label><select onchange="updateField(' + i + ', ' + q + 'pickup_country' + q + ', this.value || null)">' + countryOpts + '</select></div>';
+              })() : ''}
               <div class="field"><label>Min quantity (lock amount)</label><input type="number" min="1" step="1" value="${p.min_quantity ?? 1}" placeholder="1" oninput="const v = parseInt(this.value, 10); updateField(${i}, 'min_quantity', isNaN(v) || v < 1 ? 1 : v)"></div>
               <div class="field">
                 <label>Timed product</label>
@@ -1236,10 +1451,11 @@ HTML = """
         const p = products[i];
         const src = p && p._source ? p._source : source;
         const idx = p && p._sourceIndex !== undefined ? p._sourceIndex : i;
+        const company = getCompany();
         const r = await fetch(apiUrl('api/refresh-product'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ source: src, index: idx })
+          body: JSON.stringify({ source: src, index: idx, company_slug: company })
         });
         const data = await r.json();
         const note = data.ok ? data : { valid: false, price_change_note: data.error || 'Failed' };
@@ -1271,29 +1487,44 @@ HTML = """
     }
 
     async function syncProduct(i) {
+      if (syncLoading[i]) return;
+      syncLoading[i] = true;
+      render();
       const p = products[i];
-      if (!p) return;
+      if (!p) { syncLoading[i] = false; render(); return; }
       const src = p._source || source;
       const idx = p._sourceIndex !== undefined ? p._sourceIndex : i;
-      const company = (document.getElementById('companySelect') || {}).value;
+      const company = getCompany();
       const category = p.category_id;
       if (!company) {
+        syncLoading[i] = false; render();
         showSyncError('Select a company first to sync.');
         return;
       }
       if (!category) {
+        syncLoading[i] = false; render();
         showSyncError('Select a category for this product.');
         return;
       }
       if (!hasPackagingDimensions(p)) {
+        syncLoading[i] = false; render();
         showSyncError('Add packaging dimensions before syncing. Select a size from the Packaging size dropdown or enter Length, Width, and Height manually.');
         return;
       }
       if (!hasWeight(p)) {
+        syncLoading[i] = false; render();
         showSyncError('Add weight (grams) before syncing.');
         return;
       }
-      syncLoading[i] = true;
+      if (src === 'gumtree') {
+        const pickup = ['pickup_street', 'pickup_suburb', 'pickup_city', 'pickup_province', 'pickup_postal_code', 'pickup_country'];
+        const missing = pickup.filter(f => !(p[f] || '').trim());
+        if (missing.length) {
+          syncLoading[i] = false; render();
+          showSyncError('Gumtree products need pickup address. Expand the product and fill Street, Suburb, City, Province, Postal code, Country.');
+          return;
+        }
+      }
       syncNotes[i] = null;
       render();
       try {
@@ -1460,7 +1691,7 @@ HTML = """
     async function doSave() {
       const btn = document.getElementById('saveBtn');
       const msg = document.getElementById('msg');
-      const company = (document.getElementById('companySelect') || {}).value || '';
+      const company = getCompany() || '';
       btn.disabled = true;
       msg.textContent = '';
       try {
@@ -1474,9 +1705,6 @@ HTML = """
             bySource[src].push({ ...rest, _sortIdx: p._sourceIndex ?? 999 });
           });
           let ok = true;
-          let totalSynced = 0;
-          const allErrors = [];
-          const syncSkipped = [];
           for (const [src, prods] of Object.entries(bySource)) {
             const sorted = prods.sort((a, b) => (a._sortIdx ?? 999) - (b._sortIdx ?? 999));
             const toSave = sorted.map(({ _sortIdx, ...rest }) => rest);
@@ -1487,17 +1715,27 @@ HTML = """
               body: JSON.stringify({ source: src, products: toSave, company_slug: company || undefined, category_id: cat || undefined })
             });
             let data;
-            try { data = await r.json(); } catch (e) { msg.textContent = 'Save failed: invalid response'; msg.className = 'msg err'; ok = false; break; }
-            if (!data.ok) { msg.textContent = data.error || 'Save failed'; msg.className = 'msg err'; ok = false; break; }
-            if (data.synced) totalSynced += data.synced;
-            if (data.sync_errors) allErrors.push(...data.sync_errors);
-            if (data.sync_skipped && data.sync_message) syncSkipped.push(data.sync_message);
+            try {
+              data = await r.json();
+            } catch (e) {
+              const errMsg = 'Save failed: invalid response';
+              msg.textContent = errMsg;
+              msg.className = 'msg err';
+              showSyncError(errMsg);
+              ok = false;
+              break;
+            }
+            if (!data.ok) {
+              const errMsg = data.error || 'Save failed';
+              msg.textContent = errMsg;
+              msg.className = 'msg err';
+              showSyncError(errMsg);
+              ok = false;
+              break;
+            }
           }
           if (ok) {
             msg.textContent = 'Saved.';
-            if (company && totalSynced > 0) msg.textContent += ' Synced ' + totalSynced + ' to production.';
-            if (syncSkipped.length) msg.textContent += ' ' + syncSkipped[0];
-            if (allErrors.length) msg.textContent += ' ' + allErrors.slice(0, 3).join('; ');
             msg.className = 'msg ok';
             if (products.length > 0) viewAll().catch(() => {}); else render();
             return true;
@@ -1512,25 +1750,34 @@ HTML = """
             body: JSON.stringify({ source, products: prods, company_slug: company || undefined, category_id: cat || undefined })
           });
           let data;
-          try { data = await r.json(); } catch (e) { msg.textContent = 'Save failed: invalid response'; msg.className = 'msg err'; return false; }
+          try {
+            data = await r.json();
+          } catch (e) {
+            const errMsg = 'Save failed: invalid response';
+            msg.textContent = errMsg;
+            msg.className = 'msg err';
+            showSyncError(errMsg);
+            return false;
+          }
           if (data.ok) {
             msg.textContent = 'Saved.';
-            if (company && data.synced) msg.textContent += ' Synced ' + data.synced + ' to production.';
-            if (data.sync_skipped && data.sync_message) msg.textContent += ' ' + data.sync_message;
-            if (data.sync_errors && data.sync_errors.length) msg.textContent += ' ' + data.sync_errors.slice(0, 3).join('; ');
             msg.className = 'msg ok';
             if (data.updated) lastUpdated = data.updated;
             loadSource(source);
             return true;
           } else {
-            msg.textContent = data.error || 'Save failed';
+            const errMsg = data.error || 'Save failed';
+            msg.textContent = errMsg;
             msg.className = 'msg err';
+            showSyncError(errMsg);
             return false;
           }
         }
       } catch (e) {
-        msg.textContent = 'Error: ' + e.message;
+        const errMsg = 'Error: ' + e.message;
+        msg.textContent = errMsg;
         msg.className = 'msg err';
+        showSyncError(errMsg);
         return false;
       } finally {
         btn.disabled = false;
@@ -1538,7 +1785,7 @@ HTML = """
     }
 
     async function saveAfterDelete(affectedSources) {
-      const company = (document.getElementById('companySelect') || {}).value || '';
+      const company = getCompany() || '';
       if (viewAllSuppliers && affectedSources && affectedSources.size > 0) {
         const bySource = {};
         products.forEach(p => {
@@ -1570,7 +1817,7 @@ HTML = """
     }
 
     async function deleteFromProductionThenLocal(doDelete) {
-      const company = (document.getElementById('companySelect') || {}).value;
+      const company = getCompany();
       if (viewAllSuppliers) {
         const items = [];
         getFiltered().forEach(({ p, i }) => {
@@ -1578,10 +1825,11 @@ HTML = """
         });
         if (items.length > 0) {
           try {
+            const company = getCompany();
             await fetch(apiUrl('api/delete-from-production'), {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ items })
+              body: JSON.stringify({ items, company_slug: company })
             });
           } catch (e) {}
         }
@@ -1589,10 +1837,11 @@ HTML = """
         const indices = Array.from(selectedIndices);
         if (indices.length > 0) {
           try {
+            const company = getCompany();
             await fetch(apiUrl('api/delete-from-production'), {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ source, indices })
+              body: JSON.stringify({ source, indices, company_slug: company })
             });
           } catch (e) {}
         }
@@ -1602,16 +1851,17 @@ HTML = """
 
     async function deactivateProduct(i) {
       const p = products[i];
-      const company = (document.getElementById('companySelect') || {}).value;
+      const company = getCompany();
       if (!p || !company || !(p.production_ids || {})[company]) return;
       showConfirm('Deactivate product', 'Set this product to inactive on production? (Keeps locally)', async () => {
         const src = p._source || source;
         const idx = p._sourceIndex !== undefined ? p._sourceIndex : i;
         try {
+          const company = getCompany();
           const r = await fetch(apiUrl('api/deactivate-from-production'), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(viewAllSuppliers ? { items: [{ source: src, index: idx }] } : { source, indices: [idx] })
+            body: JSON.stringify({ ...(viewAllSuppliers ? { items: [{ source: src, index: idx }] } : { source, indices: [idx] }), company_slug: company })
           });
           const d = await r.json();
           if (d.ok) { syncNotes[i] = 'Deactivated'; render(); setTimeout(() => { delete syncNotes[i]; render(); }, 2000); }
@@ -1621,16 +1871,17 @@ HTML = """
 
     async function reactivateProduct(i) {
       const p = products[i];
-      const company = (document.getElementById('companySelect') || {}).value;
+      const company = getCompany();
       if (!p || !company || !(p.production_ids || {})[company]) return;
       showConfirm('Reactivate product', 'Set this product to active on production?', async () => {
         const src = p._source || source;
         const idx = p._sourceIndex !== undefined ? p._sourceIndex : i;
         try {
+          const company = getCompany();
           const r = await fetch(apiUrl('api/reactivate-from-production'), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(viewAllSuppliers ? { items: [{ source: src, index: idx }] } : { source, indices: [idx] })
+            body: JSON.stringify({ ...(viewAllSuppliers ? { items: [{ source: src, index: idx }] } : { source, indices: [idx] }), company_slug: company })
           });
           const d = await r.json();
           if (d.ok) { syncNotes[i] = 'Reactivated'; render(); setTimeout(() => { delete syncNotes[i]; render(); }, 2000); }
@@ -1667,10 +1918,11 @@ HTML = """
           });
           if (items.length > 0) {
             try {
+              const company = getCompany();
               const r = await fetch(apiUrl('api/deactivate-from-production'), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ items })
+                body: JSON.stringify({ items, company_slug: company })
               });
               const d = await r.json();
               if (d.ok) selectedIndices.clear();
@@ -1680,10 +1932,11 @@ HTML = """
         } else {
           const indices = Array.from(selectedIndices);
           try {
+            const company = getCompany();
             const r = await fetch(apiUrl('api/deactivate-from-production'), {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ source, indices })
+              body: JSON.stringify({ source, indices, company_slug: company })
             });
             const d = await r.json();
             if (d.ok) selectedIndices.clear();
@@ -1691,6 +1944,89 @@ HTML = """
           } catch (e) {}
         }
       });
+    }
+
+    async function syncSelected() {
+      if (selectedIndices.size === 0) return;
+      const company = getCompany();
+      if (!company) {
+        showSyncError('Select a company first to sync.');
+        return;
+      }
+      const indices = Array.from(selectedIndices);
+      const toSync = [];
+      const skipped = [];
+      for (const i of indices) {
+        const p = products[i];
+        if (!p) continue;
+        if (!p.category_id) {
+          skipped.push({ i, reason: 'no category' });
+          continue;
+        }
+        if (!hasPackagingDimensions(p) && !p.bundle_items) {
+          skipped.push({ i, reason: 'missing dimensions' });
+          continue;
+        }
+        if (!hasWeight(p) && !p.bundle_items) {
+          skipped.push({ i, reason: 'missing weight' });
+          continue;
+        }
+        if (p._source === 'gumtree') {
+          const pickup = ['pickup_street', 'pickup_suburb', 'pickup_city', 'pickup_province', 'pickup_postal_code', 'pickup_country'];
+          const missing = pickup.filter(f => !(p[f] || '').trim());
+          if (missing.length) {
+            skipped.push({ i, reason: 'Gumtree: missing pickup address' });
+            continue;
+          }
+        }
+        toSync.push(i);
+      }
+      if (toSync.length === 0) {
+        showSyncError(skipped.length ? 'Selected products missing dimensions, weight, or category. Add them first.' : 'No valid products to sync.');
+        return;
+      }
+      const syncBtn = document.getElementById('syncSelectedBtn');
+      const msgEl = document.getElementById('msg');
+      syncSelectedRunning = true;
+      if (msgEl) { msgEl.textContent = 'Syncing ' + toSync.length + ' product(s)...'; msgEl.className = 'msg'; }
+      let synced = 0;
+      const errors = [];
+      for (const i of toSync) {
+        const p = products[i];
+        const src = p._source || source;
+        const idx = p._sourceIndex !== undefined ? p._sourceIndex : i;
+        const prodsForSource = viewAllSuppliers
+          ? products.filter(pp => pp._source === src).sort((a, b) => (a._sourceIndex ?? 0) - (b._sourceIndex ?? 0)).map(pp => { const { _source, _sourceIndex, ...rest } = pp; return rest; })
+          : products.map(pp => { const { _source, _sourceIndex, ...rest } = pp; return rest; });
+        try {
+          const r = await fetch(apiUrl('api/sync-product'), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ source: src, index: idx, company_slug: company, category_id: p.category_id, products: prodsForSource })
+          });
+          const data = await r.json();
+          if (data.ok) {
+            if (!p.production_ids) p.production_ids = {};
+            p.production_ids[company] = data.product_id;
+            synced++;
+          } else {
+            errors.push((p.name || '').slice(0, 30) + ': ' + (data.error || 'failed'));
+          }
+        } catch (e) {
+          errors.push((p.name || '').slice(0, 30) + ': ' + e.message);
+        }
+        if (msgEl) msgEl.textContent = 'Synced ' + synced + '/' + toSync.length + '...';
+        render();
+      }
+      syncSelectedRunning = false;
+      if (msgEl) {
+        let txt = 'Synced ' + synced + ' product(s).';
+        if (skipped.length) txt += ' Skipped ' + skipped.length + ' (missing dimensions/weight/category).';
+        if (errors.length) txt += ' Errors: ' + errors.slice(0, 3).join('; ');
+        msgEl.textContent = txt;
+        msgEl.className = errors.length ? 'msg err' : 'msg ok';
+      }
+      render();
     }
 
     async function reactivateSelected() {
@@ -1704,10 +2040,11 @@ HTML = """
           });
           if (items.length > 0) {
             try {
+              const company = getCompany();
               const r = await fetch(apiUrl('api/reactivate-from-production'), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ items })
+                body: JSON.stringify({ items, company_slug: company })
               });
               const d = await r.json();
               if (d.ok) selectedIndices.clear();
@@ -1717,10 +2054,11 @@ HTML = """
         } else {
           const indices = Array.from(selectedIndices);
           try {
+            const company = getCompany();
             const r = await fetch(apiUrl('api/reactivate-from-production'), {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ source, indices })
+              body: JSON.stringify({ source, indices, company_slug: company })
             });
             const d = await r.json();
             if (d.ok) selectedIndices.clear();
@@ -1743,9 +2081,10 @@ HTML = """
       const msgEl = document.getElementById('msg');
       if (msgEl) msgEl.textContent = '';
       try {
+        const company = getCompany();
         const body = viewAllSuppliers
-          ? { items: indices.map(i => ({ source: products[i]._source, index: products[i]._sourceIndex })) }
-          : { source: source, indices: indices };
+          ? { items: indices.map(i => ({ source: products[i]._source, index: products[i]._sourceIndex })), company_slug: company }
+          : { source: source, indices: indices, company_slug: company };
         const r = await fetch(apiUrl('api/create-bundle'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -1789,6 +2128,58 @@ HTML = """
     }
 
     document.getElementById('saveBtn').onclick = doSave;
+
+    async function resetToUnsynced() {
+      const company = getCompany();
+      if (!company) {
+        const msg = document.getElementById('msg');
+        msg.textContent = 'Select company on Dashboard first.';
+        msg.className = 'msg err';
+        return;
+      }
+      showConfirm('Reset to unsynced', 'Clear sync status for all products in this supplier? They will show as unsynced. (Does not delete on production.)', async () => {
+      const btn = document.getElementById('resetBtn');
+      btn.disabled = true;
+      try {
+        let body;
+        if (viewAllSuppliers) {
+          const bySource = {};
+          products.forEach((p, i) => {
+            const src = p._source;
+            if (!src || !(p.production_ids || {})[company]) return;
+            if (!bySource[src]) bySource[src] = [];
+            bySource[src].push({ source: src, index: p._sourceIndex });
+          });
+          const items = Object.values(bySource).flat();
+          if (items.length === 0) {
+            document.getElementById('msg').textContent = 'No synced products to reset.';
+            return;
+          }
+          body = { items, company_slug: company };
+        } else {
+          body = { source, company_slug: company };
+        }
+        const r = await fetch(apiUrl('api/reset-production-ids'), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        });
+        const d = await r.json();
+        const msg = document.getElementById('msg');
+        if (d.ok) {
+          msg.textContent = 'Reset ' + (d.reset || 0) + ' product(s) to unsynced.';
+          msg.className = 'msg ok';
+          loadSource(source);
+        } else {
+          msg.textContent = d.error || 'Reset failed';
+          msg.className = 'msg err';
+        }
+      } finally {
+        btn.disabled = false;
+      }
+      });
+    }
+    document.getElementById('resetBtn').onclick = resetToUnsynced;
 
     initTabs();
   </script>

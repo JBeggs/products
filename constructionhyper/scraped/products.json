@@ -1,7 +1,7 @@
 {
   "products": [
     {
-      "category_id": "e1b49ce3-86e7-4ff2-93ca-5263c90ac4bd",
+      "category_id": "59935cf7-08c0-4776-8ae2-800beb19a0db",
       "compare_at_price": 1619.11,
       "constructionhyper_price": 999,
       "cost": 1198.8,
@@ -17,7 +17,8 @@
       "name": "Battery 20V 8ah Ingco FBLI2108",
       "price": 1318.68,
       "production_ids": {
-        "javamellow": "7d265edc-e0e4-4f80-9f3a-ecccb410de85"
+        "past-and-present": "04d7d722-036c-474d-8c86-e707bb55a868",
+        "javamellow": "b4485d0a-36ed-4390-b2b7-7358569b72a0"
       },
       "short_description": "Battery 20V 8ah Ingco FBLI2108",
       "status": "active",
@@ -30,5 +31,5 @@
       "weight": 1000
     }
   ],
-  "updated": "2026-03-13T13:02:08.493673"
+  "updated": "2026-03-15T00:22:13.679863"
 }

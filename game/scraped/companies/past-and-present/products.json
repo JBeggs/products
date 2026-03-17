@@ -1,0 +1,66 @@
+{
+  "products": [
+    {
+      "category_id": "b957d0d8-4c76-4d52-8e8a-3e820277e1a2",
+      "compare_at_price": 209.27,
+      "cost": 159,
+      "description": "CAMP MASTER COOLER BOX",
+      "dimension_height": 18,
+      "dimension_length": 30,
+      "dimension_width": 30,
+      "game_price": 159,
+      "goods_id": "000000000850020581",
+      "images": [
+        "images/camp_master_cooler_b_000000000850020581_01.jpg"
+      ],
+      "in_stock": false,
+      "name": "CAMP MASTER COOLER BOX",
+      "price": 190.8,
+      "production_ids": {
+        "javamellow": "5bfbaad0-5fd6-464a-8824-d375ed96cfb2",
+        "past-and-present": "8c700aab-f7f8-41f7-be0e-798a75d905da"
+      },
+      "short_description": "CAMP MASTER COOLER BOX",
+      "status": "active",
+      "stock_quantity": 0,
+      "tags": [
+        "game"
+      ],
+      "url": "https://www.game.co.za/Sports-Outdoors-Healthy-Living/Camping-Braai/Cooler-Bags-Boxes/p/000000000850020581",
+      "variants": [],
+      "weight": 1000
+    },
+    {
+      "category_id": "ff8331ba-1f28-48e5-b025-ffcbad642424",
+      "compare_at_price": 30.47,
+      "cost": 22.99,
+      "description": "KNORR Cup-A-Soup Thick Chicken & Veg 93, G",
+      "dimension_height": 8,
+      "dimension_length": 5,
+      "dimension_width": 5,
+      "game_price": 22.99,
+      "goods_id": "000000000000577101",
+      "images": [
+        "images/knorr_cup_a_soup_thi_000000000000577101_01.jpg",
+        "images/knorr_cup_a_soup_thi_000000000000577101_02.jpg"
+      ],
+      "in_stock": false,
+      "name": "KNORR Cup-A-Soup Thick Chicken &",
+      "price": 27.59,
+      "production_ids": {
+        "javamellow": "ed70151d-bdb6-436b-ba82-51d8dcae4735",
+        "past-and-present": "90bbcd38-a0b6-46fd-bd18-2d3b3135f105"
+      },
+      "short_description": "KNORR Cup-A-Soup Thick Chicken & Veg 93, G",
+      "status": "active",
+      "stock_quantity": 0,
+      "tags": [
+        "game"
+      ],
+      "url": "https://www.game.co.za/Groceries-Beverages/Pantry/Soups-Soup-Thickeners/p/000000000000577101",
+      "variants": [],
+      "weight": 15
+    }
+  ],
+  "updated": "2026-03-15T21:43:59.591266"
+}

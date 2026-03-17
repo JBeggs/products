@@ -56,6 +56,30 @@ scrape_running = False
 scrape_supplier = None
 scrape_options = {}
 
+# Order-runner state: manual supplier-order workflow per (company, order_id, supplier)
+# Key: (company_slug, order_id, supplier_slug). Value: {items, current_index, state, order_number}
+_order_run_state: dict = {}
+_order_run_lock = threading.Lock()
+
+
+def _order_run_key(company: str, order_id: str, supplier: str) -> tuple:
+    return (company.strip(), str(order_id).strip(), supplier.strip().lower())
+
+
+def _get_order_run(company: str, order_id: str, supplier: str) -> dict | None:
+    with _order_run_lock:
+        return _order_run_state.get(_order_run_key(company, order_id, supplier))
+
+
+def _set_order_run(company: str, order_id: str, supplier: str, data: dict) -> None:
+    with _order_run_lock:
+        _order_run_state[_order_run_key(company, order_id, supplier)] = data
+
+
+def _clear_order_run(company: str, order_id: str, supplier: str) -> None:
+    with _order_run_lock:
+        _order_run_state.pop(_order_run_key(company, order_id, supplier), None)
+
 INDEX_HTML = """
 <!DOCTYPE html>
 <html lang="en">
@@ -79,12 +103,18 @@ INDEX_HTML = """
     .sources ul { list-style: none; padding: 0; margin: 0; }
     .sources li { margin-bottom: 0.5rem; }
     .sources code { background: #333; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.85rem; }
+    .company-bar { margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
+    .company-bar label { font-size: 0.9rem; color: #888; }
+    .company-bar select { padding: 0.5rem 0.75rem; background: #252525; border: 1px solid #444; border-radius: 6px; color: #e0e0e0; min-width: 180px; }
   </style>
 </head>
 <body>
   <h1>Product Scrapers</h1>
   <p class="sub">Scrape, edit, and upload products from Temu, Gumtree, AliExpress, Ubuy, MyRunway, OneDayOnly</p>
-
+  <div class="company-bar">
+    <label for="companySelect">Company</label>
+    <select id="companySelect"><option value="">Loading...</option></select>
+  </div>
     <div class="cards">
     <a href="/scrape" class="card">
       <h2>Scrape</h2>
@@ -94,22 +124,35 @@ INDEX_HTML = """
       <h2>Edit Products</h2>
       <p>Edit name, price, cost, images for Temu, Gumtree, AliExpress, Ubuy, MyRunway, OneDayOnly</p>
     </a>
+    <a href="/orders" class="card">
+      <h2>Orders</h2>
+      <p>View orders from backend, grouped by customer and supplier</p>
+    </a>
   </div>
-
-  <div class="sources">
-    <h3>CLI commands (run from products/ folder)</h3>
-    <ul>
-      <li><code>python -m products scrape temu</code> — <code>python -m products scrape temu --upload</code></li>
-      <li><code>python -m products scrape gumtree</code> — <code>python -m products scrape gumtree --upload</code></li>
-      <li><code>python -m products scrape aliexpress</code> — <code>python -m products scrape aliexpress --upload</code></li>
-      <li><code>python -m products scrape ubuy</code> — <code>python -m products scrape ubuy --upload</code></li>
-      <li><code>python -m products scrape myrunway</code> — <code>python -m products scrape myrunway --upload</code></li>
-      <li><code>python -m products scrape onedayonly</code> — <code>python -m products scrape onedayonly --upload</code></li>
-    </ul>
-    <p style="margin-top: 1rem; color: #888; font-size: 0.9rem;">
-      Upload to multiple companies: set <code>COMPANY_SLUGS=past-and-present,javamellow,plant-sanctuary</code> in .env, then <code>--upload --upload-to all</code>
-    </p>
-  </div>
+  <script>
+    const COMPANY_STORAGE_KEY = 'edit_products_company_slug';
+    async function loadCompanies() {
+      try {
+        const r = await fetch('/api/companies');
+        const d = await r.json();
+        const companies = d.companies || [];
+        const sel = document.getElementById('companySelect');
+        sel.innerHTML = companies.length
+          ? '<option value="">Select company</option>' + companies.map(c => '<option value="' + c + '">' + c + '</option>').join('')
+          : '<option value="">Set COMPANY_SLUGS in .env</option>';
+        const saved = localStorage.getItem(COMPANY_STORAGE_KEY);
+        if (saved && companies.includes(saved)) sel.value = saved;
+        else if (companies.length === 1) sel.value = companies[0];
+        sel.onchange = () => {
+          const v = sel.value;
+          if (v) localStorage.setItem(COMPANY_STORAGE_KEY, v);
+        };
+      } catch (e) {
+        document.getElementById('companySelect').innerHTML = '<option value="">Error loading companies</option>';
+      }
+    }
+    loadCompanies();
+  </script>
 </body>
 </html>
 """
@@ -169,6 +212,7 @@ SCRAPE_HTML = """
 <body>
   <div class="top-nav"><a href="/">← Dashboard</a></div>
   <h1>Scrape Products</h1>
+  <div id="companyBar" style="margin-bottom: 1rem; font-size: 0.9rem; color: #888;"></div>
   <div class="field">
     <label>Supplier</label>
     <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
@@ -260,6 +304,7 @@ SCRAPE_HTML = """
   <script>
     let suppliers = [];
     async function loadSuppliers() {
+      updateCompanyBar();
       const r = await fetch('/api/suppliers');
       suppliers = await r.json();
       const sel = document.getElementById('supplierSelect');
@@ -288,10 +333,13 @@ SCRAPE_HTML = """
       const proxyEnabled = document.getElementById('proxyEnabled') && document.getElementById('proxyEnabled').checked;
       const proxyCountry = (document.getElementById('proxyCountry') && document.getElementById('proxyCountry').value) || 'ZA';
       const debugMode = document.getElementById('debugMode') && document.getElementById('debugMode').checked;
+      const payload = { supplier: slug, proxy_enabled: !!proxyEnabled, proxy_country: proxyCountry, debug: !!debugMode };
+      const company = getCompany();
+      if (company) payload.company = company;
       const res = await fetch('/api/scrape/start', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ supplier: slug, proxy_enabled: !!proxyEnabled, proxy_country: proxyCountry, debug: !!debugMode })
+        body: JSON.stringify(payload)
       });
       const data = await res.json();
       if (data.ok) { setStatus(true, 'Running'); }
@@ -341,9 +389,18 @@ SCRAPE_HTML = """
         '<button type="button" class="remove" onclick="this.parentElement.remove()">Remove</button>';
       div.appendChild(row);
     }
+    function getCompany() { return (localStorage.getItem('edit_products_company_slug') || '').trim(); }
+    function updateCompanyBar() {
+      const company = getCompany();
+      const bar = document.getElementById('companyBar');
+      bar.innerHTML = company ? 'Company: <strong>' + (company.replace(/</g,'&lt;').replace(/>/g,'&gt;')) + '</strong> — <a href="/" style="color:#2a7">Change on Dashboard</a>' : '<a href="/" style="color:#2a7">Select company on Dashboard first</a> (tiered markup is per-company)';
+    }
     async function loadPricingConfig(slug) {
       if (!slug) return;
-      const r = await fetch('/api/scraper-config?supplier=' + encodeURIComponent(slug));
+      const company = getCompany();
+      let url = '/api/scraper-config?supplier=' + encodeURIComponent(slug);
+      if (company) url += '&company=' + encodeURIComponent(company);
+      const r = await fetch(url);
       const data = await r.json();
       const div = document.getElementById('tierRows');
       div.innerHTML = '';
@@ -369,10 +426,13 @@ SCRAPE_HTML = """
           tiers.push({ threshold: th === '' ? null : parseFloat(th), multiplier: mult });
         }
       });
+      const payload = { supplier: slug, tier_multipliers: tiers };
+      const company = getCompany();
+      if (company) payload.company = company;
       const res = await fetch('/api/scraper-config', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ supplier: slug, tier_multipliers: tiers })
+        body: JSON.stringify(payload)
       });
       const data = await res.json();
       if (data.ok) document.getElementById('msg').textContent = 'Pricing config saved.';
@@ -399,6 +459,7 @@ SCRAPE_HTML = """
       if (pricingSection) pricingSection.style.display = slug ? 'block' : 'none';
       if (proxySection) proxySection.style.display = slug ? 'block' : 'none';
       if (slug) {
+        updateCompanyBar();
         loadDeliveryConfig(slug);
         loadPricingConfig(slug);
       }
@@ -441,9 +502,266 @@ SCRAPE_HTML = """
 """
 
 
+ORDERS_HTML = """
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Orders - Product Scrapers</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: system-ui, sans-serif; margin: 2rem; background: #1a1a1a; color: #e0e0e0; }
+    .top-nav { margin-bottom: 1.5rem; }
+    .top-nav a { color: #2a7; text-decoration: none; }
+    .top-nav a:hover { text-decoration: underline; }
+    h1 { font-size: 1.5rem; margin-bottom: 1rem; }
+    .field { margin-bottom: 1rem; }
+    .field label { display: block; font-size: 0.85rem; color: #888; margin-bottom: 0.4rem; }
+    select { padding: 0.6rem; background: #252525; border: 1px solid #444; border-radius: 6px; color: #e0e0e0; min-width: 200px; }
+    .order-card { background: #252525; border-radius: 8px; border: 1px solid #333; margin-bottom: 1rem; padding: 1rem; }
+    .order-card h3 { margin: 0 0 0.5rem 0; font-size: 1rem; }
+    .order-meta { font-size: 0.85rem; color: #888; margin-bottom: 0.75rem; }
+    .supplier-group { margin: 0.75rem 0; padding-left: 1rem; border-left: 3px solid #2a7; }
+    .supplier-group .supplier-name { font-weight: 600; color: #2a7; font-size: 0.9rem; margin-bottom: 0.5rem; }
+    .order-item { font-size: 0.9rem; padding: 0.25rem 0; color: #ccc; }
+    .order-item .qty { color: #888; }
+    .msg { margin-top: 1rem; color: #888; }
+    .msg.err { color: #c66; }
+    .run-panel { margin-top: 0.75rem; padding: 0.75rem; background: #1a1a1a; border-radius: 6px; border: 1px solid #333; }
+    .run-panel .run-progress { font-size: 0.85rem; color: #aaa; margin-bottom: 0.5rem; }
+    .run-panel .run-current { font-size: 0.9rem; color: #e0e0e0; margin-bottom: 0.5rem; }
+    .run-panel .run-message { font-size: 0.9rem; color: #2a7; margin: 0.5rem 0; }
+    .run-panel .run-buttons { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.5rem; }
+    .run-panel button { padding: 0.5rem 1rem; font-size: 0.9rem; border: none; border-radius: 6px; cursor: pointer; }
+    .run-panel button.primary { background: #2a7; color: white; }
+    .run-panel button.primary:hover { background: #3b8; }
+    .run-panel button.secondary { background: #444; color: #e0e0e0; }
+    .run-panel button.secondary:hover { background: #555; }
+    .run-panel button:disabled { opacity: 0.5; cursor: not-allowed; }
+    .run-panel .session-warn { font-size: 0.85rem; color: #c96; margin-bottom: 0.5rem; }
+  </style>
+</head>
+<body>
+  <div class="top-nav"><a href="/">← Dashboard</a> · <a href="/scrape">Scrape</a></div>
+  <h1>Orders</h1>
+  <div id="companyBar" style="margin-bottom: 1rem; font-size: 0.9rem; color: #888;"></div>
+  <div id="orders"></div>
+  <div id="msg" class="msg"></div>
+  <script>
+    let supplierDisplayNames = {};
+    function getCompany() { return (localStorage.getItem('edit_products_company_slug') || '').trim(); }
+    function updateCompanyBar() {
+      const company = getCompany();
+      const bar = document.getElementById('companyBar');
+      bar.innerHTML = company ? 'Company: <strong>' + escapeHtml(company) + '</strong> — <a href="/" style="color:#2a7">Change on Dashboard</a>' : '<a href="/" style="color:#2a7">Select company on Dashboard first</a>';
+    }
+    function supplierDisplay(slug) { return supplierDisplayNames[slug] || slug; }
+    async function loadSuppliers() {
+      try {
+        const r = await fetch('/api/suppliers');
+        const list = await r.json();
+        supplierDisplayNames = {};
+        (list || []).forEach(s => { supplierDisplayNames[(s.slug || '').toLowerCase()] = s.display_name || s.slug; });
+      } catch (_) {}
+    }
+    function initOrders() {
+      updateCompanyBar();
+      loadSuppliers().then(loadOrders);
+    }
+    async function loadOrders() {
+      const company = getCompany();
+      const el = document.getElementById('orders');
+      const msg = document.getElementById('msg');
+      msg.textContent = '';
+      if (!company) {
+        el.innerHTML = '';
+        return;
+      }
+      el.innerHTML = '<p>Loading...</p>';
+      try {
+        const r = await fetch('/api/orders?company_slug=' + encodeURIComponent(company));
+        const d = await r.json();
+        const orders = d.orders || [];
+        if (d.error) {
+          msg.textContent = d.error;
+          msg.className = 'msg err';
+        }
+        if (!orders.length) {
+          el.innerHTML = '<p>No orders</p>';
+          return;
+        }
+        let html = '';
+        for (const o of orders) {
+          const cust = o.customer || {};
+          const customer = [cust.first_name || o.customer_first_name, cust.last_name || o.customer_last_name].filter(Boolean).join(' ') ||
+            [o.customer_first_name, o.customer_last_name].filter(Boolean).join(' ') || cust.email || o.customer_email || 'Guest';
+          const items = (o.items || []).filter(i => !i.cancelled);
+          const bySupplier = {};
+          for (const it of items) {
+            const sup = (it.supplier_slug || it.supplierSlug || 'unknown').trim().toLowerCase() || 'unknown';
+            if (!bySupplier[sup]) bySupplier[sup] = [];
+            bySupplier[sup].push(it);
+          }
+          html += '<div class="order-card" data-order-id="' + escapeHtml(String(o.id || o.order_number || '')) + '" data-order-number="' + escapeHtml(String(o.order_number || o.id || '')) + '">';
+          html += '<h3>' + escapeHtml(o.order_number || o.id) + ' — ' + escapeHtml(customer) + '</h3>';
+          html += '<div class="order-meta">' + escapeHtml(cust.email || o.customer_email || '') + ' · ' + (o.customer_phone || '') + ' · ' + (o.status || '') + ' · R' + (o.total || 0) + '</div>';
+          for (const [sup, its] of Object.entries(bySupplier)) {
+            const displayName = supplierDisplay(sup);
+            const itemsJson = escapeHtml(JSON.stringify(its));
+            html += '<div class="supplier-group" data-supplier="' + escapeHtml(sup) + '" data-items="' + itemsJson + '">';
+            html += '<div class="supplier-name">' + escapeHtml(displayName) + '</div>';
+            for (const it of its) {
+              html += '<div class="order-item"><span class="qty">' + it.quantity + '×</span> ' + escapeHtml(it.product_name || it.productName || 'Item') + ' — R' + (it.subtotal || (it.price || 0) * (it.quantity || 1)) + '</div>';
+            }
+            html += '<div class="run-panel" data-order-id="' + escapeHtml(String(o.id || o.order_number || '')) + '" data-order-number="' + escapeHtml(String(o.order_number || o.id || '')) + '" data-supplier="' + escapeHtml(sup) + '"></div>';
+            html += '</div>';
+          }
+          html += '</div>';
+        }
+        el.innerHTML = html;
+        attachRunHandlers();
+      } catch (e) {
+        el.innerHTML = '';
+        msg.textContent = 'Error: ' + e.message;
+        msg.className = 'msg err';
+      }
+    }
+    function escapeHtml(s) {
+      if (s == null) return '';
+      const d = document.createElement('div');
+      d.textContent = String(s);
+      return d.innerHTML;
+    }
+    function attachRunHandlers() {
+      document.querySelectorAll('.supplier-group').forEach(grp => {
+        const panel = grp.querySelector('.run-panel');
+        if (!panel) return;
+        const orderCard = grp.closest('.order-card');
+        const orderId = panel.dataset?.orderId || orderCard?.dataset?.orderId || '';
+        const orderNumber = panel.dataset?.orderNumber || orderCard?.dataset?.orderNumber || orderId;
+        const supplier = panel.dataset?.supplier || grp.dataset?.supplier || '';
+        let items = [];
+        try { items = JSON.parse(grp.dataset?.items || '[]'); } catch (_) {}
+        renderRunPanel(panel, getCompany(), orderId, orderNumber, supplier, items);
+      });
+    }
+    async function renderRunPanel(panel, company, orderId, orderNumber, supplier, items) {
+      const base = { company, order_id: orderId, order_number: orderNumber, supplier, items };
+      const statusRes = await fetch('/api/orders/run/status?company=' + encodeURIComponent(company) + '&order_id=' + encodeURIComponent(orderId) + '&supplier=' + encodeURIComponent(supplier));
+      const statusData = await statusRes.json();
+      const sessionRes = await fetch('/api/orders/run/session-check?supplier=' + encodeURIComponent(supplier));
+      const sessionData = await sessionRes.json();
+      const hasSession = sessionData.has_session === true;
+
+      if (statusData.running) {
+        const s = statusData;
+        const idx = (s.current_index || 0) + 1;
+        const total = s.total || items.length;
+        const state = s.state || 'adding';
+        let inner = '';
+        if (!hasSession) {
+          inner += '<div class="session-warn">No saved session. <a href="/scrape" style="color:#2a7">Scrape</a> first and Save session after login.</div>';
+        }
+        inner += '<div class="run-progress">Item ' + idx + ' of ' + total + '</div>';
+        if (state === 'paying') {
+          inner += '<div class="run-message">All items added. Go to the supplier cart and pay manually.</div>';
+          inner += '<div class="run-buttons"><button class="primary" onclick="runFinish(this)">Finish</button></div>';
+        } else {
+          const cur = s.current_item;
+          if (cur) {
+            inner += '<div class="run-current">Current: ' + escapeHtml(cur.product_name || cur.productName || 'Item') + ' (' + (cur.quantity || 1) + '×)</div>';
+          }
+          inner += '<div class="run-buttons">';
+          inner += '<button class="secondary" onclick="runNext(this)">Next product</button>';
+          if (idx >= total) {
+            inner += '<button class="primary" onclick="runGotoCart(this)">Go to cart & pay</button>';
+          }
+          inner += '</div>';
+        }
+        panel.innerHTML = inner;
+        return;
+      }
+
+      let inner = '';
+      if (!hasSession) {
+        inner += '<div class="session-warn">No saved session. <a href="/scrape" style="color:#2a7">Scrape</a> first and Save session after login.</div>';
+      }
+      inner += '<div class="run-buttons"><button class="primary" onclick="runStart(this)"' + (!hasSession ? ' title="Session recommended"' : '') + '>Place order by supplier</button></div>';
+      panel.innerHTML = inner;
+    }
+    function getRunContext(btn) {
+      const panel = btn?.closest?.('.run-panel');
+      const grp = panel?.closest?.('.supplier-group');
+      return {
+        panel,
+        grp,
+        orderId: panel?.dataset?.orderId || '',
+        orderNumber: panel?.dataset?.orderNumber || '',
+        supplier: panel?.dataset?.supplier || grp?.dataset?.supplier || '',
+        items: (() => { try { return JSON.parse(grp?.dataset?.items || '[]'); } catch (_) { return []; } })()
+      };
+    }
+    async function runStart(btn) {
+      const ctx = getRunContext(btn);
+      const { orderId, orderNumber, supplier, items } = ctx;
+      const company = getCompany();
+      const res = await fetch('/api/orders/run/start', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ company, order_id: orderId, order_number: orderNumber, supplier, items })
+      });
+      const d = await res.json();
+      if (d.ok) attachRunHandlers();
+      else alert(d.error || 'Failed to start');
+    }
+    async function runNext(btn) {
+      const ctx = getRunContext(btn);
+      const company = getCompany();
+      const res = await fetch('/api/orders/run/next', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ company, order_id: ctx.orderId, supplier: ctx.supplier })
+      });
+      const d = await res.json();
+      if (d.ok) attachRunHandlers();
+      else alert(d.error || 'Failed');
+    }
+    async function runGotoCart(btn) {
+      const ctx = getRunContext(btn);
+      const company = getCompany();
+      await fetch('/api/orders/run/goto-cart', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ company, order_id: ctx.orderId, supplier: ctx.supplier })
+      });
+      attachRunHandlers();
+    }
+    async function runFinish(btn) {
+      const ctx = getRunContext(btn);
+      const company = getCompany();
+      const res = await fetch('/api/orders/run/finish', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ company, order_id: ctx.orderId, supplier: ctx.supplier })
+      });
+      if (res.ok) attachRunHandlers();
+    }
+    initOrders();
+  </script>
+</body>
+</html>
+"""
+
+
 @app.route("/")
 def index():
     return render_template_string(INDEX_HTML)
+
+
+@app.route("/orders")
+def orders_page():
+    return render_template_string(ORDERS_HTML)
 
 
 @app.route("/scrape")
@@ -454,6 +772,236 @@ def scrape_page():
 @app.route("/api/suppliers")
 def api_suppliers():
     return jsonify(get_suppliers())
+
+
+@app.route("/api/companies")
+def api_companies():
+    """Return company slugs for Orders and Edit pages."""
+    from shared.config import get_target_slugs
+    return jsonify({"companies": get_target_slugs()})
+
+
+@app.route("/api/orders")
+def api_orders():
+    """Fetch orders from Django API for the given company. Requires company_slug."""
+    company_slug = (request.args.get("company_slug") or "").strip()
+    if not company_slug:
+        return jsonify({"orders": [], "error": "company_slug required"})
+    base_url = (os.environ.get("API_BASE_URL") or "").strip()
+    if not base_url:
+        return jsonify({"orders": [], "error": "Set API_BASE_URL in .env"})
+    try:
+        from shared.config import get_credentials_for_company
+        username, password = get_credentials_for_company(company_slug)
+    except ValueError as e:
+        return jsonify({"orders": [], "error": str(e)})
+    if not username or not password:
+        return jsonify({"orders": [], "error": "No credentials for this company"})
+    from shared.upload import get_auth_token
+    use_email = str(os.environ.get("API_USE_EMAIL", "")).lower() in ("1", "true", "yes")
+    token = get_auth_token(base_url, username, password, company_slug=company_slug, use_email=use_email)
+    if not token:
+        return jsonify({"orders": [], "error": "Login failed"})
+    try:
+        import requests
+        r = requests.get(
+            f"{base_url.rstrip('/')}/v1/orders/",
+            headers={
+                "Authorization": f"Bearer {token}",
+                "X-Company-Slug": company_slug,
+            },
+            params={"limit": 100},
+            timeout=30,
+        )
+        r.raise_for_status()
+        data = r.json()
+        orders = data.get("data") or data.get("results") or []
+        return jsonify({"orders": orders})
+    except Exception as e:
+        return jsonify({"orders": [], "error": str(e)})
+
+
+@app.route("/api/orders/run/start", methods=["POST"])
+def api_orders_run_start():
+    """Start manual supplier-order run. Requires company, order_id, supplier, items (from frontend)."""
+    data = request.get_json(silent=True) or {}
+    company = (data.get("company") or "").strip()
+    order_id = data.get("order_id") or data.get("orderId") or ""
+    supplier = (data.get("supplier") or "").strip()
+    items = data.get("items") or []
+
+    if not company or not order_id or not supplier:
+        return jsonify({"ok": False, "error": "company, order_id, and supplier required"})
+    if not isinstance(items, list) or len(items) == 0:
+        return jsonify({"ok": False, "error": "items required (non-empty list)"})
+
+    # Filter items with supplier_slug (normalize for matching)
+    supplier_slug = supplier.strip().lower()
+    items = [i for i in items if (i.get("supplier_slug") or i.get("supplierSlug") or "").strip().lower() == supplier_slug]
+    if not items:
+        return jsonify({"ok": False, "error": "No items for this supplier"})
+
+    order_number = data.get("order_number") or data.get("orderNumber") or order_id
+
+    run_data = {
+        "items": items,
+        "current_index": 0,
+        "state": "adding",
+        "order_number": order_number,
+    }
+    _set_order_run(company, order_id, supplier, run_data)
+    current = items[0]
+    return jsonify({
+        "ok": True,
+        "current_item": current,
+        "current_index": 0,
+        "total": len(items),
+        "state": "adding",
+    })
+
+
+@app.route("/api/orders/run/next", methods=["POST"])
+def api_orders_run_next():
+    """Advance to next product in current run."""
+    data = request.get_json(silent=True) or {}
+    company = (data.get("company") or "").strip()
+    order_id = data.get("order_id") or data.get("orderId") or ""
+    supplier = (data.get("supplier") or "").strip()
+
+    if not company or not order_id or not supplier:
+        return jsonify({"ok": False, "error": "company, order_id, and supplier required"})
+
+    run = _get_order_run(company, order_id, supplier)
+    if not run:
+        return jsonify({"ok": False, "error": "No active run"})
+
+    idx = run["current_index"] + 1
+    items = run["items"]
+    if idx >= len(items):
+        run["state"] = "paying"
+        run["current_index"] = len(items) - 1
+        _set_order_run(company, order_id, supplier, run)
+        return jsonify({
+            "ok": True,
+            "current_item": None,
+            "current_index": idx - 1,
+            "total": len(items),
+            "state": "paying",
+            "message": "All items added. Go to cart and pay on the supplier site.",
+        })
+
+    run["current_index"] = idx
+    _set_order_run(company, order_id, supplier, run)
+    return jsonify({
+        "ok": True,
+        "current_item": items[idx],
+        "current_index": idx,
+        "total": len(items),
+        "state": "adding",
+    })
+
+
+@app.route("/api/orders/run/goto-cart", methods=["POST"])
+def api_orders_run_goto_cart():
+    """Mark state as 'paying' (user has gone to cart)."""
+    data = request.get_json(silent=True) or {}
+    company = (data.get("company") or "").strip()
+    order_id = data.get("order_id") or data.get("orderId") or ""
+    supplier = (data.get("supplier") or "").strip()
+
+    if not company or not order_id or not supplier:
+        return jsonify({"ok": False, "error": "company, order_id, and supplier required"})
+
+    run = _get_order_run(company, order_id, supplier)
+    if not run:
+        return jsonify({"ok": False, "error": "No active run"})
+
+    run["state"] = "paying"
+    _set_order_run(company, order_id, supplier, run)
+    return jsonify({"ok": True, "state": "paying"})
+
+
+@app.route("/api/orders/run/finish", methods=["POST"])
+def api_orders_run_finish():
+    """Finish supplier-order run (manual completion)."""
+    data = request.get_json(silent=True) or {}
+    company = (data.get("company") or "").strip()
+    order_id = data.get("order_id") or data.get("orderId") or ""
+    supplier = (data.get("supplier") or "").strip()
+
+    if not company or not order_id or not supplier:
+        return jsonify({"ok": False, "error": "company, order_id, and supplier required"})
+
+    _clear_order_run(company, order_id, supplier)
+    return jsonify({"ok": True, "state": "done"})
+
+
+@app.route("/api/orders/run/status")
+def api_orders_run_status():
+    """Get current run status for supplier."""
+    company = (request.args.get("company") or "").strip()
+    order_id = request.args.get("order_id") or request.args.get("orderId") or ""
+    supplier = (request.args.get("supplier") or "").strip()
+
+    if not company or not order_id or not supplier:
+        return jsonify({"ok": False, "error": "company, order_id, and supplier required"})
+
+    run = _get_order_run(company, order_id, supplier)
+    if not run:
+        return jsonify({"ok": False, "running": False})
+
+    items = run["items"]
+    idx = run["current_index"]
+    return jsonify({
+        "ok": True,
+        "running": True,
+        "state": run["state"],
+        "current_index": idx,
+        "total": len(items),
+        "current_item": items[idx] if 0 <= idx < len(items) else None,
+        "order_number": run.get("order_number") or order_id,
+    })
+
+
+def _supplier_has_session(supplier_slug: str) -> bool:
+    """Check if supplier has saved session (JSON or chrome_profile)."""
+    slug = (supplier_slug or "").strip().lower().replace("-", "").replace("_", "")
+    # JSON session files per SUPPLIER_SESSIONS.md
+    json_sessions = {
+        "makro": "makro/makro_session.json",
+        "matrixwarehouse": "matrixwarehouse/matrixwarehouse_session.json",
+        "loot": "loot/loot_session.json",
+        "perfectdealz": "perfectdealz/perfectdealz_session.json",
+        "aliexpress": "aliexpress/aliexpress_session.json",
+        "ubuy": "ubuy/ubuy_session.json",
+        "myrunway": "myrunway/myrunway_session.json",
+        "onedayonly": "onedayonly/onedayonly_session.json",
+    }
+    # Persistent Chrome profiles
+    chrome_profiles = {
+        "takealot": "takealot/chrome_profile",
+        "game": "game/chrome_profile",
+        "constructionhyper": "constructionhyper/chrome_profile",
+        "temu": "temu/chrome_profile",
+        "gumtree": "gumtree/chrome_profile",
+    }
+    if slug in json_sessions:
+        p = PRODUCTS_ROOT / json_sessions[slug]
+        return p.exists() and p.stat().st_size > 0
+    if slug in chrome_profiles:
+        p = PRODUCTS_ROOT / chrome_profiles[slug]
+        return p.exists() and p.is_dir()
+    return False
+
+
+@app.route("/api/orders/run/session-check")
+def api_orders_run_session_check():
+    """Check if supplier has a saved session for manual ordering."""
+    supplier = (request.args.get("supplier") or "").strip()
+    if not supplier:
+        return jsonify({"ok": False, "error": "supplier required"})
+    has_session = _supplier_has_session(supplier)
+    return jsonify({"ok": True, "supplier": supplier, "has_session": has_session})
 
 
 @app.route("/api/supplier-delivery", methods=["GET"])
@@ -479,13 +1027,12 @@ def api_supplier_delivery_post():
 @app.route("/api/scraper-config", methods=["GET"])
 def api_scraper_config_get():
     slug = (request.args.get("supplier") or "").strip()
+    company_slug = (request.args.get("company") or "").strip()
     if slug:
-        cfg = load_scraper_config()
-        supplier_tiers = cfg.get("supplier_tiers") or {}
-        raw = supplier_tiers.get(slug)
-        if raw and isinstance(raw, list):
-            return jsonify({"tier_multipliers": raw})
-        return jsonify({"tier_multipliers": []})
+        tiers = get_tier_multipliers(slug, company_slug or None)
+        # Return raw format for UI: [{threshold, multiplier}, ...]
+        raw = [{"threshold": None if t[0] == float("inf") else t[0], "multiplier": t[1]} for t in tiers]
+        return jsonify({"tier_multipliers": raw})
     return jsonify(load_scraper_config())
 
 
@@ -494,6 +1041,7 @@ def api_scraper_config_post():
     data = request.get_json(silent=True) or {}
     tiers = data.get("tier_multipliers")
     supplier = (data.get("supplier") or "").strip()
+    company_slug = (data.get("company") or "").strip() or None
     if not isinstance(tiers, list):
         return jsonify({"ok": False, "error": "tier_multipliers must be a list"})
     if not supplier:
@@ -518,7 +1066,7 @@ def api_scraper_config_post():
                 continue
     if not normalized:
         return jsonify({"ok": False, "error": "At least one tier required"})
-    save_supplier_tiers(supplier, normalized)
+    save_supplier_tiers(supplier, normalized, company_slug)
     return jsonify({"ok": True})
 
 
@@ -544,6 +1092,7 @@ def api_scrape_start():
         return jsonify({"ok": False, "error": "Scrape already running"})
     data = request.get_json(silent=True) or {}
     slug = (data.get("supplier") or "").strip()
+    company_slug = (data.get("company") or "").strip() or None
     if not slug:
         LOG.warning("Scrape start rejected: no supplier selected")
         return jsonify({"ok": False, "error": "Select a supplier"})
@@ -554,10 +1103,10 @@ def api_scrape_start():
 
     # Suppliers that use tiered markup must have tiers configured (no fallback)
     if slug in SUPPLIERS_USING_TIERED_MARKUP:
-        if not get_tier_multipliers(slug):
+        if not get_tier_multipliers(slug, company_slug):
             return jsonify({
                 "ok": False,
-                "error": "Configure pricing tiers for this supplier first. Expand the Tiered markup section, add tiers, and Save.",
+                "error": "Configure pricing tiers for this supplier first. Select company on Dashboard, expand Tiered markup, add tiers, and Save.",
             })
 
     debug_mode = bool(data.get("debug"))
@@ -571,6 +1120,7 @@ def api_scrape_start():
         "proxy_country": (data.get("proxy_country") or "ZA").strip().upper()[:2],
         "proxy_server": None,
         "debug": debug_mode,
+        "company_slug": company_slug,
     }
     if scrape_options["proxy_enabled"] and scrape_options["proxy_country"]:
         from shared.proxy_utils import fetch_free_proxy
@@ -586,12 +1136,15 @@ def api_scrape_start():
     scrape_supplier = slug
     scrape_running = True
 
+    from shared.suppliers import get_company_scoped_dir
+    output_dir = get_company_scoped_dir(info.output_dir, company_slug) if company_slug else info.output_dir
+
     def _run():
         global scrape_running
         try:
-            print(f"  [scraper] Starting {slug} -> {info.output_dir}", flush=True)
-            LOG.info("Starting scrape: %s -> %s", slug, info.output_dir)
-            run_supplier_scrape(slug, info.output_dir, scrape_stop_flag, scrape_save_session_flag, scrape_options)
+            print(f"  [scraper] Starting {slug} -> {output_dir}", flush=True)
+            LOG.info("Starting scrape: %s -> %s", slug, output_dir)
+            run_supplier_scrape(slug, output_dir, scrape_stop_flag, scrape_save_session_flag, scrape_options)
             print(f"  [scraper] Finished {slug}", flush=True)
             LOG.info("Scrape finished: %s", slug)
         except Exception as e:

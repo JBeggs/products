@@ -27,7 +27,8 @@
       "perfectdealz_price": 18999,
       "price": 22798.8,
       "production_ids": {
-        "javamellow": "e89c861c-06ab-4404-a054-2276422a2dfb"
+        "past-and-present": "8b83c635-644c-4ffe-824c-0512143ed3c0",
+        "javamellow": "6b642bc8-e00a-4f24-a195-92aefed31806"
       },
       "short_description": "Electric Fat-Tire Mountain Ebike (26\u2033 \u00d7 4.0\u2033 Tires)",
       "status": "active",
@@ -40,7 +41,7 @@
       "weight": 25000
     },
     {
-      "category_id": "1d5b3d81-3ca0-48b0-9617-f1cfe9fa8cff",
+      "category_id": "8576dd59-9aea-4458-bc59-7d7911d93a14",
       "compare_at_price": 159.7,
       "cost": 119,
       "description": "Digital Kitchen Scale with Tempered Glass with Bamboo Design",
@@ -65,7 +66,8 @@
       "perfectdealz_price": 119,
       "price": 142.8,
       "production_ids": {
-        "javamellow": "3e8d08ec-8dad-4659-8e41-c3f2717978a4"
+        "javamellow": "e58b2834-849a-4bae-a54d-9495ad782c6d",
+        "past-and-present": "37a01102-b58b-41d0-9838-deb5632cfe2e"
       },
       "short_description": "Digital Kitchen Scale with Tempered Glass with Bamboo Design",
       "status": "active",
@@ -78,5 +80,5 @@
       "weight": 1000
     }
   ],
-  "updated": "2026-03-13T17:14:49.560363"
+  "updated": "2026-03-15T00:22:31.357748"
 }

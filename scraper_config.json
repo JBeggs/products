@@ -137,7 +137,7 @@
     "takealot": [
       {
         "threshold": 30.0,
-        "multiplier": 1.2
+        "multiplier": 1.5
       },
       {
         "threshold": 99.0,
@@ -187,6 +187,24 @@
         "threshold": null,
         "multiplier": 1.2
       }
+    ],
+    "ubuy": [
+      {
+        "threshold": 30.0,
+        "multiplier": 2.0
+      },
+      {
+        "threshold": 99.0,
+        "multiplier": 3.0
+      },
+      {
+        "threshold": 199.0,
+        "multiplier": 2.25
+      },
+      {
+        "threshold": null,
+        "multiplier": 1.5
+      }
     ]
   },
   "supplier_delivery": {
@@ -208,5 +226,27 @@
       "free_delivery_threshold": 500.0
     },
     "aliexpress": {}
+  },
+  "company_tiers": {
+    "past-and-present": {
+      "takealot": [
+        {
+          "threshold": 30.0,
+          "multiplier": 1.8
+        },
+        {
+          "threshold": 99.0,
+          "multiplier": 1.2
+        },
+        {
+          "threshold": 199.0,
+          "multiplier": 1.2
+        },
+        {
+          "threshold": null,
+          "multiplier": 1.2
+        }
+      ]
+    }
   }
 }

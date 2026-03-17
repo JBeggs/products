@@ -2,6 +2,7 @@
   "products": [
     {
       "ad_id": "10013489181861010889245309",
+      "category_id": "1d5b3d81-3ca0-48b0-9617-f1cfe9fa8cff",
       "category_name": "Refrigerators and Freezers",
       "category_slug": "refrigerators-freezers",
       "compare_at_price": 2846.95,
@@ -20,7 +21,16 @@
       "in_stock": true,
       "location": null,
       "name": "195L Defy Chest Freezer for",
+      "pickup_city": "hartebeesport",
+      "pickup_country": "South Africa",
+      "pickup_postal_code": "0216",
+      "pickup_province": "Gauteng",
+      "pickup_street": "1 paddle power rd",
+      "pickup_suburb": "broederstroom",
       "price": 2400,
+      "production_ids": {
+        "javamellow": "d517b5b2-55b4-4307-9c2c-05e56fb17b23"
+      },
       "short_description": "195L  Defy Chest Freezer for sale as good as new",
       "status": "active",
       "stock_quantity": 1,
@@ -29,12 +39,8 @@
       ],
       "url": "https://www.gumtree.co.za/a-refrigerators-freezers/fochville/195l-defy-chest-freezer-for-sale-as-good-as-new/10013489181861010889245309",
       "variants": [],
-      "weight": 36000,
-      "category_id": "8576dd59-9aea-4458-bc59-7d7911d93a14",
-      "production_ids": {
-        "javamellow": "6522f22e-6b14-4b86-8cbf-ce1244aa9a20"
-      }
+      "weight": 36000
     }
   ],
-  "updated": "2026-03-13T11:17:19.533637"
+  "updated": "2026-03-15T00:21:56.143533"
 }

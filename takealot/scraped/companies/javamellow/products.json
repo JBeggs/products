@@ -1,0 +1,73 @@
+{
+  "products": [
+    {
+      "category_id": "e1b49ce3-86e7-4ff2-93ca-5263c90ac4bd",
+      "compare_at_price": 553.11,
+      "cost": 385,
+      "description": "Samyang Hot Chicken Noodle Assorted -10 Pack",
+      "dimension_height": 30,
+      "dimension_length": 20,
+      "dimension_width": 25,
+      "goods_id": "71293338",
+      "images": [
+        "images/samyang_hot_chicken_71293338_01.jpg",
+        "images/samyang_hot_chicken_71293338_02.jpg",
+        "images/samyang_hot_chicken_71293338_03.jpg",
+        "images/samyang_hot_chicken_71293338_04.jpg",
+        "images/samyang_hot_chicken_71293338_05.jpg",
+        "images/samyang_hot_chicken_71293338_06.jpg"
+      ],
+      "in_stock": false,
+      "name": "Samyang Hot Chicken Noodle Assorted",
+      "price": 462,
+      "production_ids": {
+        "javamellow": "ffea3175-b961-4fe2-8422-00bb366ea5a3",
+        "past-and-present": "737c7e12-1a70-4334-b74f-04ae44e2d3c3"
+      },
+      "short_description": "Samyang Hot Chicken Noodle Assorted -10 Pack",
+      "status": "active",
+      "stock_quantity": 0,
+      "tags": [
+        "takealot"
+      ],
+      "takealot_price": 385,
+      "url": "https://www.takealot.com/samyang-hot-chicken-noodle-assorted-10-pack/PLID71293338",
+      "variants": [],
+      "weight": 1400
+    },
+    {
+      "category_id": "e1b49ce3-86e7-4ff2-93ca-5263c90ac4bd",
+      "compare_at_price": 282.32,
+      "cost": 195,
+      "description": "Samyang Hot Chicken Noodle Carbonara",
+      "dimension_height": 20,
+      "dimension_length": 10,
+      "dimension_width": 15,
+      "goods_id": "55083661",
+      "images": [
+        "images/samyang_hot_chicken_55083661_01.jpg",
+        "images/samyang_hot_chicken_55083661_02.jpg",
+        "images/samyang_hot_chicken_55083661_03.jpg",
+        "images/samyang_hot_chicken_55083661_04.jpg"
+      ],
+      "in_stock": false,
+      "name": "Samyang Hot Chicken Noodle Carbonara",
+      "price": 234,
+      "production_ids": {
+        "past-and-present": "1e00dc7d-00f2-4827-8e89-7df5d6fc886a",
+        "javamellow": "bdad2977-5447-4869-8623-cfcfc47e29c4"
+      },
+      "short_description": "Samyang Hot Chicken Noodle Carbonara",
+      "status": "active",
+      "stock_quantity": 0,
+      "tags": [
+        "takealot"
+      ],
+      "takealot_price": 195,
+      "url": "https://www.takealot.com/samyang-hot-chicken-noodle-carbonara/PLID55083661",
+      "variants": [],
+      "weight": 650
+    }
+  ],
+  "updated": "2026-03-17T10:25:33.685298"
+}

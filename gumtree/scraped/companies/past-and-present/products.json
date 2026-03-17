@@ -1,0 +1,47 @@
+{
+  "products": [
+    {
+      "ad_id": "10013489181861010889245309",
+      "category_id": "0ed6f410-c97d-45ad-8980-39bdfb58f553",
+      "category_name": "Refrigerators and Freezers",
+      "category_slug": "refrigerators-freezers",
+      "compare_at_price": 2846.95,
+      "cost": 2000,
+      "description": "Defy 195L Chest Freezer (Like New!) Description: Looking for extra storage for your monthly bulk buys? This Defy 195L Chest Freezer is in excellent, almost new condition! \n\nI'm only selling it because Ive run out of floor space in my home. \n\nIt is a fantastic, reliable appliance with some great features: Multi-Mode Function: Easily switch between Fridge, Chiller, or Freezer modes depending on what you need to store. Chill-In Technology: A life-saver during power cutsit keeps food frozen for up to 36 hours without power. \n\nEnergy Efficient: Rated A for energy, so its light on your electricity bill. Extra Features: Includes a removable basket for smaller items, a durable marble-patterned top, and a secure locking mechanism on the handle. \n\nCondition: Like new and very well looked after. \n\nDimensions: 860mm (H) x 751mm (W) x 725mm (D) Perfect for a growing family or anyone needing reliable backup storage. Skip the retail price and grab this deal while it lasts!",
+      "dimension_height": 86,
+      "dimension_length": 73,
+      "dimension_width": 75,
+      "gumtree_price": 2000,
+      "images": [
+        "images/195l_defy_chest_fre_10013489181861010889245309_01.webp",
+        "images/195l_defy_chest_fre_10013489181861010889245309_02.webp",
+        "images/195l_defy_chest_fre_10013489181861010889245309_03.webp",
+        "images/195l_defy_chest_fre_10013489181861010889245309_04.webp"
+      ],
+      "in_stock": true,
+      "location": null,
+      "name": "195L Defy Chest Freezer for",
+      "pickup_city": "hartebeesport",
+      "pickup_country": "South Africa",
+      "pickup_postal_code": "0216",
+      "pickup_province": "Gauteng",
+      "pickup_street": "1 paddle power rd",
+      "pickup_suburb": "broederstroom",
+      "price": 2400,
+      "production_ids": {
+        "javamellow": "d517b5b2-55b4-4307-9c2c-05e56fb17b23",
+        "past-and-present": "5c699f6a-abc1-4dc7-aa57-c80035b04229"
+      },
+      "short_description": "195L  Defy Chest Freezer for sale as good as new",
+      "status": "active",
+      "stock_quantity": 1,
+      "tags": [
+        "vintage"
+      ],
+      "url": "https://www.gumtree.co.za/a-refrigerators-freezers/fochville/195l-defy-chest-freezer-for-sale-as-good-as-new/10013489181861010889245309",
+      "variants": [],
+      "weight": 36000
+    }
+  ],
+  "updated": "2026-03-16T08:50:13.888396"
+}

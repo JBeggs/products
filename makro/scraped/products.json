@@ -17,7 +17,8 @@
       "name": "Nescafe Classic Instant Coffee (1",
       "price": 609.07,
       "production_ids": {
-        "javamellow": "ac91b0c5-2250-42c3-b639-178b787415c2"
+        "javamellow": "eef78962-b6d8-4f4e-b8ac-99090e89aced",
+        "past-and-present": "4744011c-ef45-4c35-9375-bc3b96ed317e"
       },
       "short_description": "Nescafe Classic Instant Coffee\u00a0\u00a0(1 kg)",
       "status": "active",
@@ -49,7 +50,8 @@
       "name": "Jacobs Kronung Instant Coffee (200",
       "price": 213.79,
       "production_ids": {
-        "javamellow": "eb539706-aac5-4ffb-aa3a-4540e8639375"
+        "javamellow": "eb539706-aac5-4ffb-aa3a-4540e8639375",
+        "past-and-present": "c038940e-bedd-4b2b-9f87-bd2d8b321c92"
       },
       "short_description": "Jacobs Kronung Instant Coffee\u00a0\u00a0(200 g)",
       "status": "active",
@@ -80,7 +82,8 @@
       "name": "Douwe Egberts Mocha Kenya Style",
       "price": 205.15,
       "production_ids": {
-        "javamellow": "a2abe6ce-c287-4707-be40-c3e1d1832c8d"
+        "javamellow": "a2abe6ce-c287-4707-be40-c3e1d1832c8d",
+        "past-and-present": "644f9b97-d069-47f6-bb00-0f45974bb7e8"
       },
       "short_description": "Douwe Egberts Mocha Kenya Style Instant Coffee\u00a0\u00a0(Hazelnut Flavoured, 200 g)",
       "status": "active",
@@ -89,7 +92,8 @@
         "makro"
       ],
       "url": "https://www.makro.co.za/douwe-egberts-mocha-kenya-style-instant-coffee/p/itm15b792eef7c78",
-      "variants": []
+      "variants": [],
+      "weight": 200
     },
     {
       "category_id": "39f5a668-8360-4894-8986-a210626e4e06",
@@ -115,7 +119,8 @@
       "name": "Nescafe Gold Roast & Ground",
       "price": 215.95,
       "production_ids": {
-        "javamellow": "bd2d3287-84bd-4ed7-8472-9f0957d3f5e3"
+        "javamellow": "bd2d3287-84bd-4ed7-8472-9f0957d3f5e3",
+        "past-and-present": "b6b7f08c-7ef6-4061-ad07-0910b4938218"
       },
       "short_description": "Nescafe Gold Roast & Ground Coffee\u00a0\u00a0(200 g)",
       "status": "active",
@@ -172,7 +177,8 @@
       "name": "Jacobs Kronung Instant Coffee + Douwe Egberts Mocha Kenya Style + Nescafe Gold Roast & Ground",
       "price": 705.42,
       "production_ids": {
-        "javamellow": "b441b909-2fcc-4f11-864a-fdae72f2c275"
+        "past-and-present": "48d238d0-99a7-47a8-aaf6-cc8895f49863",
+        "javamellow": "8a872eb3-e005-4fd4-aae9-cd60c6d45219"
       },
       "short_description": "Coffee bundle special",
       "status": "active",
@@ -185,6 +191,7 @@
       "weight": 600
     },
     {
+      "category_id": "59935cf7-08c0-4776-8ae2-800beb19a0db",
       "compare_at_price": 1452.12,
       "cost": 1100,
       "description": "This Snack hamper pack can be carried daily to school or work. The variety of snacks inside makes it easy to choose and carry different items daily.\n\nWhat's in the box\n12 x Chips/Snacks\n12 x Chocolates\n12 x Original Biscuits\n12 x Coca Cola",
@@ -200,6 +207,10 @@
       "makro_price": 1100,
       "name": "Doritos Snack Hamper Chips ",
       "price": 1210,
+      "production_ids": {
+        "javamellow": "1750950d-1387-4ffa-a70d-b1e4c56f7242",
+        "past-and-present": "a26844ea-c842-4f8e-a969-4741a22a81fa"
+      },
       "short_description": "Doritos Snack Hamper Chips\u00a0\u00a0(48 x 5 kg)",
       "status": "active",
       "stock_quantity": 0,
@@ -208,12 +219,8 @@
       ],
       "url": "https://www.makro.co.za/doritos-snack-hamper-chips/p/itmd00256f135827",
       "variants": [],
-      "weight": 5000,
-      "category_id": "59935cf7-08c0-4776-8ae2-800beb19a0db",
-      "production_ids": {
-        "javamellow": "1750950d-1387-4ffa-a70d-b1e4c56f7242"
-      }
+      "weight": 5000
     }
   ],
-  "updated": "2026-03-13T13:29:25.670057"
+  "updated": "2026-03-15T00:22:13.811824"
 }

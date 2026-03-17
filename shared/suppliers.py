@@ -160,6 +160,16 @@ def get_sources_for_edit() -> dict[str, Path]:
     return {s.slug: s.output_dir for s in SUPPLIERS.values()}
 
 
+def get_company_scoped_dir(output_dir: Path, company_slug: str) -> Path:
+    """
+    Return company-scoped directory for products: output_dir/companies/{company_slug}/.
+    Used for products.json, index.json, images/.
+    """
+    if not (company_slug or "").strip():
+        raise ValueError("company_slug required for company-scoped paths")
+    return output_dir / "companies" / company_slug.strip()
+
+
 def run_supplier_scrape(
     slug: str,
     output_dir: Path,
@@ -183,6 +193,8 @@ def run_supplier_scrape(
         raise ValueError(f"Unknown supplier: {slug}")
 
     opts = scrape_options or {}
+    from shared.config import set_scrape_company_slug
+    set_scrape_company_slug(opts.get("company_slug"))
 
     LOG.debug("Loading module: %s", info.module_name)
     import importlib

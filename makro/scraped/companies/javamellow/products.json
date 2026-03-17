@@ -1,0 +1,226 @@
+{
+  "products": [
+    {
+      "category_id": "39f5a668-8360-4894-8986-a210626e4e06",
+      "compare_at_price": 704.7,
+      "cost": 676.74,
+      "description": "Nescafe Classic Instant Coffee (1 kg)",
+      "dimension_height": 30,
+      "dimension_length": 20,
+      "dimension_width": 25,
+      "goods_id": "COFHFSYF6WZ2JFME",
+      "images": [
+        "images/nescafe_classic_inst_COFHFSYF6WZ2JFME_01.webp"
+      ],
+      "in_stock": false,
+      "makro_price": 563.95,
+      "name": "Nescafe Classic Instant Coffee (1",
+      "price": 609.07,
+      "production_ids": {
+        "javamellow": "418824ab-60c1-4040-8db6-9b1086752a5e",
+        "past-and-present": "4744011c-ef45-4c35-9375-bc3b96ed317e"
+      },
+      "short_description": "Nescafe Classic Instant Coffee\u00a0\u00a0(1 kg)",
+      "status": "active",
+      "stock_quantity": 0,
+      "tags": [
+        "makro"
+      ],
+      "url": "https://www.makro.co.za/nescafe-classic-instant-coffee/p/itmd94e91cacc81b",
+      "variants": [],
+      "weight": 1000
+    },
+    {
+      "category_id": "39f5a668-8360-4894-8986-a210626e4e06",
+      "compare_at_price": 254.25,
+      "cost": 237.54,
+      "description": "Jacobs Kronung Instant Coffee (200 g)",
+      "dimension_height": 30,
+      "dimension_length": 20,
+      "dimension_width": 25,
+      "goods_id": "COFHFSYFAYQUHSGX",
+      "images": [
+        "images/jacobs_kronung_insta_COFHFSYFAYQUHSGX_01.webp",
+        "images/jacobs_kronung_insta_COFHFSYFAYQUHSGX_02.webp",
+        "images/jacobs_kronung_insta_COFHFSYFAYQUHSGX_03.webp"
+      ],
+      "in_stock": false,
+      "makro_price": 197.95,
+      "min_quantity": 3,
+      "name": "Jacobs Kronung Instant Coffee (200",
+      "price": 213.79,
+      "production_ids": {
+        "javamellow": "9ab1a0ba-34c7-43db-898a-61b77ed7c9ce",
+        "past-and-present": "c038940e-bedd-4b2b-9f87-bd2d8b321c92"
+      },
+      "short_description": "Jacobs Kronung Instant Coffee\u00a0\u00a0(200 g)",
+      "status": "active",
+      "stock_quantity": 0,
+      "tags": [
+        "makro"
+      ],
+      "url": "https://www.makro.co.za/jacobs-kronung-instant-coffee/p/itmb371e9fa288f5",
+      "variants": [],
+      "weight": 600
+    },
+    {
+      "category_id": "39f5a668-8360-4894-8986-a210626e4e06",
+      "compare_at_price": 229.58,
+      "cost": 227.94,
+      "description": "Douwe Egberts Instant Coffee is a convenient and easy-to-prepare coffee option for coffee lovers. Made from carefully selected coffee beans, this instant coffee delivers a rich and aromatic coffee experience without the need for brewing. Simply add hot water to a teaspoon of the instant coffee granules, stir, and enjoy a delicious cup of coffee in moments.",
+      "dimension_height": 30,
+      "dimension_length": 20,
+      "dimension_width": 25,
+      "goods_id": "COFHFSYHQWUGJF9M",
+      "images": [
+        "images/douwe_egberts_mocha_COFHFSYHQWUGJF9M_01.webp",
+        "images/douwe_egberts_mocha_COFHFSYHQWUGJF9M_02.webp"
+      ],
+      "in_stock": false,
+      "makro_price": 189.95,
+      "min_quantity": 3,
+      "name": "Douwe Egberts Mocha Kenya Style",
+      "price": 205.15,
+      "production_ids": {
+        "javamellow": "23efdfa3-559e-4f9e-b97f-143596616208",
+        "past-and-present": "644f9b97-d069-47f6-bb00-0f45974bb7e8"
+      },
+      "short_description": "Douwe Egberts Mocha Kenya Style Instant Coffee\u00a0\u00a0(Hazelnut Flavoured, 200 g)",
+      "status": "active",
+      "stock_quantity": 0,
+      "tags": [
+        "makro"
+      ],
+      "url": "https://www.makro.co.za/douwe-egberts-mocha-kenya-style-instant-coffee/p/itm15b792eef7c78",
+      "variants": [],
+      "weight": 200
+    },
+    {
+      "category_id": "39f5a668-8360-4894-8986-a210626e4e06",
+      "compare_at_price": 259.74,
+      "cost": 239.94,
+      "description": "Nescafe Gold Roast & Ground Coffee (200 g)",
+      "dimension_height": 30,
+      "dimension_length": 20,
+      "dimension_width": 25,
+      "goods_id": "COFHFSYFGBBNYCZJ",
+      "images": [
+        "images/nescafe_gold_roast_COFHFSYFGBBNYCZJ_01.webp",
+        "images/nescafe_gold_roast_COFHFSYFGBBNYCZJ_02.webp",
+        "images/nescafe_gold_roast_COFHFSYFGBBNYCZJ_03.webp",
+        "images/nescafe_gold_roast_COFHFSYFGBBNYCZJ_04.webp",
+        "images/nescafe_gold_roast_COFHFSYFGBBNYCZJ_05.webp",
+        "images/nescafe_gold_roast_COFHFSYFGBBNYCZJ_06.webp",
+        "images/nescafe_gold_roast_COFHFSYFGBBNYCZJ_07.webp"
+      ],
+      "in_stock": false,
+      "makro_price": 199.95,
+      "min_quantity": 3,
+      "name": "Nescafe Gold Roast & Ground",
+      "price": 215.95,
+      "production_ids": {
+        "javamellow": "f2898309-a37f-4104-811c-e371a01c3eb1",
+        "past-and-present": "b6b7f08c-7ef6-4061-ad07-0910b4938218"
+      },
+      "short_description": "Nescafe Gold Roast & Ground Coffee\u00a0\u00a0(200 g)",
+      "status": "active",
+      "stock_quantity": 0,
+      "tags": [
+        "makro"
+      ],
+      "url": "https://www.makro.co.za/nescafe-gold-roast-ground-coffee/p/itm95c5e73cd5e8b",
+      "variants": [],
+      "weight": 600
+    },
+    {
+      "bundle_item_details": [
+        {
+          "index": 1,
+          "name": "Jacobs Kronung Instant Coffee (200",
+          "source": "makro",
+          "supplier_name": "Makro",
+          "url": "https://www.makro.co.za/jacobs-kronung-instant-coffee/p/itmb371e9fa288f5"
+        },
+        {
+          "index": 2,
+          "name": "Douwe Egberts Mocha Kenya Style",
+          "source": "makro",
+          "supplier_name": "Makro",
+          "url": "https://www.makro.co.za/douwe-egberts-mocha-kenya-style-instant-coffee/p/itm15b792eef7c78"
+        },
+        {
+          "index": 3,
+          "name": "Nescafe Gold Roast & Ground",
+          "source": "makro",
+          "supplier_name": "Makro",
+          "url": "https://www.makro.co.za/nescafe-gold-roast-ground-coffee/p/itm95c5e73cd5e8b"
+        }
+      ],
+      "bundle_items": [
+        1,
+        2,
+        3
+      ],
+      "category_id": "39f5a668-8360-4894-8986-a210626e4e06",
+      "compare_at_price": 761.87,
+      "cost": 705.42,
+      "description": "Jacobs Kronung Instant Coffee (200 g)\n\nDouwe Egberts Instant Coffee is a convenient and easy-to-prepare coffee option for coffee lovers. Made from carefully selected coffee beans, this instant coffee delivers a rich and aromatic coffee experience without the need for brewing. Simply add hot water to a teaspoon of the instant coffee granules, stir, and enjoy a delicious cup of coffee in moments.\n\nNescafe Gold Roast & Ground Coffee (200 g)",
+      "dimension_height": 30,
+      "dimension_length": 20,
+      "dimension_width": 25,
+      "images": [
+        "images/jacobs_kronung_insta_COFHFSYFAYQUHSGX_01.webp",
+        "images/douwe_egberts_mocha_COFHFSYHQWUGJF9M_01.webp",
+        "images/nescafe_gold_roast_COFHFSYFGBBNYCZJ_01.webp"
+      ],
+      "in_stock": false,
+      "name": "Jacobs Kronung Instant Coffee + Douwe Egberts Mocha Kenya Style + Nescafe Gold Roast & Ground",
+      "price": 705.42,
+      "production_ids": {
+        "javamellow": "9ab1a0ba-34c7-43db-898a-61b77ed7c9ce",
+        "past-and-present": "48d238d0-99a7-47a8-aaf6-cc8895f49863"
+      },
+      "short_description": "Coffee bundle special",
+      "status": "active",
+      "stock_quantity": 0,
+      "tags": [
+        "makro"
+      ],
+      "url": "https://www.makro.co.za/jacobs-kronung-instant-coffee/p/itmb371e9fa288f5",
+      "variants": [],
+      "weight": 600
+    },
+    {
+      "category_id": "59935cf7-08c0-4776-8ae2-800beb19a0db",
+      "compare_at_price": 1452.12,
+      "cost": 1100,
+      "description": "This Snack hamper pack can be carried daily to school or work. The variety of snacks inside makes it easy to choose and carry different items daily.\n\nWhat's in the box\n12 x Chips/Snacks\n12 x Chocolates\n12 x Original Biscuits\n12 x Coca Cola",
+      "dimension_height": 33,
+      "dimension_length": 30,
+      "dimension_width": 23,
+      "goods_id": "CPSH8G77NDNKRGE4",
+      "images": [
+        "images/doritos_snack_hamper_CPSH8G77NDNKRGE4_01.webp",
+        "images/doritos_snack_hamper_CPSH8G77NDNKRGE4_02.webp"
+      ],
+      "in_stock": false,
+      "makro_price": 1100,
+      "name": "Doritos Snack Hamper Chips ",
+      "price": 1210,
+      "production_ids": {
+        "past-and-present": "a26844ea-c842-4f8e-a969-4741a22a81fa",
+        "javamellow": "55675485-25db-45a7-a10b-b403671aa7e7"
+      },
+      "short_description": "Doritos Snack Hamper Chips\u00a0\u00a0(48 x 5 kg)",
+      "status": "active",
+      "stock_quantity": 0,
+      "tags": [
+        "makro"
+      ],
+      "url": "https://www.makro.co.za/doritos-snack-hamper-chips/p/itmd00256f135827",
+      "variants": [],
+      "weight": 5000
+    }
+  ],
+  "updated": "2026-03-17T10:24:48.306130"
+}

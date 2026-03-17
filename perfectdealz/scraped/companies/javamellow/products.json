@@ -1,0 +1,84 @@
+{
+  "products": [
+    {
+      "category_id": "1d5b3d81-3ca0-48b0-9617-f1cfe9fa8cff",
+      "compare_at_price": 25670.12,
+      "cost": 18999,
+      "description": "Electric Fat-Tire Mountain Ebike (26\u2033 \u00d7 4.0\u2033 Tires)",
+      "dimension_height": 150,
+      "dimension_length": 150,
+      "dimension_width": 150,
+      "goods_id": "unknown",
+      "images": [
+        "images/electric_fat_tire_mo_unknown_01.jpg",
+        "images/electric_fat_tire_mo_unknown_02.jpg",
+        "images/electric_fat_tire_mo_unknown_03.jpg",
+        "images/electric_fat_tire_mo_unknown_04.jpg",
+        "images/electric_fat_tire_mo_unknown_05.jpg",
+        "images/electric_fat_tire_mo_unknown_06.jpg",
+        "images/electric_fat_tire_mo_unknown_07.jpg",
+        "images/electric_fat_tire_mo_unknown_08.jpg",
+        "images/electric_fat_tire_mo_unknown_09.jpg",
+        "images/electric_fat_tire_mo_unknown_10.jpg"
+      ],
+      "in_stock": true,
+      "min_quantity": 4,
+      "name": "Electric Fat-Tire Mountain Ebike (26\u2033",
+      "perfectdealz_price": 18999,
+      "price": 22798.8,
+      "production_ids": {
+        "javamellow": "ee6ba265-4dee-4927-8347-e42fb3ba90c6",
+        "past-and-present": "8b83c635-644c-4ffe-824c-0512143ed3c0"
+      },
+      "short_description": "Electric Fat-Tire Mountain Ebike (26\u2033 \u00d7 4.0\u2033 Tires)",
+      "status": "active",
+      "stock_quantity": 0,
+      "tags": [
+        "perfectdealz"
+      ],
+      "url": "https://perfectdealz.co.za/products/electric-fat-tire-mountain-ebike",
+      "variants": [],
+      "weight": 25000
+    },
+    {
+      "category_id": "8576dd59-9aea-4458-bc59-7d7911d93a14",
+      "compare_at_price": 159.7,
+      "cost": 119,
+      "description": "Digital Kitchen Scale with Tempered Glass with Bamboo Design",
+      "dimension_height": 20,
+      "dimension_length": 10,
+      "dimension_width": 15,
+      "goods_id": "unknown",
+      "images": [
+        "images/digital_kitchen_scal_unknown_01.png",
+        "images/digital_kitchen_scal_unknown_02.jpg",
+        "images/digital_kitchen_scal_unknown_03.jpg",
+        "images/digital_kitchen_scal_unknown_04.jpg",
+        "images/digital_kitchen_scal_unknown_05.jpg",
+        "images/digital_kitchen_scal_unknown_06.png",
+        "images/digital_kitchen_scal_unknown_07.jpg",
+        "images/digital_kitchen_scal_unknown_08.jpg",
+        "images/digital_kitchen_scal_unknown_09.jpg",
+        "images/digital_kitchen_scal_unknown_10.jpg"
+      ],
+      "in_stock": true,
+      "name": "Digital Kitchen Scale with Tempered",
+      "perfectdealz_price": 119,
+      "price": 142.8,
+      "production_ids": {
+        "past-and-present": "37a01102-b58b-41d0-9838-deb5632cfe2e",
+        "javamellow": "344249f5-5841-4c01-bb08-d77662e87d33"
+      },
+      "short_description": "Digital Kitchen Scale with Tempered Glass with Bamboo Design",
+      "status": "active",
+      "stock_quantity": 0,
+      "tags": [
+        "perfectdealz"
+      ],
+      "url": "https://perfectdealz.co.za/products/digital-kitchen-scale-with-tempered-glass-with-bamboo-design",
+      "variants": [],
+      "weight": 1000
+    }
+  ],
+  "updated": "2026-03-17T10:26:06.564147"
+}

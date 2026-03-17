@@ -25,7 +25,8 @@
       "name": "JUMPERKITS Food Processor, Electric Meat",
       "price": 531,
       "production_ids": {
-        "javamellow": "79159f1d-3158-4fab-8ded-dbfa9ef0eb8b"
+        "javamellow": "e7853dd0-cc5d-44e0-9dad-436afe564994",
+        "past-and-present": "b6d09198-ceb9-4ada-8f17-cdc814744940"
       },
       "short_description": "JUMPERKITS Food Processor, Electric Meat Grinder with 4 Stainless Steel Blades, 2L Food Chopper Small Grinder Meat Processor with 2 Speeds for Vegetable, Fruits, Baby Food, Meat, Garlic, 5 Cups",
       "status": "active",
@@ -35,7 +36,8 @@
       ],
       "temu_price": 295,
       "url": "https://www.temu.com/za/-food-processor-electric-meat-grinder-with-4-stainless-steel--2-chopper-small-grinder-meat-processor-with-2--for-vegetable-fruits-baby-food-meat-garlic--g-601105181379083.html?_oak_mp_inf=EIuUvKa71ogBGhZmbGFzaF9zYWxlX2xpc3RfMGZ4ZzZ1IOvKiYvOMw%3D%3D&top_gallery_url=https%3A%2F%2Fimg.kwcdn.com%2Fproduct%2Ffancy%2F25c37f6e-d752-4445-a447-a443556b12f2.jpg&spec_gallery_id=601105181379083&refer_page_sn=10132&freesia_scene=116&_oak_freesia_scene=116&_oak_rec_ext_1=NTc4MDA&refer_page_el_sn=201401&_x_channel_src=1&_x_channel_scene=spike&_x_sessn_id=wy92o9b66e&refer_page_name=lightning-deals&refer_page_id=10132_1773307849839_b6jqg7fea8",
-      "variants": []
+      "variants": [],
+      "weight": 1000
     },
     {
       "category_id": "8576dd59-9aea-4458-bc59-7d7911d93a14",
@@ -64,7 +66,8 @@
       "name": "A Multifunctional Automatic Sealing Machine,",
       "price": 372.6,
       "production_ids": {
-        "javamellow": "d94227b4-e63e-441e-9c95-7e77f21fcad3"
+        "javamellow": "d94227b4-e63e-441e-9c95-7e77f21fcad3",
+        "past-and-present": "6d6e05ab-dfbe-4863-9d66-d75ab086ffd8"
       },
       "short_description": "A Multifunctional Automatic Sealing Machine, Portable Wireless Vacuum Device, Equipped with Snack Sealing Capabilities, Can Connect to External Suction And Inflation for Long-Term Food Preservation, Compact And Easy to Use",
       "status": "active",
@@ -77,7 +80,8 @@
       "variants": [
         "Green",
         "Beige"
-      ]
+      ],
+      "weight": 300
     },
     {
       "category_id": "8576dd59-9aea-4458-bc59-7d7911d93a14",
@@ -106,7 +110,8 @@
       "name": "1.2L Stainless Steel Deep Fryer,",
       "price": 280.8,
       "production_ids": {
-        "javamellow": "a29bce9d-528c-411d-98a9-ea06915bd11d"
+        "javamellow": "d20a509d-bc97-4bdc-ba44-68447371adfd",
+        "past-and-present": "d14e95fb-271b-4421-b96f-17765666f628"
       },
       "short_description": "1.2L Stainless Steel Deep Fryer, a Multifunctional Oil-Saving Mini Fryer for Home Use, Ideal for Heating Milk And Preparing Food, Suitable for Crispy Fries, Fried Potatoes, Fish, And Chicken - an Essential Kitchen Tool for Family Cooking",
       "status": "active",
@@ -116,7 +121,8 @@
       ],
       "temu_price": 104,
       "url": "https://www.temu.com/za/1-2l-stainless-steel-deep-fryer-a-multifunctional-oil-saving-mini-fryer-for-home-use-ideal-for-heating-milk-and-preparing-food-suitable-for-crispy-fries--fish-and-chicken-an-essential-kitchen-tool-for-family-cooking-g-601100127576428.html?_oak_mp_inf=EOzC0Lyo1ogBGhZnb29kc19pbmh0OGlfcmVjb21tZW5kIL%2FWi4vOMw%3D%3D&top_gallery_url=https%3A%2F%2Fimg.kwcdn.com%2Fproduct%2Ffancy%2F9440b447-7182-4258-9b4c-b08b7b122b00.jpg&spec_gallery_id=70921&refer_page_sn=10032&freesia_scene=11&_oak_freesia_scene=11&_oak_rec_ext_1=MjA3MDA&_oak_gallery_order=1820041613%2C1971592241%2C1991438408%2C130091262%2C1367545902&refer_page_el_sn=200444&refer_page_name=goods&refer_page_id=10032_1773307879963_9ickqxlx1i&_x_sessn_id=wy92o9b66e&_x_channel_src=1&_x_channel_scene=spike",
-      "variants": []
+      "variants": [],
+      "weight": 1500
     },
     {
       "category_id": "8576dd59-9aea-4458-bc59-7d7911d93a14",
@@ -141,7 +147,8 @@
       "name": "3pcs Premium Stainless Steel Cutting",
       "price": 347.4,
       "production_ids": {
-        "javamellow": "41aa2bb2-77fa-40f3-ad25-54718d9c42f3"
+        "javamellow": "41aa2bb2-77fa-40f3-ad25-54718d9c42f3",
+        "past-and-present": "a07a92e0-1666-4ed4-817f-bee49bf0972a"
       },
       "short_description": "3pcs Premium Stainless Steel Cutting Board Set - Durable, Easy to Clean, Kitchen Prep, Space-Saving, Rust-Resistant, Ensures Food-Safe Preparation",
       "status": "active",
@@ -151,7 +158,8 @@
       ],
       "temu_price": 193,
       "url": "https://www.temu.com/za/3-stainless-steel-cutting-board-set-durable-easy-to-clean-kitchen-prep-space-saving-rust-resistant-ensures--preparation-g-601102187285283.html?_oak_mp_inf=EKOW45Kw1ogBGiBmZDEwNjZmNmI4ZWE0M2QwODFjMzhhOTRjNTMxMTBmZCCxwbmLzjM%3D&top_gallery_url=https%3A%2F%2Fimg.kwcdn.com%2Fproduct%2Ffancy%2F78692d35-367c-4a23-850b-f71ca587bdd7.jpg&spec_gallery_id=307059&refer_page_sn=10005&freesia_scene=1&_oak_freesia_scene=1&_oak_rec_ext_1=MjIzMDA&_oak_gallery_order=464738982%2C202962353%2C1275385117%2C1167793863&refer_page_el_sn=200024&refer_page_name=home&refer_page_id=10005_1773308632126_zqooxt72p8&_x_sessn_id=cwxmx8bddv",
-      "variants": []
+      "variants": [],
+      "weight": 1000
     },
     {
       "category_id": "8576dd59-9aea-4458-bc59-7d7911d93a14",
@@ -177,7 +185,8 @@
       "name": "20cm Handmade Bamboo Steamer with",
       "price": 298.8,
       "production_ids": {
-        "javamellow": "b23ca99a-fb90-4c8d-b016-6e8b2ab3f76f"
+        "past-and-present": "3cb711ed-3545-4388-ac14-ba4d0ea67109",
+        "javamellow": "afd18b31-97e7-42b8-a65d-ac68b933c2d1"
       },
       "short_description": "20cm Handmade Bamboo Steamer with Lid, Multi-purpose - Suitable for Vegetables, Dumplings, Fish - Durable Kitchen Gadget. Can Be Used for Outdoor RV Camping Dinners",
       "status": "active",
@@ -217,7 +226,8 @@
       "name": "28Cm Multi-Layer Non-Stick Steamer Pot",
       "price": 541.8,
       "production_ids": {
-        "javamellow": "41556825-398e-4fe7-8ea4-14e28201bab9"
+        "javamellow": "41556825-398e-4fe7-8ea4-14e28201bab9",
+        "past-and-present": "42a42819-7078-4d5b-9ee2-2d46c27cf9f9"
       },
       "short_description": "28Cm Multi-Layer Non-Stick Steamer Pot Set - 3-Tier Stainless Steel Cooker for Gas/Induction, Professional-Grade with Lid, Safe for Dishwasher",
       "status": "active",
@@ -227,8 +237,9 @@
       ],
       "temu_price": 301,
       "url": "https://www.temu.com/za/28cm-multi-layer-non-stick-steamer-pot-set-3-tier-stainless-steel-cooker-for-gas-induction--with-lid-safe-for-dishwasher-g-601101844425936.html?_oak_mp_inf=ENDZpO%2Bu1ogBGhZnb29kc19pZXUwdWlfcmVjb21tZW5kIPb%2BhY%2FOMw%3D%3D&top_gallery_url=https%3A%2F%2Fimg.kwcdn.com%2Fproduct%2Ffancy%2Ff6e37021-7ef0-46a7-992f-71de8e4f5e08.jpg&spec_gallery_id=292432&refer_page_sn=10032&freesia_scene=11&_oak_freesia_scene=11&_oak_rec_ext_1=NDQwMDA&_oak_gallery_order=1890054251%2C338219754%2C1715773796%2C1325853026%2C85578059&refer_page_el_sn=200444&ab_scene=1&_x_enter_scene_type=cate_tab&_x_sessn_id=uu3w7yit3d&refer_page_name=goods&refer_page_id=10032_1773316176868_cyzqtxlaeg",
-      "variants": []
+      "variants": [],
+      "weight": 800
     }
   ],
-  "updated": "2026-03-12T15:53:00.460586"
+  "updated": "2026-03-15T00:22:07.765144"
 }

@@ -30,12 +30,13 @@ def calculate_supplier_cost(sale_price_cents: int, supplier_slug: str | None = N
     return round(base_cost, 2)
 
 
-def apply_tiered_markup(sale_price_cents: int, supplier_slug: str | None = None) -> float:
-    """Apply tiered markup over supplier cost. Returns sell price in ZAR."""
-    from shared.config import get_tier_multipliers
+def apply_tiered_markup(sale_price_cents: int, supplier_slug: str | None = None, company_slug: str | None = None) -> float:
+    """Apply tiered markup over supplier cost. Returns sell price in ZAR. company_slug for company-scoped tiers (or from scrape context)."""
+    from shared.config import get_tier_multipliers, get_scrape_company_slug
 
     cost = calculate_supplier_cost(sale_price_cents, supplier_slug)
-    tiers = get_tier_multipliers(supplier_slug)
+    cs = company_slug if company_slug is not None else get_scrape_company_slug()
+    tiers = get_tier_multipliers(supplier_slug, cs)
     if not tiers:
         raise ValueError(
             f"No pricing tiers configured for supplier {supplier_slug!r}. "

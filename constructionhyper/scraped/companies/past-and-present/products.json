@@ -1,0 +1,35 @@
+{
+  "products": [
+    {
+      "category_id": "5493c09d-a9ab-45a9-a608-130c469af60c",
+      "compare_at_price": 1619.11,
+      "constructionhyper_price": 999,
+      "cost": 1198.8,
+      "description": "Ingco 20V Lithium-Ion Battery \u2013 8.0Ah\nProduct Details:\n\nVoltage: 20V\n\nCapacity: 8.0Ah\n\nBattery Type: Lithium-Ion\n\nLED Power Indicator: Displays remaining charge\n\nCompatibility:\n\nFits all Ingco 20V tools\n\nAlso compatible with all Total 20V tools (cross-brand compatibility)\n\nKey Benefits:\n\nHigh Capacity: Twice the runtime of a 4.0Ah battery \u2014 ideal for heavy-duty or extended use\n\nUniversal Fit: One battery system for a wide range of cordless tools (Ingco & Total)\n\nBattery Status Indicator: Easily monitor remaining power on the job\n\n...more...less",
+      "dimension_height": 70,
+      "dimension_length": 17,
+      "dimension_width": 80,
+      "goods_id": "battery-20v-8ah-ingco-fbli2108",
+      "images": [
+        "images/battery_20v_8ah_ingc_battery-20v-8ah-ingco-fbli2108_01.jpg"
+      ],
+      "in_stock": false,
+      "name": "Battery 20V 8ah Ingco FBLI2108",
+      "price": 1318.68,
+      "production_ids": {
+        "javamellow": "b4485d0a-36ed-4390-b2b7-7358569b72a0",
+        "past-and-present": "80ffd4ed-cfcd-4e1c-826f-e382f1c86ab0"
+      },
+      "short_description": "Battery 20V 8ah Ingco FBLI2108",
+      "status": "active",
+      "stock_quantity": 0,
+      "tags": [
+        "constructionhyper"
+      ],
+      "url": "https://constructionhyper.co.za/collections/black-friday-sale/products/battery-20v-8ah-ingco-fbli2108",
+      "variants": [],
+      "weight": 1000
+    }
+  ],
+  "updated": "2026-03-15T21:43:46.801737"
+}
