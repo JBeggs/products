@@ -926,26 +926,104 @@ else {
       }
     }, true);
   }
-  function addBtn() {
-    if (!document.body || document.getElementById('temu-scraper-save-btn')) return;
+  function loadPos() {
+    try {
+      var s = localStorage.getItem('scraper_btn_temu-scraper-save-btn');
+      if (s) { var j = JSON.parse(s); return { x: j.x, y: j.y, right: j.right }; }
+    } catch(e) {}
+    return null;
+  }
+  function savePos(x, y, right) {
+    try { localStorage.setItem('scraper_btn_temu-scraper-save-btn', JSON.stringify({ x: x, y: y, right: right })); } catch(e) {}
+  }
+  function ensureBtn() {
+    if (!document.body) return;
+    if (document.getElementById('temu-scraper-save-btn')) return;
+    var pos = loadPos();
+    var startRight = pos ? pos.right : true;
+    var startY = pos && pos.y != null ? Math.max(0, Math.min(pos.y, window.innerHeight - 80)) : 80;
+    var margin = 12;
     var bar = document.createElement('div');
     bar.id = 'temu-scraper-save-btn';
-    bar.style.cssText = 'position:fixed!important;top:0!important;left:0!important;right:0!important;z-index:2147483647!important;background:#1a5!important;color:white!important;padding:10px 20px!important;font-family:sans-serif!important;font-size:16px!important;font-weight:bold!important;display:flex!important;align-items:center!important;justify-content:center!important;gap:16px!important;box-shadow:0 2px 10px rgba(0,0,0,0.4)!important;';
-    bar.innerHTML = '<span>SCRAPER ACTIVE</span><button style="padding:10px 24px!important;background:#fff!important;color:#1a5!important;border:none!important;border-radius:6px!important;cursor:pointer!important;font-size:16px!important;font-weight:bold!important;">Save product</button><span style="font-size:12px!important;font-weight:normal!important;">(or Ctrl+Shift+S)</span>';
+    bar.style.cssText = 'position:fixed!important;z-index:2147483647!important;background:#1a5!important;color:white!important;padding:8px 14px!important;font-family:sans-serif!important;font-size:14px!important;font-weight:bold!important;display:flex!important;align-items:center!important;gap:10px!important;box-shadow:0 2px 10px rgba(0,0,0,0.4)!important;border-radius:8px!important;cursor:grab!important;user-select:none!important;-webkit-user-select:none!important;';
+    bar.style.top = startY + 'px';
+    bar.style[startRight ? 'right' : 'left'] = margin + 'px';
+    if (startRight) bar.style.left = 'auto'; else bar.style.right = 'auto';
+    bar.innerHTML = '<span style="cursor:grab">⋮⋮</span><button style="padding:6px 16px!important;background:#fff!important;color:#1a5!important;border:none!important;border-radius:6px!important;cursor:pointer!important;font-size:13px!important;font-weight:bold!important;">Save product</button><span style="font-size:11px!important;font-weight:normal!important;">Ctrl+Shift+S</span>';
     var btn = bar.querySelector('button');
-    btn.onclick = function() {
-      try {
-        window.__temuScraperSaveTrigger = true;
-        btn.textContent = 'Saving...';
-        setTimeout(function(){ btn.textContent = 'Save product'; }, 1500);
-      } catch (e) { btn.textContent = 'Error'; setTimeout(function(){ btn.textContent = 'Save product'; }, 2000); }
+    btn.onclick = function(e) { e.stopPropagation(); };
+    bar.onclick = function(e) {
+      if (e.target === btn || btn.contains(e.target)) {
+        try {
+          window.__temuScraperSaveTrigger = true;
+          btn.textContent = 'Saving...';
+          setTimeout(function(){ btn.textContent = 'Save product'; }, 1500);
+        } catch (err) { btn.textContent = 'Error'; setTimeout(function(){ btn.textContent = 'Save product'; }, 2000); }
+      }
     };
-    document.body.insertBefore(bar, document.body.firstChild);
+    var drag = { active: false, startX: 0, startY: 0, startLeft: 0, startTop: 0 };
+    bar.addEventListener('mousedown', function(e) {
+      if (e.target === btn || btn.contains(e.target)) return;
+      e.preventDefault();
+      var r = bar.getBoundingClientRect();
+      drag.active = true;
+      drag.startX = e.clientX;
+      drag.startY = e.clientY;
+      drag.startLeft = r.left;
+      drag.startTop = r.top;
+      bar.style.cursor = 'grabbing';
+    });
+    bar.addEventListener('touchstart', function(e) {
+      if (e.target === btn || btn.contains(e.target)) return;
+      var t = e.touches[0], r = bar.getBoundingClientRect();
+      drag.active = true;
+      drag.startX = t.clientX;
+      drag.startY = t.clientY;
+      drag.startLeft = r.left;
+      drag.startTop = r.top;
+    }, { passive: true });
+    function onMove(e) {
+      if (!drag.active) return;
+      var x = (e.touches ? e.touches[0].clientX : e.clientX) - drag.startX;
+      var y = (e.touches ? e.touches[0].clientY : e.clientY) - drag.startY;
+      var r = bar.getBoundingClientRect();
+      var newLeft = Math.max(margin, Math.min(window.innerWidth - r.width - margin, drag.startLeft + x));
+      var newTop = Math.max(0, Math.min(window.innerHeight - r.height, drag.startTop + y));
+      bar.style.left = newLeft + 'px';
+      bar.style.right = 'auto';
+      bar.style.top = newTop + 'px';
+    }
+    function onUp(e) {
+      if (!drag.active) return;
+      drag.active = false;
+      bar.style.cursor = 'grab';
+      var rect = bar.getBoundingClientRect();
+      var midX = rect.left + rect.width / 2;
+      var snapRight = midX > window.innerWidth / 2;
+      bar.style.left = snapRight ? 'auto' : margin + 'px';
+      bar.style.right = snapRight ? margin + 'px' : 'auto';
+      rect = bar.getBoundingClientRect();
+      savePos(rect.left, rect.top, snapRight);
+    }
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+    document.addEventListener('touchmove', onMove, { passive: true });
+    document.addEventListener('touchend', onUp);
+    document.body.appendChild(bar);
+  }
+  function scheduleAdd() {
+    if (document.body) {
+      ensureBtn();
+      var obs = new MutationObserver(function() { if (!document.getElementById('temu-scraper-save-btn')) ensureBtn(); });
+      obs.observe(document.body, { childList: true, subtree: true });
+    } else {
+      document.addEventListener('DOMContentLoaded', function() { scheduleAdd(); }, { once: true });
+    }
   }
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', function() { setTimeout(addBtn, 100); }, { once: true });
+    document.addEventListener('DOMContentLoaded', function() { setTimeout(scheduleAdd, 100); }, { once: true });
   } else {
-    setTimeout(addBtn, 100);
+    setTimeout(scheduleAdd, 100);
   }
 }
 """
