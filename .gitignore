@@ -24,6 +24,9 @@ chrome_profile/
 # **/scraped/
 **/debug_html/
 
+# Gumtree crawler SQLite
+gumtree_crawler/gumtree_crawler.db
+
 # IDE & OS
 .idea/
 .vscode/

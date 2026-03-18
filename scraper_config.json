@@ -225,7 +225,11 @@
     "game": {
       "free_delivery_threshold": 500.0
     },
-    "aliexpress": {}
+    "aliexpress": {},
+    "takealot": {
+      "delivery_cost": 70.0,
+      "free_delivery_threshold": 650.0
+    }
   },
   "company_tiers": {
     "past-and-present": {
