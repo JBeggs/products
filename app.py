@@ -5,6 +5,7 @@ Run: python app.py [--port 5001]
 Open: http://127.0.0.1:5001
 """
 import argparse
+import json
 import logging
 import os
 import sys
@@ -920,54 +921,68 @@ GUMTREE_CRAWLER_HTML = """
     button.secondary { background: #444; color: #e0e0e0; }
     button.secondary:hover { background: #555; }
     button:disabled { opacity: 0.5; cursor: not-allowed; }
-    select, input { padding: 0.5rem; background: #1a1a1a; border: 1px solid #444; border-radius: 4px; color: #e0e0e0; }
-    .list-header { display: flex; align-items: center; gap: 0.75rem; padding: 0.5rem 0.75rem; background: #333; color: #888; font-size: 0.75rem; font-weight: 600; border-radius: 6px 6px 0 0; }
-    .list-row { display: flex; align-items: center; gap: 0.75rem; padding: 0.5rem 0.75rem; background: #1a1a1a; border: 1px solid #333; border-top: none; }
-    .list-row:hover { background: #222; }
-    .list-row .col-cb { width: 28px; flex-shrink: 0; }
-    .list-row .col-title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .list-row .col-cat { width: 100px; font-size: 0.8rem; color: #888; flex-shrink: 0; }
-    .list-row .col-location { width: 120px; font-size: 0.8rem; color: #888; flex-shrink: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .list-row .col-price { width: 70px; font-weight: 600; flex-shrink: 0; }
-    .list-row .col-price.down { color: #2a7; }
-    .list-row .col-price.up { color: #c66; }
-    .list-row .col-day { width: 80px; font-size: 0.85rem; color: #888; flex-shrink: 0; }
-    .list-row .col-actions { display: flex; gap: 0.5rem; flex-shrink: 0; }
-    .list-row .col-thumbs { display: flex; gap: 0.25rem; flex-wrap: wrap; max-width: 120px; }
-    .list-row .col-thumbs img { width: 32px; height: 32px; object-fit: cover; border-radius: 4px; }
-    .list-row a { color: #2a7; text-decoration: none; }
-    .list-row a:hover { text-decoration: underline; }
-    .list-row.expandable { cursor: pointer; }
-    .list-row .expand-icon { opacity: 0.6; font-size: 0.8rem; margin-right: 0.25rem; }
-    .row-detail { display: none; padding: 1rem 0.75rem; background: #1e1e1e; border: 1px solid #333; border-top: none; font-size: 0.9rem; }
-    .row-detail.expanded { display: block; }
-    .row-detail .detail-grid { display: grid; grid-template-columns: auto 1fr; gap: 0.5rem 1.5rem; max-width: 600px; }
-    .row-detail .detail-label { color: #888; }
-    .row-detail .detail-desc { white-space: pre-wrap; word-break: break-word; max-height: 200px; overflow-y: auto; margin-top: 0.5rem; }
-    .badge { display: inline-block; padding: 0.2rem 0.5rem; font-size: 0.75rem; border-radius: 4px; margin-right: 0.25rem; }
-    .badge.new { background: #2a7; color: white; }
-    .badge.changed { background: #c96; color: #111; }
-    .group-province { margin-top: 1rem; }
-    .group-province:first-child { margin-top: 0; }
-    .group-province-header { background: #333; color: #2a7; font-weight: 600; padding: 0.5rem 0.75rem; border-radius: 6px 6px 0 0; cursor: pointer; }
-    .group-city { margin-left: 0.5rem; border-left: 2px solid #444; }
-    .group-city-header { background: #2a2a2a; color: #aaa; font-size: 0.9rem; font-weight: 500; padding: 0.4rem 0.75rem; cursor: pointer; }
-    .group-suburb { margin-left: 1rem; border-left: 2px solid #555; }
-    .group-suburb-header { background: #252525; color: #888; font-size: 0.85rem; padding: 0.35rem 0.75rem; cursor: pointer; }
+    select, input, textarea { padding: 0.5rem; background: #1a1a1a; border: 1px solid #444; border-radius: 4px; color: #e0e0e0; }
+    textarea { min-height: 70px; width: 100%; resize: vertical; }
+    .scenario-tabs { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+    .tab-btn { background: #333; color: #ccc; border: 1px solid #444; }
+    .tab-btn.active { background: #2a7; color: #fff; border-color: #2a7; }
+    .scenario-summary { color: #aaa; font-size: 0.92rem; margin-top: 0.75rem; }
+    .location-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 0.75rem; }
     .filters { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1rem; align-items: center; }
     .filters label { font-size: 0.85rem; color: #888; }
     .status { font-size: 0.9rem; color: #888; }
     .status.running { color: #2a7; }
     .msg { margin-top: 0.5rem; font-size: 0.9rem; color: #888; }
+    .badge { display: inline-block; padding: 0.2rem 0.5rem; font-size: 0.75rem; border-radius: 4px; margin-right: 0.25rem; }
+    .badge.new { background: #2a7; color: white; }
+    .badge.changed { background: #c96; color: #111; }
+    .badge.green { background: #225a37; color: #d7ffe5; }
+    .badge.yellow { background: #7b5c13; color: #fff2bf; }
+    .badge.red { background: #6a2323; color: #ffd3d3; }
+    .badge.gold { background: #8e6d15; color: #fff4c2; }
+    .badge.black { background: #111; color: #f5f5f5; border: 1px solid #555; }
+    .group-province { margin-top: 1rem; }
+    .group-province:first-child { margin-top: 0; }
+    .group-province-header { background: #333; color: #2a7; font-weight: 600; padding: 0.5rem 0.75rem; border-radius: 6px 6px 0 0; cursor: pointer; display: flex; align-items: center; gap: 0.4rem; }
+    .group-city { margin-left: 0.5rem; border-left: 2px solid #444; }
+    .group-city-header { background: #2a2a2a; color: #aaa; font-size: 0.9rem; font-weight: 500; padding: 0.4rem 0.75rem; cursor: pointer; }
+    .group-suburb { margin-left: 1rem; border-left: 2px solid #555; }
+    .group-suburb-header { background: #252525; color: #888; font-size: 0.85rem; padding: 0.35rem 0.75rem; cursor: pointer; display: flex; align-items: center; gap: 0.35rem; }
+    .group-body.collapsed { display: none; }
+    .collapse-icon { display: inline-block; width: 1rem; color: #aaa; }
     .rules-list { margin-top: 0.5rem; }
     .rules-list li { margin-bottom: 0.5rem; display: flex; justify-content: space-between; align-items: center; }
     .rules-list button { padding: 0.3rem 0.6rem; font-size: 0.8rem; }
+    .listing-card { background: #1a1a1a; border: 1px solid #333; border-left-width: 5px; border-radius: 8px; padding: 0.9rem; margin-bottom: 0.75rem; }
+    .listing-card.red { border-left-color: #b33; }
+    .listing-card.yellow { border-left-color: #d9a520; }
+    .listing-card.green { border-left-color: #2a7; }
+    .listing-card.gold { border-left-color: #d4af37; box-shadow: 0 0 0 1px rgba(212,175,55,0.25); }
+    .listing-card.black { border-left-color: #fff; background: #141414; }
+    .listing-header { display: flex; justify-content: space-between; gap: 1rem; align-items: flex-start; }
+    .listing-title { font-size: 1rem; font-weight: 600; }
+    .listing-title a { color: #2a7; text-decoration: none; }
+    .listing-title a:hover { text-decoration: underline; }
+    .listing-meta { color: #999; font-size: 0.85rem; margin-top: 0.35rem; display: flex; gap: 0.8rem; flex-wrap: wrap; }
+    .listing-badges { margin-top: 0.55rem; display: flex; gap: 0.35rem; flex-wrap: wrap; }
+    .listing-actions { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
+    .listing-checkbox { margin-right: 0.5rem; }
+    .listing-details { margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid #333; display: none; }
+    .listing-details.open { display: block; }
+    .detail-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0.6rem; margin-bottom: 0.75rem; }
+    .detail-card { background: #202020; border-radius: 6px; padding: 0.6rem; border: 1px solid #333; }
+    .detail-card strong { display: block; color: #aaa; margin-bottom: 0.2rem; font-size: 0.82rem; }
+    .thumbs { display: flex; gap: 0.35rem; flex-wrap: wrap; }
+    .thumbs img { width: 52px; height: 52px; object-fit: cover; border-radius: 6px; }
+    .inline-note { color: #aaa; font-size: 0.85rem; }
+    .changes-list li { margin-bottom: 0.45rem; }
+    .changes-list a { color: #2a7; text-decoration: none; }
   </style>
 </head>
 <body>
   <div class="top-nav"><a href="/">← Dashboard</a></div>
   <h1>Gumtree Crawler</h1>
-  <p class="status">Daily crawler for laptops and motorcycles. Tracks first-seen, last-seen, and price changes.</p>
+  <p class="status">Scenario-driven Gumtree crawler. Each tab only shows listings that pass that scenario's rules. Images remain optional and are fetched on demand.</p>
 
   <div class="panel">
     <h3>Scheduler status</h3>
@@ -978,23 +993,56 @@ GUMTREE_CRAWLER_HTML = """
   </div>
 
   <div class="panel">
+    <h3>Scenario Tabs</h3>
+    <div id="scenarioTabs" class="scenario-tabs"></div>
+    <div id="scenarioSummary" class="scenario-summary">Loading scenarios...</div>
+  </div>
+
+  <div class="panel">
     <h3>Filters</h3>
     <div class="filters">
       <label>Category</label>
       <select id="filterCategory">
         <option value="">All</option>
-        <option value="laptops">Laptops</option>
         <option value="motorcycles">Motorcycles</option>
+        <option value="desktop-computers">Desktop computers</option>
+        <option value="bicycles">Bicycles</option>
+        <option value="skateboarding">Skateboarding</option>
+        <option value="cars-bakkies">Cars & bakkies</option>
+        <option value="laptops">Laptops</option>
+        <option value="cell-phones">Cell phones</option>
       </select>
       <label>Price min</label>
       <input type="number" id="filterMinPrice" placeholder="Min" style="width:80px">
       <label>Price max</label>
       <input type="number" id="filterMaxPrice" placeholder="Max" style="width:80px">
       <label>Keyword</label>
-      <input type="text" id="filterKeyword" placeholder="Search" style="width:120px">
+      <input type="text" id="filterKeyword" placeholder="Extra filter" style="width:160px">
       <label><input type="checkbox" id="filterNewToday"> New today</label>
       <label><input type="checkbox" id="filterPriceChanged"> Price changed</label>
       <button class="secondary" onclick="loadListings()">Apply</button>
+    </div>
+    <div id="filterHint" class="inline-note"></div>
+  </div>
+
+  <div class="panel">
+    <h3>Location Preferences</h3>
+    <div class="location-grid">
+      <div>
+        <label>Preferred provinces</label>
+        <textarea id="prefProvinces" placeholder="Comma separated, highest priority first"></textarea>
+      </div>
+      <div>
+        <label>Preferred cities</label>
+        <textarea id="prefCities" placeholder="Comma separated, highest priority first"></textarea>
+      </div>
+      <div>
+        <label>Preferred suburbs</label>
+        <textarea id="prefSuburbs" placeholder="Comma separated, highest priority first"></textarea>
+      </div>
+    </div>
+    <div class="controls">
+      <button class="secondary" onclick="saveLocationPreferences()">Save location preferences</button>
     </div>
   </div>
 
@@ -1005,10 +1053,7 @@ GUMTREE_CRAWLER_HTML = """
       <select id="exportCompany"><option value="">Select company</option></select>
       <button class="secondary" onclick="exportSelected()">Export selected to Gumtree</button>
     </div>
-    <div id="listingsWrap">
-      <div class="list-header"><span class="col-cb"></span><span class="col-title">Title</span><span class="col-cat">Category</span><span class="col-location">Location</span><span class="col-price">Price</span><span class="col-day">Day on GT</span><span class="col-thumbs" style="max-width:120px">Images</span><span class="col-actions">Actions</span></div>
-      <div id="listings"></div>
-    </div>
+    <div id="listings"></div>
     <div id="listingsMsg" class="msg"></div>
   </div>
 
@@ -1033,6 +1078,81 @@ GUMTREE_CRAWLER_HTML = """
   </div>
 
   <script>
+    const gumtreeState = {
+      activeScenario: 'all',
+      scenarios: [],
+      counts: {},
+      locationPreferences: null,
+    };
+
+    function csvFromArray(values) {
+      return (values || []).join(', ');
+    }
+
+    function arrayFromCsv(value) {
+      return String(value || '')
+        .split(',')
+        .map(v => v.trim())
+        .filter(Boolean);
+    }
+
+    function getActiveScenario() {
+      return gumtreeState.scenarios.find(s => s.slug === gumtreeState.activeScenario) || null;
+    }
+
+    function scoreBadge(text, cls) {
+      return '<span class="badge ' + cls + '">' + escapeHtml(text) + '</span>';
+    }
+
+    function renderScenarioTabs() {
+      const wrap = document.getElementById('scenarioTabs');
+      const summary = document.getElementById('scenarioSummary');
+      const allCount = gumtreeState.counts.all || {};
+      let html = '<button class="tab-btn' + (gumtreeState.activeScenario === 'all' ? ' active' : '') + '" onclick="setScenarioTab(\\'all\\')">All (' + (allCount.total_count || 0) + ')</button>';
+      for (const scenario of gumtreeState.scenarios) {
+        const counts = gumtreeState.counts[scenario.slug] || {};
+        html += '<button class="tab-btn' + (gumtreeState.activeScenario === scenario.slug ? ' active' : '') + '" onclick="setScenarioTab(\\'' + escapeHtml(scenario.slug) + '\\')">' + escapeHtml(scenario.name) + ' (' + (counts.visible_count || 0) + ')</button>';
+      }
+      wrap.innerHTML = html;
+      const active = getActiveScenario();
+      if (active) {
+        summary.textContent = active.description || '';
+        document.getElementById('filterHint').textContent =
+          'Scenario rules are strict here. Extra filters only narrow the already-matching results.';
+      } else {
+        summary.textContent = 'All tab shows the full crawler view for debugging and admin review.';
+        document.getElementById('filterHint').textContent =
+          'All tab shows everything the crawler stored. Switch to a scenario tab to see strict matches only.';
+      }
+    }
+
+    async function loadScenarioMeta() {
+      const r = await fetch('/api/gumtree-crawler/scenarios');
+      const d = await r.json();
+      gumtreeState.scenarios = d.scenarios || [];
+      gumtreeState.counts = d.counts || {};
+      gumtreeState.locationPreferences = d.location_preferences || {};
+      document.getElementById('prefProvinces').value = csvFromArray(gumtreeState.locationPreferences.preferred_provinces);
+      document.getElementById('prefCities').value = csvFromArray(gumtreeState.locationPreferences.preferred_cities);
+      document.getElementById('prefSuburbs').value = csvFromArray(gumtreeState.locationPreferences.preferred_suburbs);
+      renderScenarioTabs();
+    }
+
+    function setScenarioTab(slug) {
+      gumtreeState.activeScenario = slug;
+      renderScenarioTabs();
+      loadListings();
+      loadChanges();
+    }
+
+    function toggleGroup(el) {
+      const body = el && el.nextElementSibling;
+      if (!body) return;
+      body.classList.toggle('collapsed');
+      const icon = el.querySelector('.collapse-icon');
+      if (icon) icon.textContent = body.classList.contains('collapsed') ? '▶' : '▼';
+    }
+
     async function loadStatus() {
       const r = await fetch('/api/gumtree-crawler/status');
       const d = await r.json();
@@ -1049,6 +1169,27 @@ GUMTREE_CRAWLER_HTML = """
       if (d.ok) loadStatus();
       else alert(d.error || 'Failed');
     }
+
+    async function saveLocationPreferences() {
+      const payload = {
+        preferred_provinces: arrayFromCsv(document.getElementById('prefProvinces').value),
+        preferred_cities: arrayFromCsv(document.getElementById('prefCities').value),
+        preferred_suburbs: arrayFromCsv(document.getElementById('prefSuburbs').value),
+      };
+      const r = await fetch('/api/gumtree-crawler/location-preferences', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const d = await r.json();
+      if (!d.ok) {
+        alert(d.error || 'Could not save location preferences');
+        return;
+      }
+      gumtreeState.locationPreferences = d.location_preferences || payload;
+      loadListings();
+    }
+
     async function loadListings() {
       const params = new URLSearchParams();
       const cat = document.getElementById('filterCategory').value;
@@ -1057,12 +1198,15 @@ GUMTREE_CRAWLER_HTML = """
       const kw = document.getElementById('filterKeyword').value;
       const newToday = document.getElementById('filterNewToday').checked;
       const priceChanged = document.getElementById('filterPriceChanged').checked;
+      if (gumtreeState.activeScenario !== 'all') params.set('scenario', gumtreeState.activeScenario);
       if (cat) params.set('category', cat);
       if (minP) params.set('min_price', minP);
       if (maxP) params.set('max_price', maxP);
       if (kw) params.set('keyword', kw);
       if (newToday) params.set('new_today', '1');
       if (priceChanged) params.set('price_changed', '1');
+      params.set('sort', gumtreeState.activeScenario === 'all' ? 'last_seen' : 'match_score');
+      params.set('limit', '200');
       const r = await fetch('/api/gumtree-crawler/listings?' + params);
       const d = await r.json();
       const listEl = document.getElementById('listings');
@@ -1073,41 +1217,62 @@ GUMTREE_CRAWLER_HTML = """
         return;
       }
       const imgBase = '/api/gumtree-crawler/serve-image/';
-      function toggleRowDetail(ev, rowEl) {
-        if (ev.target.closest('input.listing-cb') || ev.target.closest('a') || ev.target.closest('button')) return;
-        const wr = rowEl.closest('.list-row-wrapper');
-        if (!wr) return;
-        const detail = wr.querySelector('.row-detail');
-        const icon = rowEl.querySelector('.expand-icon');
-        if (detail && detail.classList.toggle('expanded')) {
-          if (icon) icon.textContent = '\u25BC';
-        } else {
-          if (icon) icon.textContent = '\u25B6';
-        }
-      }
       function rowHtml(l) {
-        const priceCls = (l.trend === 'down' ? ' down' : (l.trend === 'up' ? ' up' : ''));
-        const dayStr = l.day_on != null ? (l.day_on + 'd') : '-';
+        const scoreColor = l.special_state || l.decision_color || 'red';
+        const priceInfo = 'R' + (l.price ?? '?') + (l.prev_price != null && l.prev_price !== l.price ? ' (was R' + l.prev_price + ')' : '');
         const thumbs = (l.images || []).slice(0, 4).map(p => '<img src="' + imgBase + encodeURIComponent(p) + '" alt="" loading="lazy">').join('');
-        const link = '<a href="' + escapeHtml(l.url) + '" target="_blank">' + escapeHtml(l.title || 'Untitled') + '</a>';
-        const newBadge = l.is_new ? '<span class="badge new">New</span> ' : '';
-        const detailRows = [
-          ['Title', escapeHtml(l.title || '-')],
-          ['Price', 'R' + (l.price ?? '?') + (l.prev_price != null && l.prev_price !== l.price ? ' (was R' + l.prev_price + ')' : '')],
-          ['Location', escapeHtml(l.location || '-')],
-          ['Seller', escapeHtml(l.seller || '-')],
-          ['Condition', escapeHtml(l.condition || '-')],
-          ['Category', escapeHtml(l.category || '-')],
-          ['URL', '<a href="' + escapeHtml(l.url) + '" target="_blank">' + escapeHtml((l.url || '').slice(0, 60) + (l.url && l.url.length > 60 ? '...' : '')) + '</a>'],
-          ['First seen', escapeHtml(l.first_seen || '-')],
-          ['Last seen', escapeHtml(l.last_seen || '-')],
-          ['Notes', escapeHtml(l.notes || '-')]
+        const detailId = 'detail-' + l.id;
+        const badges = [];
+        if (l.is_new) badges.push(scoreBadge('New', 'new'));
+        badges.push(scoreBadge((l.special_state || l.decision_color || 'red').toUpperCase(), scoreColor));
+        if (l.location_grade) badges.push(scoreBadge('Loc ' + l.location_grade + ' ' + Math.round(l.location_score || 0), l.location_grade));
+        if (l.match_score != null) badges.push(scoreBadge('Fit ' + Math.round(l.match_score) + '%', l.match_score >= 80 ? 'green' : (l.match_score >= 60 ? 'yellow' : 'red')));
+        if (l.urgency_hits && l.urgency_hits.length) badges.push(scoreBadge('Urgent', l.strong_urgency_hits && l.strong_urgency_hits.length ? 'black' : 'yellow'));
+        if (l.attributes && l.attributes.year) badges.push(scoreBadge('Year ' + l.attributes.year, 'yellow'));
+        if (l.attributes && l.attributes.gpu_model) badges.push(scoreBadge(l.attributes.gpu_model, 'green'));
+        if (l.attributes && l.attributes.system_ram_gb) badges.push(scoreBadge(l.attributes.system_ram_gb + 'GB RAM', 'green'));
+        if (l.attributes && l.attributes.phone_model) badges.push(scoreBadge(l.attributes.phone_model, 'green'));
+        const visibleScenarioText = l.visible_scenarios && l.visible_scenarios.length ? ('Scenarios: ' + l.visible_scenarios.join(', ')) : 'No strict scenario match yet';
+        const detailCards = [
+          ['Price', priceInfo],
+          ['Posted', l.posted_at || '-'],
+          ['First seen', l.first_seen || '-'],
+          ['Last seen', l.last_seen || '-'],
+          ['Location', l.location || '-'],
+          ['Seller', l.seller || '-'],
+          ['Condition', l.condition || '-'],
+          ['Category', l.category || '-'],
+          ['Location score', String(Math.round(l.location_score || 0))],
+          ['Scenario fit', l.match_score != null ? (Math.round(l.match_score) + '%') : '-'],
+          ['Urgency score', l.urgency_score != null ? (Math.round(l.urgency_score) + '%') : '-'],
+          ['Notes', l.notes || '-'],
         ];
-        const detailGrid = detailRows.map(([lab, val]) => '<span class="detail-label">' + lab + '</span><span>' + val + '</span>').join('');
-        const desc = l.description ? '<div class="detail-desc"><strong>Description</strong><pre>' + escapeHtml(l.description) + '</pre></div>' : '';
-        const detailHtml = '<div class="row-detail" id="detail-' + l.id + '"><div class="detail-grid">' + detailGrid + '</div>' + desc + '</div>';
-        const rowContent = '<span class="col-cb"><input type="checkbox" class="listing-cb" value="' + l.id + '"></span><span class="col-title"><span class="expand-icon">\u25B6</span>' + newBadge + link + '</span><span class="col-cat">' + escapeHtml(l.category || '') + '</span><span class="col-location">' + escapeHtml(l.location || '') + '</span><span class="col-price' + priceCls + '">R' + (l.price ?? '?') + '</span><span class="col-day">' + dayStr + '</span><span class="col-thumbs">' + thumbs + '</span><span class="col-actions"><button class="secondary" onclick="fetchImages(' + l.id + ')" id="fetchBtn' + l.id + '">Get images</button><button class="secondary" onclick="ignoreListing(' + l.id + ')">Ignore</button></span>';
-        return '<div class="list-row-wrapper"><div class="list-row expandable" data-id="' + l.id + '" onclick="toggleRowDetail(event, this)">' + rowContent + '</div>' + detailHtml + '</div>';
+        const detailHtml = detailCards.map(([label, value]) => '<div class="detail-card"><strong>' + escapeHtml(label) + '</strong>' + escapeHtml(value) + '</div>').join('');
+        const signals = (l.reasons || []).length ? ('<div class="detail-card"><strong>Rejected reasons</strong>' + escapeHtml(l.reasons.join(', ')) + '</div>') : '';
+        const desc = l.description ? '<div class="detail-card" style="grid-column:1/-1;"><strong>Description</strong>' + escapeHtml(l.description) + '</div>' : '';
+        const attrs = l.attributes && Object.keys(l.attributes).length
+          ? '<div class="detail-card" style="grid-column:1/-1;"><strong>Extracted attributes</strong>' + escapeHtml(JSON.stringify(l.attributes, null, 2)) + '</div>'
+          : '';
+        return ''
+          + '<div class="listing-card ' + scoreColor + '">'
+          + '  <div class="listing-header">'
+          + '    <div>'
+          + '      <div class="listing-title"><label class="listing-checkbox"><input type="checkbox" class="listing-cb" value="' + l.id + '"></label><a href="' + escapeHtml(l.url) + '" target="_blank">' + escapeHtml(l.title || 'Untitled') + '</a></div>'
+          + '      <div class="listing-meta"><span>' + escapeHtml(l.location || '-') + '</span><span>' + escapeHtml(priceInfo) + '</span><span>Posted: ' + escapeHtml(l.posted_at || '-') + '</span><span>Seen: ' + escapeHtml((l.day_on != null ? l.day_on + 'd' : '-')) + '</span></div>'
+          + '      <div class="listing-badges">' + badges.join('') + '</div>'
+          + '      <div class="inline-note" style="margin-top:0.45rem;">' + escapeHtml(visibleScenarioText) + '</div>'
+          + '    </div>'
+          + '    <div class="listing-actions">'
+          + '      <button class="secondary" onclick="toggleListingDetail(\\'' + detailId + '\\')">Details</button>'
+          + '      <button class="secondary" onclick="fetchImages(' + l.id + ')" id="fetchBtn' + l.id + '">Get images</button>'
+          + '      <button class="secondary" onclick="ignoreListing(' + l.id + ')">Ignore</button>'
+          + '    </div>'
+          + '  </div>'
+          + '  <div class="listing-details" id="' + detailId + '">'
+          + '    <div class="detail-grid">' + detailHtml + signals + desc + attrs + '</div>'
+          + '    <div class="thumbs">' + thumbs + '</div>'
+          + '  </div>'
+          + '</div>';
       }
       const groups = {};
       for (const l of d.listings) {
@@ -1124,23 +1289,27 @@ GUMTREE_CRAWLER_HTML = """
       for (const prov of provOrder) {
         const cities = groups[prov];
         const cityOrder = Object.keys(cities).sort((a,b) => (a === 'Other' ? 1 : 0) - (b === 'Other' ? 1 : 0) || a.localeCompare(b));
-        html += '<div class="group-province"><div class="group-province-header">' + escapeHtml(prov) + '</div>';
+        html += '<div class="group-province"><div class="group-province-header" onclick="toggleGroup(this)"><span class="collapse-icon">▼</span>' + escapeHtml(prov) + '</div><div class="group-body">';
         for (const city of cityOrder) {
           const suburbs = cities[city];
           const subOrder = Object.keys(suburbs).sort((a,b) => (a === 'Other' ? 1 : 0) - (b === 'Other' ? 1 : 0) || a.localeCompare(b));
           html += '<div class="group-city"><div class="group-city-header">' + escapeHtml(city) + '</div>';
           for (const sub of subOrder) {
             const items = suburbs[sub];
-            html += '<div class="group-suburb"><div class="group-suburb-header">' + escapeHtml(sub) + ' (' + items.length + ')</div>';
+            html += '<div class="group-suburb"><div class="group-suburb-header" onclick="toggleGroup(this)"><span class="collapse-icon">▼</span>' + escapeHtml(sub) + ' (' + items.length + ')</div><div class="group-body">';
             html += items.map(rowHtml).join('');
-            html += '</div>';
+            html += '</div></div>';
           }
           html += '</div>';
         }
-        html += '</div>';
+        html += '</div></div>';
       }
       listEl.innerHTML = html;
-      msg.textContent = 'Total: ' + d.total;
+      msg.textContent = 'Total: ' + d.total + (gumtreeState.activeScenario !== 'all' ? ' strict matches in this scenario.' : ' listings stored.');
+    }
+    function toggleListingDetail(id) {
+      const el = document.getElementById(id);
+      if (el) el.classList.toggle('open');
     }
     async function fetchImages(id) {
       const btn = document.getElementById('fetchBtn' + id);
@@ -1184,11 +1353,13 @@ GUMTREE_CRAWLER_HTML = """
       loadIgnoreRules();
     }
     async function loadChanges() {
-      const r = await fetch('/api/gumtree-crawler/changes?limit=20');
+      const params = new URLSearchParams({ limit: '20' });
+      if (gumtreeState.activeScenario !== 'all') params.set('scenario', gumtreeState.activeScenario);
+      const r = await fetch('/api/gumtree-crawler/changes?' + params);
       const d = await r.json();
       const el = document.getElementById('changes');
       if (!d.changes || !d.changes.length) { el.innerHTML = '<p class="msg">No price changes yet.</p>'; return; }
-      el.innerHTML = '<ul>' + d.changes.map(c => '<li><a href="' + escapeHtml(c.url) + '" target="_blank">' + escapeHtml(c.title || '') + '</a> R' + (c.old_price || '?') + ' → R' + c.new_price + ' (' + (c.changed_at || '').slice(0,10) + ')</li>').join('') + '</ul>';
+      el.innerHTML = '<ul class="changes-list">' + d.changes.map(c => '<li><a href="' + escapeHtml(c.url) + '" target="_blank">' + escapeHtml(c.title || '') + '</a> R' + (c.old_price || '?') + ' → R' + c.new_price + ' (' + (c.changed_at || '').slice(0,10) + ')</li>').join('') + '</ul>';
     }
     async function loadCompanies() {
       const r = await fetch('/api/companies');
@@ -1207,11 +1378,13 @@ GUMTREE_CRAWLER_HTML = """
       if (d.ok) alert(d.message || 'Exported ' + d.added + ' listing(s)');
       else alert(d.error || 'Export failed');
     }
+    loadScenarioMeta().then(() => {
+      loadListings();
+      loadChanges();
+    });
     loadCompanies();
     loadStatus();
-    loadListings();
     loadIgnoreRules();
-    loadChanges();
     setInterval(loadStatus, 5000);
   </script>
 </body>
@@ -2254,6 +2427,113 @@ if MAKRO_CRAWLER_SCHEDULER_ENABLED:
     LOG.info("Makro crawler daily scheduler enabled")
 
 
+def _gumtree_safe_json(value, default):
+    try:
+        return json.loads(value) if value else default
+    except Exception:
+        return default
+
+
+def _gumtree_parse_location(loc):
+    import re
+
+    sa_province_hints = ("cape", "natal", "kwa", "gauteng", "free state", "limpopo", "mpumalanga", "north west")
+    if not loc or not isinstance(loc, str):
+        return ("", "", "")
+    loc = loc.strip()
+    if not loc:
+        return ("", "", "")
+    province = city = suburb = ""
+    if " > " in loc or ">" in loc:
+        parts = [p.strip() for p in re.split(r"\s*>\s*", loc) if p.strip()]
+        if len(parts) >= 2:
+            province, suburb = parts[0], parts[1]
+        elif len(parts) == 1:
+            province = parts[0]
+    else:
+        parts = [p.strip() for p in loc.split(",") if p.strip()]
+        if len(parts) == 3:
+            suburb, city, province = parts[0], parts[1], parts[2]
+        elif len(parts) == 2:
+            last_lower = parts[1].lower()
+            if any(h in last_lower for h in sa_province_hints):
+                city, province = parts[0], parts[1]
+            else:
+                suburb, city = parts[0], parts[1]
+        else:
+            city = parts[0] if parts else ""
+    return (province or "", city or "", suburb or "")
+
+
+def _gumtree_row_to_dict(row, location_preferences=None, scenario_cfg=None):
+    from datetime import datetime, timezone
+
+    from gumtree_crawler.scoring import score_location
+
+    d = dict(row)
+    for key, value in list(d.items()):
+        if hasattr(value, "isoformat"):
+            d[key] = value.isoformat() if value else None
+    d["images"] = _gumtree_safe_json(d.get("images_json"), [])
+    d["attributes"] = _gumtree_safe_json(d.get("attributes_json"), {})
+    d["signals"] = _gumtree_safe_json(d.get("signals_json"), {})
+    d["reasons"] = _gumtree_safe_json(d.get("reasons_json"), [])
+    d["visible_scenarios"] = [s for s in str(d.get("scenario_slugs") or "").split(",") if s]
+    if not d["visible_scenarios"] and d.get("scenario_slug"):
+        d["visible_scenarios"] = [d["scenario_slug"]]
+    d["urgency_hits"] = list(d["signals"].get("urgency_hits") or [])
+    d["strong_urgency_hits"] = [hit for hit in d["urgency_hits"] if hit in ("moving", "relocating", "immigrating", "desperate", "must go")]
+    price = d.get("price")
+    prev = d.get("prev_price")
+    if prev is not None and price is not None and prev != price:
+        d["trend"] = "up" if price > prev else "down"
+    else:
+        d["trend"] = None
+    first_seen = d.get("first_seen")
+    if first_seen:
+        try:
+            dt = datetime.fromisoformat(str(first_seen).replace("Z", "+00:00"))
+            d["day_on"] = max(0, (datetime.now(timezone.utc) - dt).days)
+        except Exception:
+            d["day_on"] = None
+    else:
+        d["day_on"] = None
+    d["is_new"] = bool(first_seen and str(first_seen)[:10] == datetime.now().strftime("%Y-%m-%d"))
+    province, city, suburb = _gumtree_parse_location(d.get("location"))
+    d["province"] = province
+    d["city"] = city
+    d["suburb"] = suburb
+    location_eval = score_location(province, city, suburb, location_preferences or {})
+    d["location_score"] = location_eval["score"]
+    d["location_grade"] = location_eval["grade"]
+    d["location_matches"] = location_eval["matched_levels"]
+    d["posted_at"] = d.get("posted_at") or "-"
+    weights = (scenario_cfg or {}).get("sort_weights") or {}
+    match_w = float(weights.get("match", 0.5))
+    location_w = float(weights.get("location", 0.2))
+    price_w = float(weights.get("price", 0.15))
+    urgency_w = float(weights.get("urgency", max(0.0, 1.0 - (match_w + location_w + price_w))))
+    total_weight = max(match_w + location_w + price_w + urgency_w, 0.01)
+    overall_score = (
+        (float(d.get("match_score") or 0.0) * match_w)
+        + (float(d.get("location_score") or 0.0) * location_w)
+        + (float(d.get("price_score") or 0.0) * price_w)
+        + (float(d.get("urgency_score") or 0.0) * urgency_w)
+    ) / total_weight
+    d["overall_score"] = round(overall_score, 2)
+    if d.get("special_state") == "black":
+        d["decision_color"] = "black"
+    elif d.get("special_state") == "gold":
+        d["decision_color"] = "gold"
+    elif overall_score >= 78:
+        d["decision_color"] = "green"
+    elif overall_score >= 58:
+        d["decision_color"] = "yellow"
+    else:
+        d["decision_color"] = "red"
+    return d
+
+
 @app.route("/gumtree-crawler")
 def gumtree_crawler_page():
     """Gumtree crawler UI page."""
@@ -2266,10 +2546,60 @@ def makro_crawler_page():
     return render_template_string(MAKRO_CRAWLER_HTML)
 
 
+@app.route("/api/gumtree-crawler/scenarios")
+def api_gumtree_crawler_scenarios():
+    """Return scenario config, counts, and location preferences."""
+    from gumtree_crawler.db import get_location_preferences, get_scenario_counts, list_listings, list_scenario_configs
+
+    scenarios = list_scenario_configs(enabled_only=False)
+    counts = get_scenario_counts()
+    _, all_total = list_listings(limit=1, offset=0, include_ignored=False)
+    counts["all"] = {"visible_count": all_total, "total_count": all_total}
+    return jsonify(
+        {
+            "scenarios": scenarios,
+            "counts": counts,
+            "location_preferences": get_location_preferences() or {},
+        }
+    )
+
+
+@app.route("/api/gumtree-crawler/scenarios/<slug>", methods=["PATCH"])
+def api_gumtree_crawler_scenario_patch(slug):
+    """Update a saved Gumtree scenario config."""
+    from gumtree_crawler.db import save_scenario_config
+
+    data = request.get_json(silent=True) or {}
+    scenario = save_scenario_config(slug, data)
+    if not scenario:
+        return jsonify({"ok": False, "error": "Scenario not found"}), 404
+    return jsonify({"ok": True, "scenario": scenario})
+
+
+@app.route("/api/gumtree-crawler/location-preferences", methods=["GET", "POST"])
+def api_gumtree_crawler_location_preferences():
+    """Get or update Gumtree location preferences."""
+    from gumtree_crawler.db import get_location_preferences, save_location_preferences
+
+    if request.method == "GET":
+        return jsonify({"location_preferences": get_location_preferences() or {}})
+    data = request.get_json(silent=True) or {}
+    prefs = {
+        "preferred_provinces": [str(v).strip() for v in data.get("preferred_provinces") or [] if str(v).strip()],
+        "preferred_cities": [str(v).strip() for v in data.get("preferred_cities") or [] if str(v).strip()],
+        "preferred_suburbs": [str(v).strip() for v in data.get("preferred_suburbs") or [] if str(v).strip()],
+    }
+    saved = save_location_preferences(prefs)
+    return jsonify({"ok": True, "location_preferences": saved})
+
+
 @app.route("/api/gumtree-crawler/listings")
 def api_gumtree_crawler_listings():
-    """List crawler listings with filters."""
-    from gumtree_crawler.db import list_listings
+    """List crawler listings with strict scenario filtering when requested."""
+    from gumtree_crawler.db import get_location_preferences, get_scenario_config, list_listings
+
+    scenario_slug = request.args.get("scenario", "").strip() or None
+    scenario_cfg = get_scenario_config(scenario_slug) if scenario_slug else None
     category = request.args.get("category", "").strip() or None
     min_price = request.args.get("min_price", type=int)
     max_price = request.args.get("max_price", type=int)
@@ -2279,7 +2609,7 @@ def api_gumtree_crawler_listings():
     new_today = request.args.get("new_today", "").lower() in ("1", "true", "yes")
     price_changed = request.args.get("price_changed", "").lower() in ("1", "true", "yes")
     include_ignored = request.args.get("include_ignored", "").lower() in ("1", "true", "yes")
-    sort = request.args.get("sort", "last_seen")
+    sort = request.args.get("sort", "match_score" if scenario_cfg else "last_seen")
     order = request.args.get("order", "desc")
     limit = min(request.args.get("limit", 50, type=int), 200)
     offset = request.args.get("offset", 0, type=int)
@@ -2297,92 +2627,34 @@ def api_gumtree_crawler_listings():
         order=order,
         limit=limit,
         offset=offset,
+        scenario_slug=scenario_cfg.get("slug") if scenario_cfg else None,
     )
-    # Convert sqlite Row keys to serializable, add images/trend/day_on/province/city/suburb/is_new
-    import json
-    import re
-    from datetime import datetime, timezone
-
-    SA_PROVINCE_HINTS = ("cape", "natal", "kwa", "gauteng", "free state", "limpopo", "mpumalanga", "north west")
-
-    def _parse_location(loc):
-        """Parse Gumtree SA location into province, city, suburb. Handles 'Province > Suburb' and 'A, B, C'."""
-        if not loc or not isinstance(loc, str):
-            return ("", "", "")
-        loc = loc.strip()
-        if not loc:
-            return ("", "", "")
-        province = city = suburb = ""
-        if " > " in loc or ">" in loc:
-            parts = [p.strip() for p in re.split(r"\s*>\s*", loc) if p.strip()]
-            if len(parts) >= 2:
-                province, suburb = parts[0], parts[1]
-            elif len(parts) == 1:
-                province = parts[0]
-        else:
-            parts = [p.strip() for p in loc.split(",") if p.strip()]
-            if len(parts) == 3:
-                suburb, city, province = parts[0], parts[1], parts[2]
-            elif len(parts) == 2:
-                last_lower = parts[1].lower()
-                is_province = any(h in last_lower for h in SA_PROVINCE_HINTS)
-                if is_province:
-                    city, province = parts[0], parts[1]
-                else:
-                    suburb, city = parts[0], parts[1]
-            else:
-                city = parts[0] if parts else ""
-        return (province or "", city or "", suburb or "")
-
-    def _row_to_dict(r):
-        d = dict(r)
-        for k, v in d.items():
-            if hasattr(v, "isoformat"):
-                d[k] = v.isoformat() if v else None
-        # Parse images_json to array
-        ij = d.get("images_json")
-        d["images"] = json.loads(ij) if (ij and isinstance(ij, str)) else []
-        # Trend: up=red, down=green, else neutral
-        price = d.get("price")
-        prev = d.get("prev_price")
-        if prev is not None and price is not None and prev != price:
-            d["trend"] = "up" if price > prev else "down"
-        else:
-            d["trend"] = None
-        # Day on Gumtree from first_seen
-        fs = d.get("first_seen")
-        if fs:
-            try:
-                dt = datetime.fromisoformat(str(fs).replace("Z", "+00:00"))
-                days = (datetime.now(timezone.utc) - dt).days
-                d["day_on"] = max(0, days)
-            except Exception:
-                d["day_on"] = None
-        else:
-            d["day_on"] = None
-        # New: first seen today (added in most recent crawl)
-        d["is_new"] = bool(fs and str(fs)[:10] == datetime.now().strftime("%Y-%m-%d"))
-        # Province, city, suburb for grouping
-        prov, city, sub = _parse_location(d.get("location"))
-        d["province"] = prov
-        d["city"] = city
-        d["suburb"] = sub
-        return d
-    return jsonify({"listings": [_row_to_dict(r) for r in rows], "total": total})
+    prefs = get_location_preferences() or {}
+    return jsonify(
+        {
+            "listings": [_gumtree_row_to_dict(r, prefs, scenario_cfg) for r in rows],
+            "total": total,
+            "scenario": scenario_cfg,
+        }
+    )
 
 
 @app.route("/api/gumtree-crawler/changes")
 def api_gumtree_crawler_changes():
-    """Recent price changes."""
+    """Recent price changes, optionally scoped to one scenario."""
     from gumtree_crawler.db import get_price_changes
+
+    scenario_slug = request.args.get("scenario", "").strip() or None
     limit = min(request.args.get("limit", 50, type=int), 100)
-    changes = get_price_changes(limit=limit)
-    def _row_to_dict(r):
-        d = dict(r)
+    changes = get_price_changes(limit=limit, scenario_slug=scenario_slug)
+
+    def _row_to_dict(row):
+        d = dict(row)
         for k, v in d.items():
             if hasattr(v, "isoformat"):
                 d[k] = v.isoformat() if v else None
         return d
+
     return jsonify({"changes": [_row_to_dict(c) for c in changes]})
 
 

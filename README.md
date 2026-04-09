@@ -1,6 +1,6 @@
 # Products Scraper
 
-Unified product scraper for Temu, Gumtree, and AliExpress. One codebase with configurable company targets. Upload to one or multiple companies.
+Unified product scraper for Temu, Gumtree, and AliExpress, plus a scenario-based Gumtree crawler. One codebase with configurable company targets. Upload to one or multiple companies.
 
 **Full guide:** [docs/PRODUCT_SCRAPERS.md](../docs/PRODUCT_SCRAPERS.md)
 
@@ -92,6 +92,97 @@ python edit_products.py    # Edit only at http://127.0.0.1:5001
 - **Dashboard:** Scrape | Edit | Upload
 - **Scrape:** Select supplier, then start scrape
 - **Edit:** Edit name, price, cost, images (tabs for Temu, Gumtree, AliExpress)
+
+---
+
+## Gumtree Crawler
+
+The Gumtree crawler is separate from the classic `gumtree/scrape_gumtree.py` product scraper.
+
+- **UI route:** `/gumtree-crawler`
+- **Purpose:** discover Gumtree listings, score them against buying scenarios, and only surface strict matches in the scenario tabs
+- **Storage:** `gumtree_crawler/gumtree_crawler.db`
+
+### What It Stores
+
+The crawler SQLite database stores:
+
+- crawl jobs
+- raw listings
+- price history
+- scenario configs
+- per-listing scenario matches
+- ignore rules
+- crawler filters such as location preferences
+
+### Default Scenarios
+
+On first run the crawler seeds default scenarios from `gumtree_crawler/config.py`, then persists them in SQLite:
+
+- `motor-bikes`
+- `ai-hardware`
+- `personal-transport`
+- `cars`
+- `laptops`
+- `cell-phones`
+
+Deleting `gumtree_crawler/gumtree_crawler.db` recreates the schema and reseeds the default scenarios and default location preferences the next time the crawler initializes.
+
+### Scenario Tabs
+
+The crawler page has:
+
+- **`All`**: broad admin/debug view of stored non-ignored listings
+- **scenario tabs**: only listings whose `scenario_matches.visible = 1` for that scenario
+
+Each scenario can define:
+
+- one or more Gumtree search URLs
+- price range
+- required and excluded keywords
+- urgency keywords
+- year requirements
+- extracted attribute requirements such as GPU or RAM
+- seller allow/deny rules
+- sort weights for match, location, price, and urgency scoring
+
+### Location Preferences
+
+Location ranking is editable in the Gumtree crawler UI and stored separately from the classic scraper flow.
+
+- preferences are saved as ordered province/city/suburb lists
+- the crawler converts Gumtree location text into province/city/suburb parts
+- earlier entries in the saved lists rank higher
+- location affects scoring and display, not hard visibility
+
+### Images
+
+Images are intentionally **not downloaded during crawl**.
+
+- crawl runs store listing data first: price, location, posted date when available, description, seller, condition, extracted attributes, and signals
+- images are fetched only on demand from the Gumtree crawler UI/API
+- fetched images are saved under the Gumtree source directory and can then be previewed or exported to products
+
+### Runtime Config vs Code Defaults
+
+Code defaults live in:
+
+- `gumtree_crawler/config.py`
+
+Runtime state lives in:
+
+- `gumtree_crawler/gumtree_crawler.db`
+
+Important: after first seed, the app reads the crawler's saved scenario config from SQLite. Updating code defaults does not automatically overwrite existing scenario rows in the database.
+
+### Core Files
+
+- `gumtree_crawler/config.py` - default scenarios and default location preferences
+- `gumtree_crawler/crawler.py` - crawl orchestration and scenario evaluation
+- `gumtree_crawler/db.py` - schema, scenario config persistence, listing queries
+- `gumtree_crawler/scoring.py` - strict scenario matching and location scoring
+- `gumtree_crawler/parsers.py` - listing/detail extraction and optional image URL extraction
+- `app.py` - `/gumtree-crawler` page and `/api/gumtree-crawler/*` routes
 
 ---
 

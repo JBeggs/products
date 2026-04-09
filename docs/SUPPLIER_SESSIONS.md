@@ -2,6 +2,8 @@
 
 This document describes how each supplier stores and restores login sessions for scraping. Use this when implementing "place order" flows that need to reuse saved sessions.
 
+This document is about the classic supplier scrapers. The Gumtree crawler is a separate discovery system backed by SQLite config/results and is documented in `products/README.md`.
+
 ## Overview
 
 Suppliers use one of two session mechanisms:
@@ -25,7 +27,7 @@ Suppliers use one of two session mechanisms:
 | **MyRunway** | JSON session | `myrunway/myrunway_session.json` | Same as Makro. |
 | **OneDayOnly** | JSON session | `onedayonly/onedayonly_session.json` | Same as Makro. |
 | **Temu** | Custom (Chrome profile) | `temu/chrome_profile/` | Uses `launch_persistent_context` directly, not `GenericScraperConfig`. |
-| **Gumtree** | Custom (Chrome profile) | `gumtree/chrome_profile/` | Uses `launch_persistent_context` for Gmail/Google OAuth. |
+| **Gumtree** | Custom (Chrome profile + JSON save) | `gumtree/chrome_profile/`, `gumtree/gumtree_session.json` | Interactive Gumtree scraper uses the persistent profile for browsing/OAuth and can also save `storage_state` JSON. |
 
 ## JSON Session (storage_state)
 
@@ -39,6 +41,27 @@ Suppliers use one of two session mechanisms:
 - **Behavior**: Launches Chromium with `launch_persistent_context(user_data_dir)`. Cookies, localStorage, sessionStorage, and login state persist.
 - **Advantage**: Fewer captchas; OAuth (Google, etc.) works because sessionStorage persists.
 - **Save**: No explicit "Save session" – the profile is written as you browse. Closing the browser preserves state.
+
+## Gumtree Scraper vs Gumtree Crawler
+
+There are now two different Gumtree flows:
+
+1. **Classic Gumtree product scraper** - `gumtree/scrape_gumtree.py`
+2. **Gumtree crawler** - `gumtree_crawler/` plus `/gumtree-crawler` in the app
+
+### Classic Gumtree product scraper
+
+- Uses the persistent profile in `gumtree/chrome_profile/`
+- Also has `gumtree/gumtree_session.json` available for saved Playwright state
+- Supports the browse-and-save product flow and the URL-based product scrape flow
+
+### Gumtree crawler
+
+- Does **not** rely on the classic Gumtree product scrape session model for its runtime config
+- Persists scenario config, listings, price history, and location preferences in `gumtree_crawler/gumtree_crawler.db`
+- Keeps images optional during crawl; images are fetched manually later from the crawler UI/API
+
+If you are working on login/session persistence for browsing Gumtree products, use the classic scraper paths above. If you are working on the scenario-based Gumtree discovery workflow, look at the crawler docs and code instead of the scraper session files.
 
 ## OAuth and Popups
 

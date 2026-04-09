@@ -431,12 +431,24 @@ PREVENT_NEW_TAB_SCRIPT = """
 FLOATING_BUTTON_SCRIPT = """
 if (!location.hostname.includes('gumtree')) void 0;
 else {
+  function fireSave() {
+    if (window._gumtreeScraperSaveCooldown && Date.now() - window._gumtreeScraperSaveCooldown < 2500) return;
+    window._gumtreeScraperSaveCooldown = Date.now();
+    window.__gumtreeScraperSaveTrigger = true;
+    var bar = document.getElementById('gumtree-scraper-save-btn');
+    var b = bar ? bar.querySelector('button') : null;
+    if (b) {
+      b.textContent = 'Saving...';
+      setTimeout(function(){ b.textContent = 'Saved!'; }, 1200);
+      setTimeout(function(){ b.textContent = 'Save product'; }, 2500);
+    }
+  }
   if (!window._gumtreeScraperKbdBound) {
     window._gumtreeScraperKbdBound = true;
     document.addEventListener('keydown', function(e) {
       if (e.ctrlKey && e.shiftKey && e.key === 'S') {
         e.preventDefault();
-        window.__gumtreeScraperSaveTrigger = true;
+        fireSave();
       }
     }, true);
   }
@@ -468,11 +480,7 @@ else {
     btn.onclick = function(e) { e.stopPropagation(); };
     bar.onclick = function(e) {
       if (e.target === btn || btn.contains(e.target)) {
-        try {
-          window.__gumtreeScraperSaveTrigger = true;
-          btn.textContent = 'Saving...';
-          setTimeout(function(){ btn.textContent = 'Save product'; }, 1500);
-        } catch (err) { btn.textContent = 'Error'; setTimeout(function(){ btn.textContent = 'Save product'; }, 2000); }
+        try { fireSave(); } catch (err) { btn.textContent = 'Error'; setTimeout(function(){ btn.textContent = 'Save product'; }, 2000); }
       }
     };
     var drag = { active: false, startX: 0, startY: 0, startLeft: 0, startTop: 0 };
