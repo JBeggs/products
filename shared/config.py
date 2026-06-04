@@ -27,6 +27,9 @@ SCRAPER_CONFIG_FILE = PRODUCTS_ROOT / "scraper_config.json"
 SUPPLIERS_USING_TIERED_MARKUP = frozenset({
     "makro", "matrixwarehouse", "temu", "onedayonly", "myrunway", "ubuy",
     "perfectdealz", "takealot", "aliexpress", "game", "loot", "constructionhyper",
+    "northernbolt", "builders", "dailydiscounts", "soundselect", "tsawelding", "gimmeonline",
+    "nativechild", "blackafrican", "cosmeticconnection",
+    "ahm", "outdoorandvelocity", "buythis", "vinylcutters",
 })
 
 # Default tier multipliers: (threshold_cents/100 = R, multiplier)
@@ -112,6 +115,76 @@ def save_supplier_tiers(slug: str, tiers: list[dict], company_slug: str | None =
     save_scraper_config(cfg)
 
 
+def get_company_suppliers(company_slug: str) -> list[str]:
+    """Scraper supplier slugs allowed for this company. Empty list = no restriction (all suppliers on Scrape page).
+
+    ``company_suppliers`` in JSON may be a list of slugs or a legacy single string per company.
+    """
+    if not (company_slug or "").strip():
+        return []
+    cfg = load_scraper_config()
+    m = cfg.get("company_suppliers") or {}
+    if not isinstance(m, dict):
+        return []
+    raw = m.get(company_slug.strip())
+    if raw is None:
+        return []
+    if isinstance(raw, str):
+        from shared.suppliers import get_supplier
+        info = get_supplier(raw.strip())
+        return [info.slug] if info else ([raw.strip()] if raw.strip() else [])
+    if isinstance(raw, list):
+        from shared.suppliers import get_supplier
+        out: list[str] = []
+        seen: set[str] = set()
+        for x in raw:
+            if x is None:
+                continue
+            t = str(x).strip()
+            if not t:
+                continue
+            info = get_supplier(t)
+            canonical = info.slug if info else t
+            low = canonical.lower()
+            if low not in seen:
+                seen.add(low)
+                out.append(canonical)
+        return out
+    return []
+
+
+def save_company_suppliers(company_slug: str, supplier_slugs: list[str] | None) -> None:
+    """Replace allowed scraper suppliers for a company. Empty list or None clears (show all on Scrape page)."""
+    cs = (company_slug or "").strip()
+    if not cs:
+        raise ValueError("company_slug required")
+    cfg = load_scraper_config()
+    m = cfg.get("company_suppliers") or {}
+    if not isinstance(m, dict):
+        m = {}
+    if not supplier_slugs:
+        m.pop(cs, None)
+    else:
+        seen: set[str] = set()
+        out: list[str] = []
+        for x in supplier_slugs:
+            if x is None:
+                continue
+            t = str(x).strip()
+            if not t:
+                continue
+            low = t.lower()
+            if low not in seen:
+                seen.add(low)
+                out.append(t)
+        if out:
+            m[cs] = out
+        else:
+            m.pop(cs, None)
+    cfg["company_suppliers"] = m
+    save_scraper_config(cfg)
+
+
 def get_target_slugs(upload_to: str | None = None) -> list[str]:
     """
     Return list of company slugs to upload to.
@@ -192,7 +265,12 @@ def get_category_for_slug(slug: str) -> str | None:
 
 
 def get_supplier_delivery(slug: str) -> dict:
-    """Get delivery config for a supplier. Returns {delivery_time, delivery_cost, free_delivery_threshold}."""
+    """Supplier-wide delivery overrides from ``scraper_config.json``.
+
+    Keys (do not confuse):
+    - ``delivery_cost``: flat ZAR shipping fee → syncs to Django ``supplier_delivery_cost``
+    - ``free_delivery_threshold``: basket subtotal to waive that fee → Django ``free_delivery_threshold``
+    """
     cfg = load_scraper_config()
     supplier_delivery = cfg.get("supplier_delivery") or {}
     return supplier_delivery.get(slug) or {}
@@ -208,42 +286,65 @@ def add_delivery_to_price(sell_price_zar: float, supplier_slug: str) -> float:
 
 
 def save_supplier_delivery(slug: str, data: dict) -> None:
-    """Save delivery config for a supplier. Merges into existing config."""
+    """Persist delivery_* for one supplier slug.
+
+    Keys present in ``data`` update or remove that field; omitted keys keep the
+    previous value under ``supplier_delivery[slug]`` (avoids wiping unrelated
+    fields when only one value is saved).
+
+    The Flask UI POSTs ``delivery_time``, ``delivery_cost``, and
+    ``free_delivery_threshold`` every time. Scrape merge passes a full ``dict(current)``
+    plus edits so every intended field is present.
+    """
     cfg = load_scraper_config()
     supplier_delivery = cfg.get("supplier_delivery") or {}
-    out = {}
-    dt = (data.get("delivery_time") or "").strip()
-    if dt:
-        out["delivery_time"] = dt
-    dc = data.get("delivery_cost")
-    if dc is not None and dc != "":
-        try:
-            out["delivery_cost"] = float(dc)
-        except (TypeError, ValueError):
-            pass
-    fd = data.get("free_delivery_threshold")
-    if fd is not None and fd != "":
-        try:
-            out["free_delivery_threshold"] = float(fd)
-        except (TypeError, ValueError):
-            pass
-    supplier_delivery[slug] = out
+    merged = dict(supplier_delivery.get(slug) or {})
+
+    if "delivery_time" in data:
+        dt = data.get("delivery_time")
+        if dt is not None and str(dt).strip():
+            merged["delivery_time"] = str(dt).strip()
+        else:
+            merged.pop("delivery_time", None)
+
+    if "delivery_cost" in data:
+        dc = data.get("delivery_cost")
+        if dc is not None and dc != "":
+            try:
+                merged["delivery_cost"] = float(dc)
+            except (TypeError, ValueError):
+                pass
+        else:
+            merged.pop("delivery_cost", None)
+
+    if "free_delivery_threshold" in data:
+        fd = data.get("free_delivery_threshold")
+        if fd is not None and fd != "":
+            try:
+                merged["free_delivery_threshold"] = float(fd)
+            except (TypeError, ValueError):
+                pass
+        else:
+            merged.pop("free_delivery_threshold", None)
+
+    supplier_delivery[slug] = merged
     cfg["supplier_delivery"] = supplier_delivery
     save_scraper_config(cfg)
 
 
 def merge_supplier_delivery_from_scrape(slug: str, scraped: dict) -> None:
-    """Merge scraped delivery info into config. Only fills in empty fields."""
+    """Merge scraped delivery info into config. Fresh scrape values overwrite."""
     current = get_supplier_delivery(slug)
     merged = dict(current)
-    if (scraped.get("delivery_time") or "").strip() and not (current.get("delivery_time") or "").strip():
-        merged["delivery_time"] = (scraped["delivery_time"] or "").strip()
-    if scraped.get("delivery_cost") is not None and current.get("delivery_cost") is None:
+    scrap_time = (scraped.get("delivery_time") or "").strip()
+    if scrap_time:
+        merged["delivery_time"] = scrap_time
+    if scraped.get("delivery_cost") is not None:
         try:
             merged["delivery_cost"] = float(scraped["delivery_cost"])
         except (TypeError, ValueError):
             pass
-    if scraped.get("free_delivery_threshold") is not None and current.get("free_delivery_threshold") is None:
+    if scraped.get("free_delivery_threshold") is not None:
         try:
             merged["free_delivery_threshold"] = float(scraped["free_delivery_threshold"])
         except (TypeError, ValueError):

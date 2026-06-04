@@ -1,0 +1,98 @@
+{
+  "products": [
+    {
+      "category_id": "f66ce246-697a-4962-82ad-20c952af9b4e",
+      "compare_at_price": 152.01,
+      "cost": 110,
+      "description": "Delight in the harmonious pairing of sweet honey and warm cinnamon. Our infused blend offers a cozy, aromatic flavor perfect for adding depth to your favorite recipes.",
+      "dimension_height": 20,
+      "dimension_length": 10,
+      "dimension_width": 15,
+      "goods_id": "honey-and-cinnamon-infused-500g",
+      "hekpoorthoneyfarms_price": 110,
+      "images": [
+        "images/honey_and_cinnamon_i_honey-and-cinnamon-infused-500_01.jpg",
+        "images/honey_and_cinnamon_i_honey-and-cinnamon-infused-500_02.png"
+      ],
+      "in_stock": true,
+      "name": "Honey and Cinnamon Infused 500g",
+      "price": 127.6,
+      "production_ids": {
+        "honey": "da88980c-00c3-4ce2-bd1f-44198914de85"
+      },
+      "short_description": "Honey and Cinnamon Infused 500g",
+      "status": "active",
+      "stock_quantity": 0,
+      "tags": [
+        "hekpoorthoneyfarms",
+        "honey"
+      ],
+      "url": "https://hekpoorthoneyfarms.co.za/shop/honey-and-cinnamon-infused-500g/",
+      "variants": [],
+      "weight": 500
+    },
+    {
+      "category_id": "f66ce246-697a-4962-82ad-20c952af9b4e",
+      "compare_at_price": 146.35,
+      "cost": 110,
+      "description": "Experience the perfect blend of sweet and spicy with our Honey and Ginger Infused creation. This delightful combination offers a zesty kick to enhance both sweet and savory dishes.",
+      "dimension_height": 20,
+      "dimension_length": 10,
+      "dimension_width": 15,
+      "goods_id": "honey-ginger-infused",
+      "hekpoorthoneyfarms_price": 110,
+      "images": [
+        "images/honey_and_ginger_inf_honey-ginger-infused_01.jpg",
+        "images/honey_and_ginger_inf_honey-ginger-infused_02.png"
+      ],
+      "in_stock": true,
+      "name": "Honey and Ginger Infused 500g",
+      "price": 127.6,
+      "production_ids": {
+        "honey": "783465e5-1b8f-4490-aafa-1186eaf176cd"
+      },
+      "short_description": "Honey and Ginger Infused 500g",
+      "status": "active",
+      "stock_quantity": 0,
+      "tags": [
+        "hekpoorthoneyfarms",
+        "honey"
+      ],
+      "url": "https://hekpoorthoneyfarms.co.za/shop/honey-ginger-infused/",
+      "variants": [],
+      "weight": 500
+    },
+    {
+      "category_id": "f66ce246-697a-4962-82ad-20c952af9b4e",
+      "compare_at_price": 117.83,
+      "cost": 80,
+      "description": "Indulge in the rich, nutty flavor of Macadamia Honey. Harvested from macadamia tree blossoms, this golden honey offers a smooth, buttery taste. Perfect for gourmet cooking, baking, and drizzling.",
+      "dimension_height": 20,
+      "dimension_length": 10,
+      "dimension_width": 15,
+      "goods_id": "macadamia-honey",
+      "hekpoorthoneyfarms_price": 80,
+      "images": [
+        "images/macadamia_honey_macadamia-honey_02.jpg",
+        "images/macadamia_honey_macadamia-honey_03.png"
+      ],
+      "in_stock": true,
+      "name": "Macadamia Honey",
+      "price": 94.4,
+      "production_ids": {
+        "honey": "fbe72c22-459a-4b0a-9ac2-0af9038aab69"
+      },
+      "short_description": "Macadamia Honey",
+      "status": "active",
+      "stock_quantity": 0,
+      "tags": [
+        "hekpoorthoneyfarms",
+        "honey"
+      ],
+      "url": "https://hekpoorthoneyfarms.co.za/shop/macadamia-honey/",
+      "variants": [],
+      "weight": 500
+    }
+  ],
+  "updated": "2026-05-12T17:01:46.810892"
+}

@@ -1,0 +1,66 @@
+{
+  "products": [
+    {
+      "category_id": "f0ac6a76-cebb-4b32-ba05-ad08a3e7062c",
+      "compare_at_price": 598.8,
+      "cost": 442,
+      "description": "12g CO2 Canister ",
+      "dimension_height": 30,
+      "dimension_length": 20,
+      "dimension_width": 25,
+      "goods_id": "12g-co2-canister-50-pack-2",
+      "images": [
+        "images/12g_co2_canister_5_12g-co2-canister-50-pack-2_01.png"
+      ],
+      "in_stock": true,
+      "name": "ASG 12g CO2 Canister - 50",
+      "outdoorandvelocity_price": 442,
+      "price": 486.2,
+      "production_ids": {
+        "past-and-present": "0f4e1651-2fc8-40ca-944f-ed2b6b20513f"
+      },
+      "short_description": "12g CO2 Canister - 50 Pack",
+      "status": "active",
+      "stock_quantity": 0,
+      "tags": [
+        "outdoorandvelocity",
+        "outdoor-and-velocity"
+      ],
+      "url": "https://outdoorandvelocity.co.za/shop/12g-co2-canister-50-pack-2/",
+      "variants": [],
+      "weight": 600
+    },
+    {
+      "category_id": "f0ac6a76-cebb-4b32-ba05-ad08a3e7062c",
+      "compare_at_price": 1152.63,
+      "cost": 880,
+      "description": "Please note that additional courier charges will apply for this product. Contact us for more details on shipping rates and delivery options.",
+      "dimension_height": 30,
+      "dimension_length": 20,
+      "dimension_width": 25,
+      "goods_id": "asg-12g-co2-gas-cannister-100-count",
+      "images": [
+        "images/asg_12g_co2_canister_asg-12g-co2-gas-cannister-100-_01.png",
+        "images/asg_12g_co2_canister_asg-12g-co2-gas-cannister-100-_06.png"
+      ],
+      "in_stock": true,
+      "name": "ASG 12g CO2 Canister - 100",
+      "outdoorandvelocity_price": 880,
+      "price": 950.4,
+      "production_ids": {
+        "past-and-present": "400e49b4-59d8-4fba-9c99-e38de0ca38d5"
+      },
+      "short_description": "ASG 12g CO2 Canister - 100 Pack",
+      "status": "active",
+      "stock_quantity": 0,
+      "tags": [
+        "outdoorandvelocity",
+        "outdoor-and-velocity"
+      ],
+      "url": "https://outdoorandvelocity.co.za/shop/asg-12g-co2-gas-cannister-100-count/",
+      "variants": [],
+      "weight": 1200
+    }
+  ],
+  "updated": "2026-05-12T11:42:01.830483"
+}

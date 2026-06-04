@@ -1,0 +1,36 @@
+{
+  "products": [
+    {
+      "category_id": "2c26b75e-23e7-471b-b340-e8477e6afd3b",
+      "compare_at_price": 102,
+      "cost": 100,
+      "description": "test",
+      "dimension_height": 30,
+      "dimension_length": 20,
+      "dimension_width": 25,
+      "goods_id": "manual_9b7985db541f",
+      "images": [
+        "images/test_manual_9b7985db541f_01.png"
+      ],
+      "in_stock": true,
+      "manual_price": 100,
+      "name": "test",
+      "price": 100,
+      "production_ids": {
+        "wire-and-bead": "9ed7848a-140a-4418-ad9d-7479726d19e9"
+      },
+      "short_description": "test",
+      "status": "active",
+      "stock_quantity": 1,
+      "tags": [
+        "Featured",
+        "manual"
+      ],
+      "timed_duration_minutes": 120,
+      "url": "https://manual.local/product/manual_9b7985db541f",
+      "variants": [],
+      "weight": 1000
+    }
+  ],
+  "updated": "2026-04-24T13:42:31.630521"
+}

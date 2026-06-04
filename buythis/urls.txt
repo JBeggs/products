@@ -1,0 +1,4 @@
+# BuyThis product URLs (one per line)
+# https://buythis.co.za/
+# Legacy direct-to-film URLs are rewritten to buythis on save.
+https://buythis.co.za/h-press-mt6

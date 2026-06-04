@@ -1,0 +1,88 @@
+{
+  "products": [
+    {
+      "name": "Unisex Golf & Polo Shirt",
+      "price": 94.8,
+      "perfectdealz_price": 79,
+      "goods_id": "unisex-golf-polo-shirt"
+    },
+    {
+      "name": "Reusable Waterproof Rain Coat",
+      "price": 46.8,
+      "perfectdealz_price": 39,
+      "goods_id": "reusable-waterproof-rain-coat"
+    },
+    {
+      "name": "Super Long Winter Wearable Blanket",
+      "price": 334.8,
+      "perfectdealz_price": 279,
+      "goods_id": "super-long-winter-wearable-blanket-with-hoodie"
+    },
+    {
+      "name": "Tactical Vest Ceramic Armour Plates",
+      "price": 1198.8,
+      "perfectdealz_price": 999,
+      "goods_id": "tactical-vest-ceramic-armour-plates-nij-level-3-4"
+    },
+    {
+      "name": "PE Aramid Protective Body Plate",
+      "price": 1138.8,
+      "perfectdealz_price": 949,
+      "goods_id": "pe-aramid-protective-body-plate"
+    },
+    {
+      "name": "Classic Plain Sweatshirt for Daily",
+      "price": 358.8,
+      "perfectdealz_price": 299,
+      "goods_id": "classic-plain-sweatshirt"
+    },
+    {
+      "name": "USB Heated Electric Shawl Blanket",
+      "price": 346.8,
+      "perfectdealz_price": 289,
+      "goods_id": "usb-heated-electric-shawl-blanket"
+    },
+    {
+      "name": "Oversized Plush Blanket Hoodie",
+      "price": 318,
+      "perfectdealz_price": 265,
+      "goods_id": "oversized-plush-blanket-hoodie"
+    },
+    {
+      "name": "Migraine Hat",
+      "price": 226.8,
+      "perfectdealz_price": 189,
+      "goods_id": "migraine-hat"
+    },
+    {
+      "name": "Glow in The Dark Pink",
+      "price": 102,
+      "perfectdealz_price": 85,
+      "goods_id": "glow-in-the-dark-pink-unicorn-blanket"
+    },
+    {
+      "name": "Rabbit Plush Crossbody Bag - Brown",
+      "price": 82.8,
+      "perfectdealz_price": 69,
+      "goods_id": "rabbit-plush-crossbody-bag"
+    },
+    {
+      "name": "3D Printing Doodle Arts Craft",
+      "price": 210,
+      "perfectdealz_price": 175,
+      "goods_id": "3d-printing-doodle-arts-craft-drawing-usb-pen-set"
+    },
+    {
+      "name": "Flashing Roller Skates",
+      "price": 118.8,
+      "perfectdealz_price": 99,
+      "goods_id": "flashing-roller-skates"
+    },
+    {
+      "name": "Kids Police Role Play Costume",
+      "price": 262.8,
+      "perfectdealz_price": 219,
+      "goods_id": "kids-police-role-play-costume"
+    }
+  ]
+}

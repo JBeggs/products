@@ -1,0 +1,90 @@
+{
+  "updated": "2026-05-17T14:50:16.748199",
+  "product_count": 14,
+  "products": [
+    {
+      "name": "Sweet Red Pepper Chutney",
+      "price": 93.75,
+      "brendas_price": 75,
+      "goods_id": "sweet-red-pepper-chutney"
+    },
+    {
+      "name": "Apple Chutney",
+      "price": 93.75,
+      "brendas_price": 75,
+      "goods_id": "apple-chutney"
+    },
+    {
+      "name": "Dhania Chutney",
+      "price": 93.75,
+      "brendas_price": 75,
+      "goods_id": "dhania-chutney"
+    },
+    {
+      "name": "Green Fig Preserve (1 litre)",
+      "price": 199.26,
+      "brendas_price": 162,
+      "goods_id": "green-fig-preserve"
+    },
+    {
+      "name": "Guava Preserve (1 litre)",
+      "price": 170.97,
+      "brendas_price": 139,
+      "goods_id": "guava-preserve"
+    },
+    {
+      "name": "Orange Preserve (1 litre)",
+      "price": 178.35,
+      "brendas_price": 145,
+      "goods_id": "orange-preserve-2"
+    },
+    {
+      "name": "Peach Jam",
+      "price": 80,
+      "brendas_price": 64,
+      "goods_id": "peach-jam"
+    },
+    {
+      "name": "Tomato Jam",
+      "price": 80,
+      "brendas_price": 64,
+      "goods_id": "tomato-jam"
+    },
+    {
+      "name": "Citrus Marmalade",
+      "price": 80,
+      "brendas_price": 64,
+      "goods_id": "citrus_marmalade"
+    },
+    {
+      "name": "Ripe Fig Jam",
+      "price": 80,
+      "brendas_price": 64,
+      "goods_id": "ripe-fig-preserve"
+    },
+    {
+      "name": "Strawberry Jam",
+      "price": 98.75,
+      "brendas_price": 79,
+      "goods_id": "strawberry-jam"
+    },
+    {
+      "name": "Nastergal Jam",
+      "price": 101.25,
+      "brendas_price": 81,
+      "goods_id": "nastergal-jam"
+    },
+    {
+      "name": "Peach & Granadilla Jam",
+      "price": 80,
+      "brendas_price": 64,
+      "goods_id": "peach-granadilla-jam"
+    },
+    {
+      "name": "Apricot Jam",
+      "price": 80,
+      "brendas_price": 64,
+      "goods_id": "apricot-jam"
+    }
+  ]
+}

@@ -1,0 +1,9 @@
+# TSA Welding — add product page URLs here (one per line), or browse and Save in the UI.
+# Store: https://www.tsawelding.co.za/
+
+https://www.tsawelding.co.za/collections/promotions/products/pinnacle-migarc-145-flux-core-mig-mma-tig-welding-machine
+https://www.tsawelding.co.za/collections/promotions/products/pinnacle-migarc-165-mig-arc-welding-inverter
+https://www.tsawelding.co.za/products/stainless-steel-flux-core-e308lt0-3-gasless-wire-0-8mm-1kg
+https://www.tsawelding.co.za/products/1kg-flux-core-mig-welding-wire-e71t-11-gasless-0-8mm
+https://www.tsawelding.co.za/products/1kg-flux-core-mig-welding-wire-e71t-11-gasless-1-0mm
+https://www.tsawelding.co.za/products/1kg-flux-core-mig-welding-wire-e71t-11-gasless-0-9mm

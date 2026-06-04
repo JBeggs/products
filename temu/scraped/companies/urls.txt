@@ -1,0 +1,23 @@
+# Add Temu product URLs (one per line)
+# Example (SEO slug): https://www.temu.com/za/your-product-name-g-123456789.html
+# Example (goods.html from orders): https://www.temu.com/goods.html?goods_id=123456789012345
+
+https://www.temu.com/za/smart-led-display-soldering-iron-kit-with-3-tips-compact-portable-usb-c-rechargeable-soldering-iron-7-second-fast-heating-temperature-calibration-auto--to-carry-and--suitable-for--soldering-tasks-ideal-for--use-g-601105315766855.html
+https://www.temu.com/za/-temperature--adjustable-soldering-iron-type-c-power-supply-plug-in-heating-core-for-easy-replacement-battery-free-lightweight-design-compact-and-portable-with-precise-and-stable-temperature-control-professional-soldering-g-606021024067804.html
+https://www.temu.com/za/portable-soldering-iron-rechargeable-welding-tool-kit-with-3-replacement-soldering-tips-g-606046793860117.html
+https://www.temu.com/za/1-mini-portable-handheld-sewing-machine-usb-powered-wireless--and-durable--and--g-601101616624336.html
+https://www.temu.com/za/-electronic--vernier-caliper-0-150mm-high-strength-plastic-caliper-measuring-tool-inner-and-outer-diameter-g-601101328087423.html
+https://www.temu.com/za/air-fryer-6l-large-capacity-with-led--household-multifunctional--sturdy-and--heating-compatible-with-cooktops-wide-voltage-110-220v-south-african-standard-plug-adapter-not-included-g-605877679551705.html
+https://www.temu.com/za/home-mini-exhaust-fan-set-portable-blower-with-59-inch-flexible-hose-adjustable-5-speed-with-on-off-switch-and-fixed-collar-suitable-for-home-kitchen-use-bedroom-ventilation-and-wall-mounted-exhaust-system-g-605994935486151.html
+https://www.temu.com/za/1pc-4pcs-emergency-camping-multitool-card-for-survival-edc-kit-versatile-fishing-tool-card-featuring-fish-hook-arrow-trap--saw-blade-sewing-needle-and-taper-needle-g-601099531716263.html
+https://www.temu.com/za/-cordless-fabric-shears-ergonomic-leather-cutting-tool-for-carpet-professional-tailors-crafters-portable-essential-durable-abs-sewing-shears-heavy-duty-craft-tool-for-leather-fabric-usb-charging-2-5-hour-heavy-duty-operation-g-601102747937994.html
+https://www.temu.com/za/-11-in-1-stainless-steel-pocket-tool-credit-card-size-bottle-opener-with-dual-serrated--suitable-for-outdoor-survival-g-601105409855816.html
+https://www.temu.com/za/stainless-steel-mini-keychain-creative-card-holder-design-easy-to-carry-trap-style-durable-stainless-steel-material-unique--is--for--and--g-601105570043707.html
+https://www.temu.com/za/1pc-ultra-thin-multi-function-tool-card-portable-multitool-with-bottle-opener-and-screwdriver-phone-holder-versatile-outdoor-survival-gear-for-camping-and--g-601101690027787.html
+https://www.temu.com/za/-tech-13-in-1-mini-multifunctional-tools-protable-small-pocket-multitool-kit-compact-card-tool-bottle-opener-rope-cutter-screwdriver-wrench-scale-carabiner-clip-hiking-camping-edc-gadgets-g-601099621764133.html
+https://www.temu.com/za/1pc-29-hole-card-gauge-drill-bit-aperture-measuring-ruler-double-sided-card-gauge-multi-size-hole-g-601105052800489.html
+https://www.temu.com/za/mini--knife-lightweight-portable-with-sharp--blade-ergonomic-non--compact-folding-design-for-outdoor-camping--delivery-tool-gift-durable-pocket-knife-for-men-women-g-601103840527564.html
+https://www.temu.com/za/6pcs-mini-vegetable-knife-keychain-set-portable-pocket-knife-for--opening-and-box-cutting-g-601102014745665.html
+https://www.temu.com/za/-9v-battery--of--high---operation-lightweight-fast-detection-of--copper-and-iron--used-for-outdoor---lost-item-search-g-601100592970510.html
+https://www.temu.com/za/2pcs-new-practical-outdoor-camping-portable-mini-igniter-head-kitchen-home-g-601101434904646.html
+https://www.temu.com/za/1pc-stylish-mens--with-lighter-holder-durable-plastic-easy-design-g-601100071046040.html

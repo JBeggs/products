@@ -1,0 +1,13 @@
+# Seeds and All — product URLs (one per line), or browse and Save in the UI.
+# Store: https://www.seedsandall.co.za/
+
+https://seedsandall.co.za/product/citron-melon-makataan-citrullus-lanatus-ssp-lanatus-var-citroides-5-seed-pack/
+https://seedsandall.co.za/product/tigers-jaw-faucaria-mixed-species-10-seed-pack/
+https://seedsandall.co.za/product/red-barked-dogwood-bonsai-bonsai-ebook-cornus-alba-5-seed-pack/
+https://seedsandall.co.za/product/hylocereus-undatus-dragon-fruit-l-a-woman-10-seed-pack/
+https://seedsandall.co.za/product/blue-star-blue-flowered-milkweed-tweedia-caerulea-5-seed-pack/
+https://seedsandall.co.za/product/aloe-jibisana-jibisa-aloe-5-seed-pack/
+https://seedsandall.co.za/product/helichrysum-caespititium-helichrysum-lineare-caespititium-snowball-everlasting-speelwonderboom-snowball-everlasting-speelwonderboom-5-seed-pack/
+https://seedsandall.co.za/product/erica-lutea-10-seed-pack/
+https://seedsandall.co.za/product/trachyandra-ciliata-5-seed-pack/
+https://seedsandall.co.za/product/aloe-laeta-5-seed-pack/

@@ -1,0 +1,35 @@
+# Makro product URLs (one per line)
+# Example: https://www.makro.co.za/honor-x7c-4g-dual-sim-256gb-black-256-gb/p/itm0975edb559f7a?pid=MOBH7E4A9DDBCMGQ
+
+https://www.makro.co.za/cederberg-sustainable-viticulture-rose-wine/p/itmd0c3eecc52737
+https://www.makro.co.za/laibach-ladybird-red-wine/p/itm282f1f2e71474
+https://www.makro.co.za/douglas-green-chenin-blanc-sauvignon-blanc-white-wine/p/itma7df40ff30a4f
+https://www.makro.co.za/kleine-zalze-family-reserve-sauvignon-blanc-white-wine/p/itm11d5232c2297b
+https://www.makro.co.za/slanghoek-shiraz-syrah-red-wine/p/itm1c03d76d93701
+https://www.makro.co.za/de-grendel-sauvignon-blanc-white-wine/p/itmb4f48c797c4e9
+https://www.makro.co.za/swartland-jerepigo-red-wine/p/itm5773774cfc443
+https://www.makro.co.za/black-bottle-blended-scotch-whisky/p/itmf7e63eec3a480
+https://www.makro.co.za/jack-daniel-s-tennessee-whiskey/p/itm9e244019a1520
+https://www.makro.co.za/murphy-s-law-irish-whiskey/p/itm958536daaaf7f
+https://www.makro.co.za/jameson-original-irish-whiskey/p/itmff986011b4c85
+https://www.makro.co.za/bushmills-irish-whiskey/p/itm25feaf95d6a85
+https://www.makro.co.za/viceroy-brandy/p/itm82c9e2816b4a9
+https://www.makro.co.za/klipdrift-blended-brandy/p/itm7230234d01ed6
+https://www.makro.co.za/van-ryns-brandy/p/itm5da55f224067e
+https://www.makro.co.za/klipdrift-blended-brandy/p/itm39d6f0d740213
+https://www.makro.co.za/kwv-brandy/p/itmb32ac749b6ba1
+https://www.makro.co.za/lion-lager-can/p/itm7f1e32045873e
+https://www.makro.co.za/lion-lager-can/p/itm9d2ab42df39a0
+https://www.makro.co.za/hansa-pilsener-nrb-pilsner-bottle/p/itm8bf8d1ad89f47
+https://www.makro.co.za/guinness-draught-stout-can/p/itmdbb68f197039d
+https://www.makro.co.za/hansa-pilsener-can/p/itm691175ab97a7c
+https://www.makro.co.za/corona-extra-lager-bottle/p/itm7da817d1979d6
+https://www.makro.co.za/windhoek-premium-draught-beer-can/p/itmb75a88c2e14db
+https://www.makro.co.za/windhoek-nrb-draught-beer-bottle/p/itm1a2d108234d1d
+https://www.makro.co.za/cactus-jack-blanco-silver-tequila/p/itm8729da39b8864
+https://www.makro.co.za/olmeca-blanco-silver-tequila/p/itm4e26be764bb45
+https://www.makro.co.za/olmeca-reposado-tequila/p/itm80b887bc91c57
+https://www.makro.co.za/olmeca-reposado-tequila/p/itm040b6bf5ee0ef
+https://www.makro.co.za/ponchos-extra-anejo-tequila/p/itm2a80ff3266acf
+https://www.makro.co.za/patron-el-alto-tequila-anejo/p/itm8e0494195f7f6
+https://www.makro.co.za/jose-cuervo-blanco-silver-tequila/p/itm2f573369d29d3

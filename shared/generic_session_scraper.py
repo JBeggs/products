@@ -164,11 +164,11 @@ else {{
     if (startRight) bar.style.left = 'auto'; else bar.style.right = 'auto';
     bar.innerHTML = '<span style="cursor:grab">⋮⋮</span><button style="padding:6px 16px!important;background:#fff!important;color:#1a5!important;border:none!important;border-radius:6px!important;cursor:pointer!important;font-size:13px!important;font-weight:bold!important;">Save product</button><span style="font-size:11px!important;font-weight:normal!important;">Ctrl+Shift+S</span>';
     var btn = bar.querySelector('button');
-    btn.onclick = function(e) {{ e.stopPropagation(); }};
-    bar.onclick = function(e) {{
-      if (e.target === btn || btn.contains(e.target)) {{
-        try {{ fireSave(); }} catch (err) {{ btn.textContent = 'Error'; setTimeout(function(){{ btn.textContent = 'Save product'; }}, 2000); }}
-      }}
+    // Call fireSave on the button directly. Do not rely on bubbling to bar.onclick:
+    // btn.onclick used stopPropagation(), which blocked the bar handler so clicks did nothing.
+    btn.onclick = function(e) {{
+      e.stopPropagation();
+      try {{ fireSave(); }} catch (err) {{ btn.textContent = 'Error'; setTimeout(function(){{ btn.textContent = 'Save product'; }}, 2000); }}
     }};
     var drag = {{ active: false, startX: 0, startY: 0, startLeft: 0, startTop: 0 }};
     bar.addEventListener('mousedown', function(e) {{

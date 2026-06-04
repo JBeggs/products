@@ -8,7 +8,10 @@ import argparse
 import json
 import logging
 import os
+import threading
+import time
 from pathlib import Path
+from urllib.parse import urljoin
 
 from dotenv import load_dotenv
 from flask import Blueprint, Flask, jsonify, make_response, render_template_string, request, send_from_directory
@@ -18,6 +21,185 @@ load_dotenv(Path(__file__).parent / ".env")
 logging.getLogger("werkzeug").setLevel(logging.ERROR)
 
 PRODUCTS_ROOT = Path(__file__).parent
+
+_verify_lock = threading.Lock()
+_verify_stop = threading.Event()
+_verify_thread = None
+_verify_state = {
+    "running": False,
+    "total": 0,
+    "done": 0,
+    "current": None,
+    "summary": {"ok": 0, "price_changed": 0, "sold_out": 0, "error": 0, "unsupported": 0},
+    "rows": [],
+    "sold_out_items": [],
+}
+
+_sync_lock = threading.Lock()
+_sync_stop = threading.Event()
+_sync_thread = None
+_sync_state = {
+    "running": False,
+    "total": 0,
+    "done": 0,
+    "checking": 0,
+    "current": None,
+    "summary": {"ok": 0, "error": 0, "skipped": 0},
+    "rows": [],
+    "synced_items": [],
+}
+
+
+def _valid_sync_dim(x) -> bool:
+    if x is None:
+        return False
+    try:
+        return float(x) > 0
+    except (TypeError, ValueError):
+        return False
+
+
+def _validate_product_for_sync(prod: dict) -> str | None:
+    """Return error message if product cannot sync, else None."""
+    if not (prod.get("url") or "").strip():
+        return "No URL"
+    if prod.get("bundle_items"):
+        return None
+    if not all(_valid_sync_dim(prod.get(k)) for k in ("dimension_length", "dimension_width", "dimension_height")):
+        return "Missing packaging dimensions"
+    try:
+        w = prod.get("weight")
+        if w is None or int(w) <= 0:
+            return "Missing weight"
+    except (TypeError, ValueError):
+        return "Missing weight"
+    return None
+
+
+def _sync_one_product(
+    sources: dict,
+    source: str,
+    index: int,
+    company_slug: str,
+    category_id: str,
+    token: str,
+    base_url: str,
+    sync_images: bool,
+    products_cache: dict[str, list],
+    dirty_sources: set[str],
+) -> dict:
+    """Sync one product. Updates products_cache in place. Returns {status, note, product_id?}."""
+    from shared.suppliers import get_company_scoped_dir
+    from shared.upload import find_product_by_source_url, update_product, upload_product
+
+    if source not in sources:
+        return {"status": "error", "note": "Invalid source", "source": source, "index": index}
+
+    products = products_cache.get(source)
+    if products is None:
+        products = load_products(source, sources, company_slug)
+        products_cache[source] = products
+
+    if index < 0 or index >= len(products):
+        return {"status": "error", "note": "Invalid index", "source": source, "index": index}
+
+    prod = products[index]
+    name = (prod.get("name") or "").strip()
+    err = _validate_product_for_sync(prod)
+    if err:
+        return {"status": "skipped", "note": err, "source": source, "index": index, "name": name}
+
+    cat = (prod.get("category_id") or "").strip() or category_id
+    if not cat:
+        return {"status": "skipped", "note": "No category", "source": source, "index": index, "name": name}
+
+    url = (prod.get("url") or "").strip()
+    output_dir = sources[source]
+    company_dir = get_company_scoped_dir(output_dir, company_slug)
+
+    bundle_items = prod.get("bundle_items")
+    products_by_source = None
+    if bundle_items:
+        is_cross = len(bundle_items) > 0 and isinstance(bundle_items[0], dict)
+        if is_cross:
+            ref_sources = {it.get("source") for it in bundle_items if it.get("source") in sources}
+            products_by_source = {}
+            for src in ref_sources:
+                if src not in products_cache:
+                    products_cache[src] = load_products(src, sources, company_slug)
+                products_by_source[src] = products_cache[src]
+            for it in bundle_items:
+                src, idx = it.get("source"), it.get("index")
+                prods = products_by_source.get(src) or []
+                if idx is None or idx < 0 or idx >= len(prods):
+                    return {"status": "error", "note": f"Bundle invalid item {it}", "source": source, "index": index, "name": name}
+                child_pid = (prods[idx].get("production_ids") or {}).get(company_slug)
+                if not child_pid:
+                    return {"status": "error", "note": "Sync child products first", "source": source, "index": index, "name": name}
+        else:
+            for idx in bundle_items:
+                if idx < 0 or idx >= len(products):
+                    return {"status": "error", "note": f"Bundle invalid index {idx}", "source": source, "index": index, "name": name}
+                child_pid = (products[idx].get("production_ids") or {}).get(company_slug)
+                if not child_pid:
+                    return {"status": "error", "note": "Sync child products first", "source": source, "index": index, "name": name}
+
+    production_ids = prod.get("production_ids") or {}
+    existing_id = production_ids.get(company_slug)
+
+    if existing_id:
+        result = update_product(
+            prod, base_url, token, company_slug, existing_id,
+            source=source, products=products, products_by_source=products_by_source,
+            output_dir=company_dir, sources_dict=sources,
+            category_id=cat, sync_images=sync_images,
+        )
+        if result is True:
+            dirty_sources.add(source)
+            return {"status": "ok", "note": "Updated", "source": source, "index": index, "name": name, "product_id": existing_id}
+        if result == "not_found":
+            del production_ids[company_slug]
+            prod["production_ids"] = production_ids
+            dirty_sources.add(source)
+            existing_id = None
+        else:
+            return {"status": "error", "note": "Update failed", "source": source, "index": index, "name": name}
+
+    if not existing_id:
+        found_id = find_product_by_source_url(base_url, token, company_slug, url)
+        if found_id:
+            result = update_product(
+                prod, base_url, token, company_slug, found_id,
+                source=source, products=products, products_by_source=products_by_source,
+                output_dir=company_dir, sources_dict=sources,
+                category_id=cat, sync_images=sync_images,
+            )
+            if result is True:
+                production_ids[company_slug] = found_id
+                prod["production_ids"] = production_ids
+                dirty_sources.add(source)
+                return {"status": "ok", "note": "Updated (matched URL)", "source": source, "index": index, "name": name, "product_id": found_id}
+            if result == "not_found":
+                del production_ids[company_slug]
+                prod["production_ids"] = production_ids
+                dirty_sources.add(source)
+            else:
+                return {"status": "error", "note": "Update failed", "source": source, "index": index, "name": name}
+
+        pid = upload_product(
+            prod, company_dir, base_url, token, company_slug, cat,
+            products=products, products_by_source=products_by_source,
+            sources_dict=sources if products_by_source else None,
+            bundle_source=source,
+        )
+        if pid:
+            production_ids[company_slug] = pid
+            prod["production_ids"] = production_ids
+            dirty_sources.add(source)
+            return {"status": "ok", "note": "Created", "source": source, "index": index, "name": name, "product_id": pid}
+        return {"status": "error", "note": "Create failed", "source": source, "index": index, "name": name}
+
+    return {"status": "error", "note": "Sync failed", "source": source, "index": index, "name": name}
 
 # Source from supplier registry (single source of truth) - fetched fresh per request
 def _get_sources():
@@ -124,20 +306,21 @@ def create_edit_blueprint():
             existing_id = production_ids.get(company_slug)
             if existing_id:
                 cat = (prod.get("category_id") or "").strip() or category_id
-                ok = update_product(
+                result = update_product(
                     prod, base_url, token, company_slug, existing_id,
                     source=source, products=products, products_by_source=products_by_source,
                     output_dir=company_dir, sources_dict=sources_dict,
                     category_id=cat,
                 )
-                if ok:
+                if result is True:
                     synced += 1
-                else:
-                    # Product may have been deleted on prod; clear stale id and retry as create
+                elif result == "not_found":
                     del production_ids[company_slug]
                     prod["production_ids"] = production_ids
                     changed = True
                     existing_id = None
+                else:
+                    return
             if not existing_id:
                 # Fallback: try to find existing product by source_url on API (avoids duplicates when production_ids was lost)
                 found_id = find_product_by_source_url(base_url, token, company_slug, prod.get("url"))
@@ -212,6 +395,11 @@ def create_edit_blueprint():
             company_slug = (data.get("company_slug") or "").strip()
             category_id = (data.get("category_id") or "").strip()
             prods = data.get("products", [])
+            raw_sync_images = data.get("sync_images", True)
+            if isinstance(raw_sync_images, str):
+                sync_images = raw_sync_images.strip().lower() in ("1", "true", "yes")
+            else:
+                sync_images = bool(raw_sync_images)
             if s not in sources:
                 return jsonify({"ok": False, "error": "Invalid source"})
             if not company_slug:
@@ -283,29 +471,44 @@ def create_edit_blueprint():
                         if not child_pid:
                             return jsonify({"ok": False, "error": "Sync child products first"})
 
+            import time as _time
+            _t0 = _time.time()
+            pname = prod.get("name", "")[:40]
+            print(f"  [sync] Starting: {pname}...")
+
             token = get_auth_token(base_url, username, password, company_slug=company_slug, use_email=use_email)
             if not token:
                 return jsonify({"ok": False, "error": "Login failed"})
+            print(f"  [sync] Auth OK ({_time.time() - _t0:.1f}s)")
 
             production_ids = prod.get("production_ids") or {}
             existing_id = production_ids.get(company_slug)
             if existing_id:
+                print(f"  [sync] Updating existing {existing_id}...")
                 cat = (prod.get("category_id") or "").strip() or category_id
-                if update_product(
+                result = update_product(
                     prod, base_url, token, company_slug, existing_id,
                     source=s, products=products, products_by_source=products_by_source,
                     output_dir=company_dir, sources_dict=sources,
                     category_id=cat,
-                ):
+                    sync_images=sync_images,
+                )
+                if result is True:
+                    print(f"  [sync] Done: updated in {_time.time() - _t0:.1f}s")
                     return jsonify({"ok": True, "product_id": existing_id})
-                # Product may have been deleted on prod; clear stale id and retry as create
-                del production_ids[company_slug]
-                prod["production_ids"] = production_ids
-                save_products(s, products, sources, company_slug)
-                existing_id = None
+                if result == "not_found":
+                    print(f"  [sync] Product gone from prod, will re-create")
+                    del production_ids[company_slug]
+                    prod["production_ids"] = production_ids
+                    save_products(s, products, sources, company_slug)
+                    existing_id = None
+                else:
+                    print(f"  [sync] Update failed after {_time.time() - _t0:.1f}s")
+                    return jsonify({"ok": False, "error": "Update failed (API error, not deleted). Check logs."})
             if not existing_id:
-                # Fallback: find existing product by source_url to avoid duplicates when production_ids was lost
+                print(f"  [sync] Looking up by source URL...")
                 found_id = find_product_by_source_url(base_url, token, company_slug, url)
+                print(f"  [sync] Lookup done ({_time.time() - _t0:.1f}s) found={found_id}")
                 if found_id:
                     cat = (prod.get("category_id") or "").strip() or category_id
                     if update_product(
@@ -313,11 +516,13 @@ def create_edit_blueprint():
                         source=s, products=products, products_by_source=products_by_source,
                         output_dir=company_dir, sources_dict=sources,
                         category_id=cat,
+                        sync_images=sync_images,
                     ):
                         production_ids[company_slug] = found_id
                         prod["production_ids"] = production_ids
                         save_products(s, products, sources, company_slug)
                         return jsonify({"ok": True, "product_id": found_id})
+                print(f"  [sync] Creating new product...")
                 pid = upload_product(
                     prod, company_dir, base_url, token, company_slug, category_id,
                     products=products, products_by_source=products_by_source,
@@ -328,8 +533,10 @@ def create_edit_blueprint():
                     production_ids[company_slug] = pid
                     prod["production_ids"] = production_ids
                     save_products(s, products, sources, company_slug)
+                    print(f"  [sync] Done: created {pid} in {_time.time() - _t0:.1f}s")
                     return jsonify({"ok": True, "product_id": pid})
-                return jsonify({"ok": False, "error": "Create failed"})
+                print(f"  [sync] FAILED after {_time.time() - _t0:.1f}s")
+                return jsonify({"ok": False, "error": "Create failed (image upload failed). Check terminal."})
         except Exception as e:
             return jsonify({"ok": False, "error": str(e)})
 
@@ -616,6 +823,356 @@ def create_edit_blueprint():
         except Exception as e:
             return jsonify({"ok": False, "error": str(e)})
 
+    def _verify_timeout_note(source: str, timeout_s: float) -> str:
+        note = f"Timed out after {int(timeout_s)}s"
+        if source == "temu":
+            note += (
+                " — Temu uses real Chrome (port 9223). Keep that window open, complete login/slider "
+                "if shown, then retry. Setup: cd products && python temu/setup_verify.py"
+            )
+        return note
+
+    def _prewarm_temu_verify() -> None:
+        from temu.scrape_temu import _get_temu_verify_page
+
+        _get_temu_verify_page()
+
+    def _run_verify_job(targets: list, company_slug: str, delay: float = 0.1) -> None:
+        global _verify_state
+        from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeout
+
+        from shared.refresh import verify_and_save_product
+        from shared.verify_timeouts import TEMU_PREWARM_TIMEOUT_S, verify_timeout_for
+        from shared.verify_utils import is_supplier_supported
+
+        has_temu = any(t.get("source") == "temu" for t in targets)
+        with ThreadPoolExecutor(max_workers=1, thread_name_prefix="verify-one") as pool:
+            if has_temu and not _verify_stop.is_set():
+                with _verify_lock:
+                    _verify_state["current"] = {
+                        "source": "temu",
+                        "index": -1,
+                        "name": "Opening Temu Chrome (port 9223)…",
+                    }
+                try:
+                    pool.submit(_prewarm_temu_verify).result(timeout=TEMU_PREWARM_TIMEOUT_S)
+                except FuturesTimeout:
+                    with _verify_lock:
+                        _verify_state["rows"].append(
+                            {
+                                "status": "error",
+                                "source": "temu",
+                                "index": -1,
+                                "name": "Temu Chrome",
+                                "note": (
+                                    f"Temu Chrome did not become ready within {int(TEMU_PREWARM_TIMEOUT_S)}s. "
+                                    "Run: cd products && python temu/setup_verify.py — then complete login/slider."
+                                ),
+                            }
+                        )
+                        _verify_state["summary"]["error"] += 1
+                except Exception as e:
+                    with _verify_lock:
+                        _verify_state["rows"].append(
+                            {
+                                "status": "error",
+                                "source": "temu",
+                                "index": -1,
+                                "name": "Temu Chrome",
+                                "note": str(e),
+                            }
+                        )
+                        _verify_state["summary"]["error"] += 1
+                finally:
+                    with _verify_lock:
+                        _verify_state["current"] = None
+
+            for i, target in enumerate(targets):
+                if _verify_stop.is_set():
+                    break
+                src = target["source"]
+                idx = target["index"]
+                name = target.get("name") or ""
+                per_product_timeout = verify_timeout_for(src)
+                with _verify_lock:
+                    _verify_state["current"] = {"source": src, "index": idx, "name": name}
+                    _verify_state["checking"] = i + 1
+
+                if not is_supplier_supported(src):
+                    result = {
+                        "status": "unsupported",
+                        "note": "No price checker for this supplier",
+                        "source": src,
+                        "index": idx,
+                        "name": name,
+                    }
+                else:
+                    try:
+                        future = pool.submit(verify_and_save_product, src, idx, company_slug)
+                        result = future.result(timeout=per_product_timeout)
+                    except FuturesTimeout:
+                        result = {
+                            "status": "error",
+                            "note": _verify_timeout_note(src, per_product_timeout),
+                            "source": src,
+                            "index": idx,
+                            "name": name,
+                        }
+                    except Exception as e:
+                        result = {
+                            "status": "error",
+                            "note": str(e),
+                            "source": src,
+                            "index": idx,
+                            "name": name,
+                        }
+
+                status = result.get("status") or "error"
+                with _verify_lock:
+                    _verify_state["done"] = i + 1
+                    if status in _verify_state["summary"]:
+                        _verify_state["summary"][status] += 1
+                    row = {
+                        "status": status,
+                        "source": src,
+                        "index": idx,
+                        "name": result.get("name") or name,
+                        "note": result.get("note") or "",
+                    }
+                    _verify_state["rows"].append(row)
+                    if len(_verify_state["rows"]) > 200:
+                        _verify_state["rows"] = _verify_state["rows"][-200:]
+                    if status == "sold_out":
+                        _verify_state["sold_out_items"].append({"source": src, "index": idx})
+                    _verify_state["current"] = None
+
+                if delay > 0 and i + 1 < len(targets) and not _verify_stop.is_set():
+                    time.sleep(delay)
+
+        try:
+            from temu.scrape_temu import close_temu_verify_session
+            from shared.playwright_verify import close_verify_browser
+
+            close_temu_verify_session()
+            close_verify_browser()
+        except Exception:
+            pass
+
+        with _verify_lock:
+            _verify_state["running"] = False
+            _verify_state["current"] = None
+
+    @bp.route("/api/verify-start", methods=["POST"])
+    def api_verify_start():
+        global _verify_thread, _verify_state
+        try:
+            data = request.get_json() or {}
+            company_slug = (data.get("company_slug") or "").strip()
+            scope = (data.get("scope") or "all").strip()
+            src = (data.get("source") or "").strip()
+            if not company_slug:
+                return jsonify({"ok": False, "error": "company_slug required"})
+            sources = _get_sources()
+            if scope == "source":
+                if src not in sources:
+                    return jsonify({"ok": False, "error": "Invalid source"})
+            with _verify_lock:
+                if _verify_state.get("running"):
+                    return jsonify({"ok": False, "error": "Verification already running"})
+            from shared.refresh import collect_verify_targets
+
+            targets = collect_verify_targets(company_slug, scope=scope, source=src or None)
+            if not targets:
+                return jsonify({"ok": False, "error": "No products with URLs to verify"})
+
+            _verify_stop.clear()
+            with _verify_lock:
+                _verify_state = {
+                    "running": True,
+                    "total": len(targets),
+                    "done": 0,
+                    "checking": 0,
+                    "current": None,
+                    "summary": {"ok": 0, "price_changed": 0, "sold_out": 0, "error": 0, "unsupported": 0},
+                    "rows": [],
+                    "sold_out_items": [],
+                }
+
+            def _worker():
+                _run_verify_job(targets, company_slug)
+
+            _verify_thread = threading.Thread(target=_worker, daemon=True)
+            _verify_thread.start()
+            return jsonify({"ok": True, "total": len(targets)})
+        except Exception as e:
+            return jsonify({"ok": False, "error": str(e)})
+
+    @bp.route("/api/verify-status")
+    def api_verify_status():
+        with _verify_lock:
+            return jsonify(dict(_verify_state))
+
+    @bp.route("/api/verify-stop", methods=["POST"])
+    def api_verify_stop():
+        _verify_stop.set()
+        return jsonify({"ok": True})
+
+    def _run_sync_job(
+        targets: list,
+        company_slug: str,
+        sync_images: bool,
+        products_by_source: dict | None = None,
+    ) -> None:
+        global _sync_state
+        from shared.config import get_credentials_for_company
+        from shared.upload import get_auth_token
+
+        sources = _get_sources()
+        products_cache: dict[str, list] = {}
+        dirty_sources: set[str] = set()
+
+        if products_by_source:
+            for src, prods in products_by_source.items():
+                if src in sources and isinstance(prods, list):
+                    save_products(src, prods, sources, company_slug)
+                    products_cache[src] = list(prods)
+
+        base_url = (os.environ.get("API_BASE_URL") or "").strip()
+        try:
+            username, password = get_credentials_for_company(company_slug)
+        except ValueError as e:
+            with _sync_lock:
+                _sync_state["running"] = False
+                _sync_state["rows"].append({"status": "error", "note": str(e), "name": "", "source": ""})
+            return
+
+        use_email = str(os.environ.get("API_USE_EMAIL", "")).lower() in ("1", "true", "yes")
+        if not base_url or not username or not password:
+            with _sync_lock:
+                _sync_state["running"] = False
+                _sync_state["rows"].append({"status": "error", "note": "Missing API credentials", "name": "", "source": ""})
+            return
+
+        token = get_auth_token(base_url, username, password, company_slug=company_slug, use_email=use_email)
+        if not token:
+            with _sync_lock:
+                _sync_state["running"] = False
+                _sync_state["rows"].append({"status": "error", "note": "Login failed", "name": "", "source": ""})
+            return
+
+        for i, target in enumerate(targets):
+            if _sync_stop.is_set():
+                break
+            src = target["source"]
+            idx = target["index"]
+            cat = (target.get("category_id") or "").strip()
+            name = target.get("name") or ""
+            with _sync_lock:
+                _sync_state["current"] = {"source": src, "index": idx, "name": name}
+                _sync_state["checking"] = i + 1
+
+            result = _sync_one_product(
+                sources, src, idx, company_slug, cat, token, base_url, sync_images,
+                products_cache, dirty_sources,
+            )
+            status = result.get("status") or "error"
+            with _sync_lock:
+                _sync_state["done"] = i + 1
+                if status in _sync_state["summary"]:
+                    _sync_state["summary"][status] += 1
+                row = {
+                    "status": status,
+                    "source": src,
+                    "index": idx,
+                    "name": result.get("name") or name,
+                    "note": result.get("note") or "",
+                }
+                _sync_state["rows"].append(row)
+                if len(_sync_state["rows"]) > 200:
+                    _sync_state["rows"] = _sync_state["rows"][-200:]
+                if status == "ok" and result.get("product_id"):
+                    _sync_state["synced_items"].append({
+                        "source": src,
+                        "index": idx,
+                        "product_id": result["product_id"],
+                    })
+                _sync_state["current"] = None
+
+        for src in dirty_sources:
+            prods = products_cache.get(src)
+            if prods is not None:
+                save_products(src, prods, sources, company_slug)
+
+        with _sync_lock:
+            _sync_state["running"] = False
+            _sync_state["current"] = None
+
+    @bp.route("/api/sync-start", methods=["POST"])
+    def api_sync_start():
+        global _sync_thread, _sync_state
+        try:
+            data = request.get_json() or {}
+            company_slug = (data.get("company_slug") or "").strip()
+            targets = data.get("targets") or []
+            products_by_source = data.get("products_by_source") or {}
+            raw_sync_images = data.get("sync_images", True)
+            if isinstance(raw_sync_images, str):
+                sync_images = raw_sync_images.strip().lower() in ("1", "true", "yes")
+            else:
+                sync_images = bool(raw_sync_images)
+            if not company_slug:
+                return jsonify({"ok": False, "error": "company_slug required"})
+            if not targets:
+                return jsonify({"ok": False, "error": "No products to sync"})
+            sources = _get_sources()
+            normalized = []
+            for t in targets:
+                src = (t.get("source") or "").strip()
+                if src not in sources:
+                    continue
+                normalized.append({
+                    "source": src,
+                    "index": int(t.get("index", 0)),
+                    "category_id": (t.get("category_id") or "").strip(),
+                    "name": (t.get("name") or "").strip(),
+                })
+            if not normalized:
+                return jsonify({"ok": False, "error": "No valid sync targets"})
+            with _sync_lock:
+                if _sync_state.get("running"):
+                    return jsonify({"ok": False, "error": "Sync already running"})
+            _sync_stop.clear()
+            with _sync_lock:
+                _sync_state = {
+                    "running": True,
+                    "total": len(normalized),
+                    "done": 0,
+                    "checking": 0,
+                    "current": None,
+                    "summary": {"ok": 0, "error": 0, "skipped": 0},
+                    "rows": [],
+                    "synced_items": [],
+                }
+
+            def _worker():
+                _run_sync_job(normalized, company_slug, sync_images, products_by_source or None)
+
+            _sync_thread = threading.Thread(target=_worker, daemon=True)
+            _sync_thread.start()
+            return jsonify({"ok": True, "total": len(normalized)})
+        except Exception as e:
+            return jsonify({"ok": False, "error": str(e)})
+
+    @bp.route("/api/sync-status")
+    def api_sync_status():
+        with _sync_lock:
+            return jsonify(dict(_sync_state))
+
+    @bp.route("/api/sync-stop", methods=["POST"])
+    def api_sync_stop():
+        _sync_stop.set()
+        return jsonify({"ok": True})
+
     @bp.route("/api/companies")
     def api_companies():
         """Return company slugs for Update Production dropdown."""
@@ -643,19 +1200,65 @@ def create_edit_blueprint():
         from shared.upload import get_auth_token
         import requests
 
+        def _rows_from_payload(data):
+            """DRF paginated {results, next}, bare list, or {success, data: list|{results}}."""
+            if isinstance(data, list):
+                return data
+            if not isinstance(data, dict):
+                return []
+            if isinstance(data.get("results"), list):
+                return data["results"]
+            inner = data.get("data")
+            if isinstance(inner, list):
+                return inner
+            if isinstance(inner, dict):
+                if isinstance(inner.get("results"), list):
+                    return inner["results"]
+                if isinstance(inner.get("data"), list):
+                    return inner["data"]
+            return []
+
+        def _row_id(row):
+            if not isinstance(row, dict):
+                return None
+            rid = row.get("id")
+            if rid is None:
+                rid = row.get("pk")
+            if rid is None:
+                return None
+            s = str(rid).strip()
+            return s or None
+
         token = get_auth_token(base_url, username, password, company_slug=company_slug, use_email=use_email)
         if not token:
-            return jsonify({"categories": [], "error": "Login failed"})
+            return jsonify({"categories": [], "error": "Login failed (check credentials or try again — remote API can be slow)"})
         try:
-            r = requests.get(
-                f"{base_url.rstrip('/')}/v1/categories/",
-                headers={"Authorization": f"Bearer {token}", "X-Company-Slug": company_slug},
-                timeout=15,
-            )
-            r.raise_for_status()
-            data = r.json()
-            items = data.get("results") if isinstance(data.get("results"), list) else (data if isinstance(data, list) else data.get("data", []))
-            categories = [{"id": str(c.get("id")), "name": c.get("name", ""), "slug": c.get("slug", "")} for c in items if c.get("id")]
+            headers = {"Authorization": f"Bearer {token}", "X-Company-Slug": company_slug}
+            base = base_url.rstrip("/")
+            next_url = f"{base}/v1/categories/"
+            all_rows = []
+            seen = set()
+            while next_url:
+                if next_url in seen:
+                    break
+                seen.add(next_url)
+                r = requests.get(next_url, headers=headers, timeout=30)
+                r.raise_for_status()
+                payload = r.json()
+                all_rows.extend(_rows_from_payload(payload))
+                nxt = payload.get("next") if isinstance(payload, dict) else None
+                if not nxt:
+                    break
+                next_url = urljoin(r.url, nxt) if isinstance(nxt, str) else None
+
+            categories = []
+            for c in all_rows:
+                rid = _row_id(c)
+                if not rid:
+                    continue
+                categories.append(
+                    {"id": rid, "name": str(c.get("name") or ""), "slug": str(c.get("slug") or "")}
+                )
             return jsonify({"categories": categories})
         except Exception as e:
             return jsonify({"categories": [], "error": str(e)})
@@ -744,12 +1347,23 @@ def create_edit_blueprint():
             combined_images = []
             cross_supplier = items_input is not None
             for src, idx, p in items_data:
+                child_paths = []
+                main_img = p.get("image")
+                if main_img and isinstance(main_img, str) and not str(main_img).lower().startswith("http"):
+                    child_paths.append(main_img)
                 for img in p.get("images") or []:
+                    if img:
+                        child_paths.append(img)
+                for img in child_paths:
                     raw = img.split("?")[0] if isinstance(img, str) else str(img)
-                    key = f"{src}/{raw}" if cross_supplier else raw
+                    raw = raw.strip()
+                    if not raw:
+                        continue
+                    # Dedupe by (supplier, child index, path) so two children never collapse when paths match.
+                    key = (src, idx, raw) if cross_supplier else (idx, raw)
                     if key not in images_seen:
                         images_seen.add(key)
-                        combined_images.append(f"{src}/{raw}" if cross_supplier else img)
+                        combined_images.append(f"{src}/{raw}" if cross_supplier else raw)
             if not combined_images:
                 return jsonify({"ok": False, "error": "No images in selected products"})
             desc_parts = []
@@ -804,6 +1418,53 @@ def create_edit_blueprint():
 
 app = Flask(__name__)
 app.register_blueprint(create_edit_blueprint())
+
+
+def _normalize_pdp_url(url: str) -> str:
+    """Stable key for matching the same product across saves."""
+    return (url or "").strip().split("?")[0].rstrip("/").lower()
+
+
+def _merge_sync_state_into_incoming_products(incoming: list, previous: list) -> list:
+    """
+    Preserve production_ids from the last on-disk snapshot when the client payload
+    dropped them (undefined omitted from JSON, partial state, race). Per-URL match.
+    Incoming non-empty values win over previous for the same company slug.
+    """
+    by_url: dict[str, dict] = {}
+    for prev in previous:
+        if not isinstance(prev, dict):
+            continue
+        u = _normalize_pdp_url(prev.get("url") or "")
+        if u:
+            by_url[u] = prev
+    out: list = []
+    for p in incoming:
+        if not isinstance(p, dict):
+            out.append(p)
+            continue
+        merged = dict(p)
+        u = _normalize_pdp_url(merged.get("url") or "")
+        prev = by_url.get(u) if u else None
+        if not prev:
+            out.append(merged)
+            continue
+        prev_ids = prev.get("production_ids")
+        if not prev_ids or not isinstance(prev_ids, dict):
+            out.append(merged)
+            continue
+        cur_ids = merged.get("production_ids")
+        if cur_ids is None:
+            merged["production_ids"] = dict(prev_ids)
+        elif isinstance(cur_ids, dict):
+            if not cur_ids:
+                merged["production_ids"] = dict(prev_ids)
+            else:
+                combined = dict(prev_ids)
+                combined.update(cur_ids)
+                merged["production_ids"] = combined
+        out.append(merged)
+    return out
 
 
 def _get_products_path(source: str, sources: dict, company_slug: str) -> Path | None:
@@ -873,6 +1534,8 @@ def save_products(source: str, products: list, sources: dict | None = None, comp
         data = json.loads(path.read_text(encoding="utf-8")) if path.exists() else {}
     except Exception:
         data = {}
+    previous_products = list(data.get("products") or [])
+    products = _merge_sync_state_into_incoming_products(products, previous_products)
     data["products"] = products
     from datetime import datetime
     data["updated"] = datetime.now().isoformat()
@@ -889,22 +1552,62 @@ HTML = """
   <title>Edit Products</title>
   <style>
     * { box-sizing: border-box; }
-    body { font-family: system-ui, sans-serif; margin: 1rem; background: #1a1a1a; color: #e0e0e0; }
+    html { overflow-x: hidden; }
+    body { font-family: system-ui, sans-serif; margin: 1rem; background: #1a1a1a; color: #e0e0e0; max-width: 100vw; overflow-x: hidden; }
     h1 { font-size: 1.25rem; margin-bottom: 1rem; }
-    .tabs { display: flex; gap: 0.5rem; margin-bottom: 1rem; }
-    .tabs button { padding: 0.5rem 1rem; background: #333; border: 1px solid #555; border-radius: 4px; color: #e0e0e0; cursor: pointer; }
+    .supplier-panel { margin-bottom: 1rem; max-width: 100%; }
+    .supplier-panel-row { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.4rem; flex-wrap: wrap; }
+    .supplier-jump-label { font-size: 0.8rem; color: #888; flex-shrink: 0; }
+    .supplier-jump {
+      flex: 1 1 12rem;
+      min-width: 0;
+      max-width: min(28rem, 100%);
+      padding: 0.45rem 0.6rem;
+      background: #252525;
+      border: 1px solid #444;
+      border-radius: 6px;
+      color: #e0e0e0;
+      font-size: 0.9rem;
+    }
+    .tabs-scroll {
+      max-width: 100%;
+      overflow-x: auto;
+      overflow-y: hidden;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: thin;
+      padding-bottom: 0.35rem;
+      border-bottom: 1px solid #333;
+    }
+    .tabs-scroll::-webkit-scrollbar { height: 6px; }
+    .tabs-scroll::-webkit-scrollbar-thumb { background: #444; border-radius: 3px; }
+    .tabs { display: flex; gap: 0.35rem; flex-wrap: nowrap; margin-bottom: 0; width: max-content; padding: 0.1rem 0; }
+    .tabs button {
+      padding: 0.4rem 0.65rem;
+      background: #333;
+      border: 1px solid #555;
+      border-radius: 4px;
+      color: #e0e0e0;
+      cursor: pointer;
+      flex-shrink: 0;
+      white-space: nowrap;
+      font-size: 0.82rem;
+    }
     .tabs button.active { background: #2a7; border-color: #2a7; }
     .tabs button:hover { background: #444; }
-    .tab-placeholder { color: #888; font-size: 0.9rem; }
-    .filter-bar { display: flex; gap: 0.75rem; margin-bottom: 1rem; flex-wrap: wrap; }
+    .tab-placeholder { color: #888; font-size: 0.9rem; white-space: nowrap; }
+    .filter-bar { display: flex; gap: 0.75rem; margin-bottom: 1rem; flex-wrap: wrap; max-width: 100%; align-items: center; }
     .filter-bar input { padding: 0.4rem 0.6rem; background: #252525; border: 1px solid #444; border-radius: 4px; color: #e0e0e0; min-width: 180px; }
     .last-updated { font-size: 0.85rem; color: #888; align-self: center; }
     .product-count { font-size: 0.85rem; color: #aaa; align-self: center; }
     .source-badge { font-size: 0.7rem; font-weight: 600; color: #2a7; }
-    .row { display: flex; align-items: center; gap: 1rem; padding: 0.5rem 0.75rem; background: #252525; border-radius: 6px; margin-bottom: 0.25rem; cursor: pointer; }
+    .row { display: flex; align-items: center; gap: 0.6rem; padding: 0.5rem 0.75rem; background: #252525; border-radius: 6px; margin-bottom: 0.25rem; cursor: pointer; min-width: 0; max-width: 100%; }
     .row:hover { background: #2a2a2a; }
     .row.expanded { flex-wrap: wrap; }
-    .row .col-name { flex: 1; min-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    #products { max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    /* Floor width so columns do not crush; narrow viewports scroll #products horizontally */
+    #products .row { min-width: 32rem; }
+    #products .row.list-header { min-width: 32rem; }
+    .row .col-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .row .col-cost { width: 70px; font-size: 0.85rem; color: #888; }
     .row .col-price { width: 70px; }
     .row .col-goods { width: 100px; font-size: 0.8rem; color: #666; }
@@ -969,7 +1672,7 @@ HTML = """
     .supplier-links { margin-bottom: 0.75rem; }
     .col-select { width: 28px; flex-shrink: 0; }
     .col-select input { cursor: pointer; }
-    .select-actions { display: flex; gap: 0.5rem; align-items: center; }
+    .select-actions { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; row-gap: 0.35rem; max-width: 100%; }
     .select-actions button { padding: 0.35rem 0.7rem; font-size: 0.85rem; border: none; border-radius: 4px; cursor: pointer; }
     .select-actions .delete-selected { background: #c44; color: white; }
     .select-actions .delete-selected:hover { background: #e55; }
@@ -979,6 +1682,28 @@ HTML = """
     .select-actions .create-bundle-btn:disabled { opacity: 0.5; cursor: not-allowed; }
     .view-all-btn { padding: 0.4rem 0.75rem; font-size: 0.9rem; background: #444; color: #e0e0e0; border: 1px solid #555; border-radius: 4px; cursor: pointer; -webkit-tap-highlight-color: transparent; }
     .view-all-btn:hover { background: #555; }
+    .verify-all-btn { padding: 0.4rem 0.75rem; font-size: 0.9rem; background: #284; color: white; border: 1px solid #396; border-radius: 4px; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+    .verify-all-btn:hover { background: #395; }
+    .verify-all-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .verify-modal { background: #252525; border: 1px solid #444; border-radius: 8px; padding: 1.25rem; min-width: 520px; max-width: 95vw; max-height: 85vh; display: flex; flex-direction: column; }
+    .verify-modal h3 { margin: 0 0 0.75rem 0; font-size: 1rem; }
+    .verify-progress { margin-bottom: 0.75rem; }
+    .verify-progress-bar { height: 8px; background: #333; border-radius: 4px; overflow: hidden; margin-top: 0.35rem; }
+    .verify-progress-fill { height: 100%; background: #2a7; width: 0%; transition: width 0.3s; }
+    .verify-current { font-size: 0.85rem; color: #aaa; margin-bottom: 0.75rem; min-height: 1.2em; }
+    .verify-log { overflow-y: auto; max-height: 320px; border: 1px solid #333; border-radius: 4px; font-size: 0.82rem; }
+    .verify-log table { width: 100%; border-collapse: collapse; }
+    .verify-log th, .verify-log td { padding: 0.35rem 0.5rem; text-align: left; border-bottom: 1px solid #333; }
+    .verify-log th { position: sticky; top: 0; background: #2a2a2a; color: #aaa; font-weight: 600; }
+    .verify-status-ok { color: #6c6; }
+    .verify-status-price_changed { color: #fc6; }
+    .verify-status-sold_out { color: #f88; }
+    .verify-status-error { color: #f66; }
+    .verify-status-unsupported { color: #888; }
+    .verify-summary { margin-top: 0.75rem; font-size: 0.9rem; color: #ccc; }
+    .verify-modal-actions { display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 1rem; }
+    .verify-modal-actions button { padding: 0.5rem 1rem; border: none; border-radius: 4px; cursor: pointer; background: #444; color: #e0e0e0; }
+    .verify-modal-actions button.primary { background: #2a7; color: white; }
     .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 1000; }
     .modal-overlay.hidden { display: none; }
     .modal { background: #252525; border: 1px solid #444; border-radius: 8px; padding: 1.25rem; min-width: 320px; max-width: 90vw; }
@@ -990,6 +1715,10 @@ HTML = """
     .modal-actions .btn-cancel:hover { background: #555; }
     .modal-actions .btn-confirm { background: #c44; color: white; }
     .modal-actions .btn-confirm:hover { background: #e55; }
+    .modal-actions .btn-skip-images { background: #444; color: #e0e0e0; border: 1px solid #555; }
+    .modal-actions .btn-skip-images:hover { background: #555; }
+    .modal-actions .btn-sync-images { background: #2a5; color: white; }
+    .modal-actions .btn-sync-images:hover { background: #3b6; }
     .modal-extra { margin: 0.75rem 0 0 0; }
     .modal-link { color: #6af; text-decoration: none; }
     .packaging-field .packaging-row { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
@@ -1004,8 +1733,8 @@ HTML = """
     @media (max-width: 640px) {
       body { margin: 0.5rem; padding-bottom: max(2rem, env(safe-area-inset-bottom, 0px)); -webkit-text-size-adjust: 100%; }
       h1 { font-size: 1.1rem; }
-      .tabs { flex-wrap: nowrap; overflow-x: auto; gap: 0.4rem; padding-bottom: 0.25rem; -webkit-overflow-scrolling: touch; }
       .tabs button { padding: 0.5rem 0.75rem; font-size: 0.9rem; min-height: 44px; -webkit-tap-highlight-color: transparent; }
+      .supplier-jump { font-size: 16px; min-height: 44px; max-width: 100%; }
       .filter-bar { flex-direction: column; align-items: stretch; gap: 0.5rem; }
       .filter-bar input { min-width: 0; width: 100%; font-size: 16px; min-height: 44px; }
       .last-updated { font-size: 0.8rem; }
@@ -1042,12 +1771,22 @@ HTML = """
   <div class="top-nav"><a href="/">← Dashboard</a></div>
   <h1>Edit Products</h1>
   <div id="companyBar" class="company-bar" style="margin-bottom: 1rem; font-size: 0.9rem; color: #888;"></div>
-  <div class="tabs" id="tabs">
-    <span class="tab-placeholder">Loading suppliers...</span>
+  <div id="editSupplierScopeNote" style="font-size:0.85rem;color:#a98;margin:0 0 0.75rem 0;display:none;"></div>
+  <div class="supplier-panel">
+    <div class="supplier-panel-row">
+      <label for="supplierJump" class="supplier-jump-label">Supplier</label>
+      <select id="supplierJump" class="supplier-jump" title="Jump to supplier" aria-label="Supplier"></select>
+    </div>
+    <div class="tabs-scroll">
+      <div class="tabs" id="tabs">
+        <span class="tab-placeholder">Loading suppliers...</span>
+      </div>
+    </div>
   </div>
   <div class="filter-bar">
     <input type="text" id="searchName" placeholder="Search name..." oninput="viewAllSuppliers=false; render()">
     <button type="button" class="view-all-btn" id="viewAllBtn">View all</button>
+    <button type="button" class="verify-all-btn" id="verifyAllBtn" onclick="startVerifyAll()" title="Check stock and prices from supplier URLs">Verify all</button>
     <button type="button" class="view-all-btn" id="refreshBtn" onclick="refreshProducts()" title="Reload products">Refresh</button>
     <span class="last-updated" id="lastUpdated"></span>
     <span class="product-count" id="productCount"></span>
@@ -1070,7 +1809,51 @@ HTML = """
       <div id="modalExtra" class="modal-extra" style="display:none;"></div>
       <div class="modal-actions">
         <button type="button" class="btn-cancel" onclick="closeModal()">Cancel</button>
+        <button type="button" class="btn-skip-images" id="modalSkipImagesBtn" style="display:none;">Skip images</button>
+        <button type="button" class="btn-sync-images" id="modalSyncImagesBtn" style="display:none;">Sync images</button>
         <button type="button" class="btn-confirm" id="modalConfirmBtn">Confirm</button>
+      </div>
+    </div>
+  </div>
+  <div id="verifyModalOverlay" class="modal-overlay hidden">
+    <div class="verify-modal">
+      <h3 id="verifyModalTitle">Checking products…</h3>
+      <div class="verify-progress">
+        <span id="verifyProgressText">Starting…</span>
+        <div class="verify-progress-bar"><div class="verify-progress-fill" id="verifyProgressFill"></div></div>
+      </div>
+      <div class="verify-current" id="verifyCurrent"></div>
+      <div class="verify-log">
+        <table>
+          <thead><tr><th>Status</th><th>Supplier</th><th>Name</th><th>Note</th></tr></thead>
+          <tbody id="verifyLogBody"></tbody>
+        </table>
+      </div>
+      <div class="verify-summary" id="verifySummary"></div>
+      <div class="verify-modal-actions">
+        <button type="button" id="verifyStopBtn" onclick="stopVerifyAll()">Stop</button>
+        <button type="button" class="primary" id="verifyCloseBtn" onclick="closeVerifyModal()" disabled>Close</button>
+      </div>
+    </div>
+  </div>
+  <div id="syncModalOverlay" class="modal-overlay hidden">
+    <div class="verify-modal">
+      <h3 id="syncModalTitle">Syncing products…</h3>
+      <div class="verify-progress">
+        <span id="syncProgressText">Starting…</span>
+        <div class="verify-progress-bar"><div class="verify-progress-fill" id="syncProgressFill"></div></div>
+      </div>
+      <div class="verify-current" id="syncCurrent"></div>
+      <div class="verify-log">
+        <table>
+          <thead><tr><th>Status</th><th>Supplier</th><th>Name</th><th>Note</th></tr></thead>
+          <tbody id="syncLogBody"></tbody>
+        </table>
+      </div>
+      <div class="verify-summary" id="syncSummary"></div>
+      <div class="verify-modal-actions">
+        <button type="button" id="syncStopBtn" onclick="stopSyncBatch()">Stop</button>
+        <button type="button" class="primary" id="syncCloseBtn" onclick="closeSyncModal()" disabled>Close</button>
       </div>
     </div>
   </div>
@@ -1091,7 +1874,68 @@ HTML = """
     let syncNotes = {};
     let syncSelectedRunning = false;
     let sources = [];
+    /** Full supplier list from /edit/api/sources before Dashboard company-supplier filter */
+    let allEditSources = [];
     let categories = [];
+    let verifyPolling = null;
+    let verifySoldOutItems = [];
+    let syncPolling = null;
+
+    function resetSyncUiState() {
+      syncLoading = {};
+      syncSelectedRunning = false;
+    }
+
+    /**
+     * @returns {Promise<boolean|null>} true = sync images, false = skip unless backend missing, null = cancel
+     */
+    function showImageSyncChoice(title, message) {
+      return new Promise(function (resolve) {
+        var overlay = document.getElementById('modalOverlay');
+        var titleEl = document.getElementById('modalTitle');
+        var msgEl = document.getElementById('modalMessage');
+        var extraEl = document.getElementById('modalExtra');
+        var cancelBtn = overlay && overlay.querySelector('.btn-cancel');
+        var confirmBtn = document.getElementById('modalConfirmBtn');
+        var skipBtn = document.getElementById('modalSkipImagesBtn');
+        var syncBtn = document.getElementById('modalSyncImagesBtn');
+        if (!overlay || !titleEl || !msgEl || !cancelBtn || !confirmBtn || !skipBtn || !syncBtn) {
+          resolve(true);
+          return;
+        }
+        titleEl.textContent = title || 'Images';
+        msgEl.textContent = message || '';
+        if (extraEl) {
+          extraEl.innerHTML = '';
+          extraEl.style.display = 'none';
+        }
+        confirmBtn.style.display = 'none';
+        skipBtn.style.display = '';
+        syncBtn.style.display = '';
+        overlay.classList.remove('hidden');
+
+        function finish(val) {
+          skipBtn.onclick = null;
+          syncBtn.onclick = null;
+          cancelBtn.onclick = null;
+          overlay.onclick = null;
+          document.removeEventListener('keydown', onKey);
+          confirmBtn.style.display = '';
+          skipBtn.style.display = 'none';
+          syncBtn.style.display = 'none';
+          overlay.classList.add('hidden');
+          resolve(val);
+        }
+        function onKey(e) {
+          if (e.key === 'Escape') finish(null);
+        }
+        skipBtn.onclick = function () { finish(false); };
+        syncBtn.onclick = function () { finish(true); };
+        cancelBtn.onclick = function () { finish(null); };
+        overlay.onclick = function (e) { if (e.target === overlay) finish(null); };
+        document.addEventListener('keydown', onKey);
+      });
+    }
 
     const TIMED_DURATION_OPTIONS = [
       { value: '', label: '— Not timed' },
@@ -1149,33 +1993,114 @@ HTML = """
     }
 
     const COMPANY_STORAGE_KEY = 'edit_products_company_slug';
-    function getCompany() { return (localStorage.getItem(COMPANY_STORAGE_KEY) || '').trim(); }
-    function updateCompanyBar() {
-      const bar = document.getElementById('companyBar');
+    /** Company slug: prefer the bar dropdown (source of truth in UI), then localStorage. Keeps storage in sync when the select has a value. */
+    function getCompany() {
+      const sel = document.getElementById('companySelectEdit');
+      if (sel) {
+        const v = (sel.value || '').trim();
+        if (v) {
+          try { localStorage.setItem(COMPANY_STORAGE_KEY, v); } catch (e) {}
+          return v;
+        }
+      }
+      return (localStorage.getItem(COMPANY_STORAGE_KEY) || '').trim();
+    }
+
+    async function fetchCompanySupplierAllowSet(company) {
+      const c = (company || '').trim();
+      if (!c) return null;
+      try {
+        const cr = await fetch('/api/company-suppliers?company=' + encodeURIComponent(c));
+        const cd = await cr.json();
+        const arr = Array.isArray(cd.suppliers) ? cd.suppliers : [];
+        if (!arr.length) return null;
+        const set = new Set();
+        arr.forEach(function (x) {
+          const t = String(x || '').trim().toLowerCase();
+          if (t) set.add(t);
+        });
+        return set.size ? set : null;
+      } catch (e) {
+        return null;
+      }
+    }
+
+    function applyEditSupplierScopeNote(text) {
+      const el = document.getElementById('editSupplierScopeNote');
+      if (!el) return;
+      el.textContent = text || '';
+      el.style.display = text ? 'block' : 'none';
+    }
+
+    function filterEditSourcesForCompany(full, allowSet) {
+      if (!allowSet) return { list: full.slice(), warn: '' };
+      const filtered = full.filter(function (s) {
+        return allowSet.has(String(s.slug || '').toLowerCase());
+      });
+      if (filtered.length) return { list: filtered, warn: '' };
+      return {
+        list: full.slice(),
+        warn: 'Configured suppliers for this company do not match any supplier with saved data; showing all tabs. Update on Dashboard → Configure suppliers.',
+      };
+    }
+
+    async function rebuildSupplierTabsForCompany() {
       const company = getCompany();
-      bar.innerHTML = company ? 'Company: <strong>' + escapeHtml(company) + '</strong> — <a href="/">Change on Dashboard</a>' : '<a href="/">Select company on Dashboard first</a>';
+      const allowSet = await fetchCompanySupplierAllowSet(company);
+      const { list, warn } = filterEditSourcesForCompany(allEditSources, allowSet);
+      sources = list;
+      const parts = [];
+      if (allowSet && sources.length && !warn) {
+        parts.push('Tabs show ' + sources.length + ' supplier(s) configured for this company (Dashboard → Configure suppliers).');
+      }
+      if (warn) parts.push(warn);
+      applyEditSupplierScopeNote(parts.join(' '));
+
+      const tabsEl = document.getElementById('tabs');
+      const jump = document.getElementById('supplierJump');
+      if (!sources.length) {
+        tabsEl.innerHTML = '<span class="tab-placeholder">No suppliers</span>';
+        if (jump) { jump.innerHTML = ''; jump.disabled = true; }
+        return;
+      }
+      if (jump) jump.disabled = false;
+
+      const urlSource = new URLSearchParams(window.location.search).get('source');
+      let pick = source;
+      if (!sources.some(function (s) { return s.slug === pick; })) {
+        pick = (urlSource && sources.some(function (s) { return s.slug === urlSource; })) ? urlSource : sources[0].slug;
+      }
+      source = pick;
+
+      tabsEl.innerHTML = sources.map(function (s) {
+        return '<button type="button" class="tab' + (s.slug === source ? ' active' : '') + '" data-source="' + escapeAttr(s.slug) + '">' + escapeHtml(s.display_name || s.slug) + '</button>';
+      }).join('');
+      tabsEl.querySelectorAll('.tab').forEach(function (b) {
+        b.onclick = function () { loadSource(b.dataset.source); };
+      });
+      if (jump) {
+        jump.innerHTML = sources.map(function (s) {
+          return '<option value="' + escapeAttr(s.slug) + '">' + escapeHtml(s.display_name || s.slug) + '</option>';
+        }).join('');
+        jump.value = source;
+        jump.onchange = function () { if (jump.value) loadSource(jump.value); };
+      }
+
+      if (company) {
+        await loadSource(source);
+      } else {
+        products = [];
+        lastUpdated = null;
+        resetSyncUiState();
+        render();
+      }
     }
 
     async function initTabs() {
       const r = await fetch(cacheBust(apiUrl('api/sources')));
-      sources = await r.json();
-      updateCompanyBar();
+      allEditSources = await r.json();
       loadCategories();
-      const tabsEl = document.getElementById('tabs');
-      if (!sources.length) {
-        tabsEl.innerHTML = '<span class="tab-placeholder">No suppliers</span>';
-        return;
-      }
-      const urlSource = new URLSearchParams(window.location.search).get('source');
-      source = (urlSource && sources.some(s => s.slug === urlSource)) ? urlSource : sources[0].slug;
-      tabsEl.innerHTML = sources.map((s) =>
-        '<button class="tab' + (s.slug === source ? ' active' : '') + '" data-source="' + s.slug + '">' + (s.display_name || s.slug) + '</button>'
-      ).join('');
-      tabsEl.querySelectorAll('.tab').forEach(b => {
-        b.onclick = () => loadSource(b.dataset.source);
-      });
-      const company = getCompany();
-      if (company) loadSource(source); else products = [];
+      await rebuildSupplierTabsForCompany();
       loadCountries();
       const viewAllBtn = document.getElementById('viewAllBtn');
       if (viewAllBtn) viewAllBtn.addEventListener('click', viewAll);
@@ -1201,16 +2126,20 @@ HTML = """
     function cacheBust(url) { return url + (url.includes('?') ? '&' : '?') + '_=' + Date.now(); }
 
     async function loadSource(s) {
+      resetSyncUiState();
       source = s;
       viewAllSuppliers = false;
       selectedIndices.clear();
       refreshNotes = {};
       syncNotes = {};
       document.querySelectorAll('.tab').forEach(b => { b.classList.toggle('active', b.dataset.source === source); });
+      const jump = document.getElementById('supplierJump');
+      if (jump && jump.value !== source) jump.value = source;
       const company = getCompany();
       if (!company) {
         products = [];
         lastUpdated = null;
+        resetSyncUiState();
         render();
         return;
       }
@@ -1225,20 +2154,31 @@ HTML = """
       const company = getCompany();
       if (!company) {
         categories = [];
+        resetSyncUiState();
         render();
         return;
       }
       try {
-        const r = await fetch(apiUrl('api/categories?company_slug=' + encodeURIComponent(company)));
+        const r = await fetch(cacheBust(apiUrl('api/categories?company_slug=' + encodeURIComponent(company))));
         const d = await r.json();
         const cats = d.categories || [];
-        if (d.error || !cats.length) {
-          categories = [];
-        } else {
+        if (cats.length) {
           categories = cats;
+        } else {
+          categories = [];
+          const msgEl = document.getElementById('msg');
+          if (msgEl && d.error) {
+            msgEl.textContent = 'Categories: ' + d.error;
+            msgEl.className = 'msg err';
+          }
         }
       } catch (e) {
         categories = [];
+        const msgEl = document.getElementById('msg');
+        if (msgEl) {
+          msgEl.textContent = 'Categories failed to load: ' + (e.message || String(e));
+          msgEl.className = 'msg err';
+        }
       }
       render();
     }
@@ -1253,6 +2193,38 @@ HTML = """
 
     function escapeHtml(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
     function escapeAttr(s) { return escapeHtml(s).replace(/"/g, '&quot;'); }
+
+    async function loadCompanySelector() {
+      const bar = document.getElementById('companyBar');
+      try {
+        const r = await fetch(cacheBust(apiUrl('api/companies')));
+        const d = await r.json();
+        const companies = d.companies || [];
+        if (!companies.length) {
+          bar.innerHTML = '<span style="color:#888;">No companies configured (COMPANY_SLUGS). <a href="/">Dashboard</a></span>';
+          return;
+        }
+        bar.innerHTML = '<label for="companySelectEdit" style="margin-right:0.5rem;color:#888;">Company</label>' +
+          '<select id="companySelectEdit" style="padding:0.45rem 0.65rem;background:#252525;border:1px solid #444;border-radius:6px;color:#e0e0e0;min-width:160px;font-size:0.95rem;">' +
+          '<option value="">Select company</option>' +
+          companies.map(function (c) { return '<option value="' + escapeAttr(c) + '">' + escapeHtml(c) + '</option>'; }).join('') +
+          '</select> <span style="color:#666;font-size:0.85rem;">(<a href="/" class="modal-link">Dashboard</a>)</span>';
+        const sel = document.getElementById('companySelectEdit');
+        const saved = getCompany();
+        if (saved && companies.indexOf(saved) >= 0) sel.value = saved;
+        else if (companies.length === 1) sel.value = companies[0];
+        if (saved && companies.indexOf(saved) < 0) localStorage.removeItem(COMPANY_STORAGE_KEY);
+        if (sel.value) localStorage.setItem(COMPANY_STORAGE_KEY, sel.value);
+        sel.onchange = async function () {
+          var v = (sel.value || '').trim();
+          if (v) localStorage.setItem(COMPANY_STORAGE_KEY, v); else localStorage.removeItem(COMPANY_STORAGE_KEY);
+          loadCategories();
+          await rebuildSupplierTabsForCompany();
+        };
+      } catch (e) {
+        bar.innerHTML = '<span style="color:#c66;">Could not load companies. <a href="/" class="modal-link">Dashboard</a></span>';
+      }
+    }
 
     function formatTimestamp(iso) {
       if (!iso) return '';
@@ -1278,9 +2250,11 @@ HTML = """
       const company = getCompany();
       if (!company) {
         products = [];
+        resetSyncUiState();
         render();
         return;
       }
+      resetSyncUiState();
       const btn = document.getElementById('viewAllBtn');
       if (btn) { btn.disabled = true; btn.textContent = 'Loading…'; }
       viewAllSuppliers = true;
@@ -1342,7 +2316,7 @@ HTML = """
         const pSource = p._source || source;
         const supplierName = escapeHtml((sources.find(s => s.slug === pSource) || {}).display_name || pSource);
         const prodCat = p.category_id || '';
-        const catOpts = categories.length ? '<option value=""' + (!prodCat ? ' selected' : '') + '>—</option>' + categories.map(c => '<option value="' + escapeAttr(c.id) + '"' + (prodCat === c.id ? ' selected' : '') + '>' + escapeHtml((c.name || c.slug || c.id).slice(0, 20)) + ((c.name || c.slug || '').length > 20 ? '…' : '') + '</option>').join('') : '<option value="">Select company</option>';
+        const catOpts = categories.length ? '<option value=""' + (!prodCat ? ' selected' : '') + '>—</option>' + categories.map(c => '<option value="' + escapeAttr(c.id) + '"' + (prodCat === c.id ? ' selected' : '') + '>' + escapeHtml((c.name || c.slug || c.id).slice(0, 20)) + ((c.name || c.slug || '').length > 20 ? '…' : '') + '</option>').join('') : ('<option value="">' + (company ? 'No categories — refresh or check API' : 'Pick company in bar above') + '</option>');
         let linksHtml = '';
         if (p.bundle_items && p.bundle_item_details && p.bundle_item_details.length) {
           linksHtml = p.bundle_item_details.filter(d => (d.url || '').trim()).map(d =>
@@ -1486,33 +2460,310 @@ HTML = """
       render();
     }
 
+    function stripProductMeta(p) {
+      const out = Object.assign({}, p);
+      delete out._source;
+      delete out._sourceIndex;
+      return out;
+    }
+
+    function buildProductsBySourceForSync(indices) {
+      const bySource = {};
+      indices.forEach(function (i) {
+        const p = products[i];
+        if (!p) return;
+        const src = p._source || source;
+        if (bySource[src]) return;
+        bySource[src] = viewAllSuppliers
+          ? products.filter(function (pp) { return pp._source === src; })
+              .sort(function (a, b) { return (a._sourceIndex ?? 0) - (b._sourceIndex ?? 0); })
+              .map(stripProductMeta)
+          : products.map(stripProductMeta);
+      });
+      return bySource;
+    }
+
+    function openSyncModal() {
+      const overlay = document.getElementById('syncModalOverlay');
+      if (overlay) overlay.classList.remove('hidden');
+      document.getElementById('syncModalTitle').textContent = 'Syncing products…';
+      document.getElementById('syncProgressText').textContent = 'Starting…';
+      document.getElementById('syncProgressFill').style.width = '0%';
+      document.getElementById('syncCurrent').textContent = '';
+      document.getElementById('syncLogBody').innerHTML = '';
+      document.getElementById('syncSummary').textContent = '';
+      document.getElementById('syncCloseBtn').disabled = true;
+      document.getElementById('syncStopBtn').disabled = false;
+    }
+
+    function closeSyncModal() {
+      const overlay = document.getElementById('syncModalOverlay');
+      if (overlay) overlay.classList.add('hidden');
+      if (syncPolling) {
+        clearTimeout(syncPolling);
+        syncPolling = null;
+      }
+    }
+
+    function renderSyncStatus(data) {
+      const total = data.total || 0;
+      const done = data.done || 0;
+      const checking = data.checking || 0;
+      const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+      let progressLabel = done + ' / ' + total + ' synced';
+      if (data.running && checking > 0 && done < checking) {
+        progressLabel = done + ' / ' + total + ' synced — working on #' + checking;
+      }
+      document.getElementById('syncProgressText').textContent = progressLabel;
+      document.getElementById('syncProgressFill').style.width = pct + '%';
+      const cur = data.current;
+      const curEl = document.getElementById('syncCurrent');
+      if (cur && cur.name) {
+        curEl.textContent = 'Syncing: ' + (cur.source || '') + ' — ' + (cur.name || '').slice(0, 60);
+      } else if (data.running) {
+        curEl.textContent = 'Waiting…';
+      } else {
+        curEl.textContent = '';
+      }
+      const tbody = document.getElementById('syncLogBody');
+      const rows = data.rows || [];
+      tbody.innerHTML = rows.map(function (r) {
+        const st = r.status || 'error';
+        const cls = 'verify-status-' + st.replace(/[^a-z_]/g, '_');
+        return '<tr><td class="' + cls + '">' + escapeHtml(st) + '</td><td>' + escapeHtml(r.source || '') + '</td><td>' + escapeHtml((r.name || '').slice(0, 40)) + '</td><td>' + escapeHtml(r.note || '') + '</td></tr>';
+      }).join('');
+      if (tbody.lastElementChild) tbody.lastElementChild.scrollIntoView({ block: 'nearest' });
+      const s = data.summary || {};
+      if (!data.running) {
+        document.getElementById('syncModalTitle').textContent = 'Sync complete';
+        document.getElementById('syncSummary').textContent =
+          'OK: ' + (s.ok || 0) + ', skipped: ' + (s.skipped || 0) + ', errors: ' + (s.error || 0);
+        document.getElementById('syncCloseBtn').disabled = false;
+        document.getElementById('syncStopBtn').disabled = true;
+      }
+    }
+
+    async function pollSyncStatus() {
+      try {
+        const r = await fetch(apiUrl('api/sync-status'));
+        const data = await r.json();
+        renderSyncStatus(data);
+        if (data.running) {
+          syncPolling = setTimeout(pollSyncStatus, 500);
+        } else {
+          syncPolling = null;
+          await finishSyncJob(data);
+        }
+      } catch (e) {
+        syncPolling = setTimeout(pollSyncStatus, 2000);
+      }
+    }
+
+    async function finishSyncJob(data) {
+      const items = data.synced_items || [];
+      items.forEach(function (item) {
+        const src = item.source;
+        const idx = item.index;
+        const pid = item.product_id;
+        let p = null;
+        if (viewAllSuppliers) {
+          p = products.find(function (pp) { return pp._source === src && pp._sourceIndex === idx; });
+        } else if (src === source) {
+          p = products[idx];
+        }
+        if (p && pid) {
+          if (!p.production_ids) p.production_ids = {};
+          p.production_ids[getCompany()] = pid;
+        }
+      });
+      const msgEl = document.getElementById('msg');
+      const s = data.summary || {};
+      if (msgEl) {
+        msgEl.textContent = 'Synced ' + (s.ok || 0) + '/' + (data.total || 0) +
+          ((s.error || 0) ? ('; errors: ' + s.error) : '') +
+          ((s.skipped || 0) ? ('; skipped: ' + s.skipped) : '');
+        msgEl.className = (s.error || 0) ? 'msg err' : 'msg ok';
+      }
+      syncSelectedRunning = false;
+      render();
+    }
+
+    async function stopSyncBatch() {
+      try {
+        await fetch(apiUrl('api/sync-stop'), { method: 'POST' });
+        document.getElementById('syncStopBtn').disabled = true;
+      } catch (e) {}
+    }
+
+    function openVerifyModal() {
+      const overlay = document.getElementById('verifyModalOverlay');
+      if (overlay) overlay.classList.remove('hidden');
+      document.getElementById('verifyModalTitle').textContent = 'Checking products…';
+      document.getElementById('verifyProgressText').textContent = 'Starting…';
+      document.getElementById('verifyProgressFill').style.width = '0%';
+      document.getElementById('verifyCurrent').textContent = '';
+      document.getElementById('verifyLogBody').innerHTML = '';
+      document.getElementById('verifySummary').textContent = '';
+      document.getElementById('verifyCloseBtn').disabled = true;
+      document.getElementById('verifyStopBtn').disabled = false;
+    }
+
+    function closeVerifyModal() {
+      const overlay = document.getElementById('verifyModalOverlay');
+      if (overlay) overlay.classList.add('hidden');
+      if (verifyPolling) {
+        clearTimeout(verifyPolling);
+        verifyPolling = null;
+      }
+    }
+
+    function renderVerifyStatus(data) {
+      const total = data.total || 0;
+      const done = data.done || 0;
+      const checking = data.checking || 0;
+      const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+      let progressLabel = done + ' / ' + total + ' checked';
+      if (data.running && checking > 0 && done < checking) {
+        progressLabel = done + ' / ' + total + ' checked — working on #' + checking;
+      }
+      document.getElementById('verifyProgressText').textContent = progressLabel;
+      document.getElementById('verifyProgressFill').style.width = pct + '%';
+      const cur = data.current;
+      const curEl = document.getElementById('verifyCurrent');
+      if (cur && cur.name) {
+        curEl.textContent = 'Checking: ' + (cur.source || '') + ' — ' + (cur.name || '').slice(0, 60);
+      } else if (data.running) {
+        curEl.textContent = 'Waiting…';
+      } else {
+        curEl.textContent = '';
+      }
+      const tbody = document.getElementById('verifyLogBody');
+      const rows = data.rows || [];
+      tbody.innerHTML = rows.map(function (r) {
+        const st = r.status || 'error';
+        const cls = 'verify-status-' + st.replace(/[^a-z_]/g, '_');
+        return '<tr><td class="' + cls + '">' + escapeHtml(st) + '</td><td>' + escapeHtml(r.source || '') + '</td><td>' + escapeHtml((r.name || '').slice(0, 40)) + '</td><td>' + escapeHtml(r.note || '') + '</td></tr>';
+      }).join('');
+      if (tbody.lastElementChild) tbody.lastElementChild.scrollIntoView({ block: 'nearest' });
+      const s = data.summary || {};
+      if (!data.running) {
+        document.getElementById('verifyModalTitle').textContent = 'Verification complete';
+        document.getElementById('verifySummary').textContent =
+          'OK: ' + (s.ok || 0) + ', price changed: ' + (s.price_changed || 0) +
+          ', sold out: ' + (s.sold_out || 0) + ', errors: ' + (s.error || 0) +
+          ', unsupported: ' + (s.unsupported || 0);
+        document.getElementById('verifyCloseBtn').disabled = false;
+        document.getElementById('verifyStopBtn').disabled = true;
+      }
+    }
+
+    async function pollVerifyStatus() {
+      try {
+        const r = await fetch(apiUrl('api/verify-status'));
+        const data = await r.json();
+        renderVerifyStatus(data);
+        if (data.running) {
+          verifyPolling = setTimeout(pollVerifyStatus, 500);
+        } else {
+          verifyPolling = null;
+          verifySoldOutItems = data.sold_out_items || [];
+          await finishVerifyJob();
+        }
+      } catch (e) {
+        verifyPolling = setTimeout(pollVerifyStatus, 2000);
+      }
+    }
+
+    async function finishVerifyJob() {
+      const nSold = verifySoldOutItems.length;
+      if (viewAllSuppliers) {
+        await viewAll();
+      } else {
+        await refreshProducts();
+      }
+      selectedIndices.clear();
+      verifySoldOutItems.forEach(function (item) {
+        for (let i = 0; i < products.length; i++) {
+          const p = products[i];
+          if (!p) continue;
+          const src = p._source || source;
+          const idx = p._sourceIndex !== undefined ? p._sourceIndex : i;
+          if (src === item.source && idx === item.index) {
+            selectedIndices.add(i);
+            break;
+          }
+        }
+      });
+      render();
+      const msgEl = document.getElementById('msg');
+      if (msgEl && nSold > 0) {
+        msgEl.textContent = nSold + ' product(s) marked sold out and selected — use Deactivate or Sync when ready.';
+        msgEl.className = 'msg err';
+      }
+    }
+
+    async function startVerifyAll() {
+      const company = getCompany();
+      if (!company) {
+        showSyncError('Choose a company in the Company dropdown at the top of this page, then try again.');
+        return;
+      }
+      const scope = viewAllSuppliers ? 'all' : 'source';
+      const body = { company_slug: company, scope: scope };
+      if (scope === 'source') body.source = source;
+      openVerifyModal();
+      const btn = document.getElementById('verifyAllBtn');
+      if (btn) btn.disabled = true;
+      try {
+        const r = await fetch(apiUrl('api/verify-start'), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        });
+        const data = await r.json();
+        if (!data.ok) {
+          closeVerifyModal();
+          showSyncError(data.error || 'Could not start verification');
+          return;
+        }
+        verifySoldOutItems = [];
+        pollVerifyStatus();
+      } catch (e) {
+        closeVerifyModal();
+        showSyncError('Error: ' + e.message);
+      } finally {
+        if (btn) btn.disabled = false;
+      }
+    }
+
+    async function stopVerifyAll() {
+      try {
+        await fetch(apiUrl('api/verify-stop'), { method: 'POST' });
+        document.getElementById('verifyStopBtn').disabled = true;
+      } catch (e) {}
+    }
+
     async function syncProduct(i) {
       if (syncLoading[i]) return;
-      syncLoading[i] = true;
-      render();
       const p = products[i];
-      if (!p) { syncLoading[i] = false; render(); return; }
+      if (!p) return;
       const src = p._source || source;
       const idx = p._sourceIndex !== undefined ? p._sourceIndex : i;
       const company = getCompany();
       const category = p.category_id;
       if (!company) {
-        syncLoading[i] = false; render();
-        showSyncError('Select a company first to sync.');
+        showSyncError('Choose a company in the Company dropdown at the top of this page, then try again.');
         return;
       }
       if (!category) {
-        syncLoading[i] = false; render();
         showSyncError('Select a category for this product.');
         return;
       }
       if (!hasPackagingDimensions(p)) {
-        syncLoading[i] = false; render();
         showSyncError('Add packaging dimensions before syncing. Select a size from the Packaging size dropdown or enter Length, Width, and Height manually.');
         return;
       }
       if (!hasWeight(p)) {
-        syncLoading[i] = false; render();
         showSyncError('Add weight (grams) before syncing.');
         return;
       }
@@ -1520,11 +2771,17 @@ HTML = """
         const pickup = ['pickup_street', 'pickup_suburb', 'pickup_city', 'pickup_province', 'pickup_postal_code', 'pickup_country'];
         const missing = pickup.filter(f => !(p[f] || '').trim());
         if (missing.length) {
-          syncLoading[i] = false; render();
           showSyncError('Gumtree products need pickup address. Expand the product and fill Street, Suburb, City, Province, Postal code, Country.');
           return;
         }
       }
+      const imgChoice = await showImageSyncChoice(
+        'Sync images?',
+        'Sync images: re-upload local photos and replace CRM gallery. Skip images: update fields only; images upload only if CRM has none.'
+      );
+      if (imgChoice === null) return;
+
+      syncLoading[i] = true;
       syncNotes[i] = null;
       render();
       try {
@@ -1534,7 +2791,7 @@ HTML = """
         const r = await fetch(apiUrl('api/sync-product'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ source: src, index: idx, company_slug: company, category_id: category, products: prodsForSource })
+          body: JSON.stringify({ source: src, index: idx, company_slug: company, category_id: category, products: prodsForSource, sync_images: imgChoice })
         });
         const data = await r.json();
         if (data.ok) {
@@ -1548,11 +2805,12 @@ HTML = """
       } catch (e) {
         syncNotes[i] = 'Error: ' + e.message;
         showSyncError('Error: ' + e.message);
-      }
-      syncLoading[i] = false;
-      render();
-      if (syncNotes[i] === 'Synced') {
-        setTimeout(() => { delete syncNotes[i]; render(); }, 2000);
+      } finally {
+        syncLoading[i] = false;
+        render();
+        if (syncNotes[i] === 'Synced') {
+          setTimeout(() => { delete syncNotes[i]; render(); }, 2000);
+        }
       }
     }
 
@@ -1589,7 +2847,8 @@ HTML = """
     }
 
     function selectAll() {
-      getFiltered().forEach(({ i }) => selectedIndices.add(i));
+      /* All rows in this supplier tab (or view-all list), not only search-visible — avoids “58/61” confusion */
+      for (let i = 0; i < products.length; i++) selectedIndices.add(i);
       render();
     }
 
@@ -1606,6 +2865,11 @@ HTML = """
       if (!overlay || !titleEl || !msgEl || !btn) return;
       titleEl.textContent = title || 'Confirm';
       msgEl.textContent = message || '';
+      const skipBtnIc = document.getElementById('modalSkipImagesBtn');
+      const syncImgBtnIc = document.getElementById('modalSyncImagesBtn');
+      if (skipBtnIc) { skipBtnIc.style.display = 'none'; skipBtnIc.onclick = null; }
+      if (syncImgBtnIc) { syncImgBtnIc.style.display = 'none'; syncImgBtnIc.onclick = null; }
+      btn.style.display = '';
       overlay.classList.remove('hidden');
       const close = (runConfirm) => {
         btn.onclick = null;
@@ -1635,6 +2899,11 @@ HTML = """
       const btn = document.getElementById('modalConfirmBtn');
       const cancelBtn = overlay && overlay.querySelector('.btn-cancel');
       if (!overlay || !titleEl || !msgEl || !btn) return;
+      const skipBtn = document.getElementById('modalSkipImagesBtn');
+      const syncImgBtn = document.getElementById('modalSyncImagesBtn');
+      if (skipBtn) { skipBtn.style.display = 'none'; skipBtn.onclick = null; }
+      if (syncImgBtn) { syncImgBtn.style.display = 'none'; syncImgBtn.onclick = null; }
+      btn.style.display = '';
       titleEl.textContent = 'Sync failed';
       msgEl.textContent = message || 'Could not sync to production.';
       extraEl.innerHTML = '';
@@ -1663,6 +2932,11 @@ HTML = """
       const btn = document.getElementById('modalConfirmBtn');
       const cancelBtn = overlay && overlay.querySelector('.btn-cancel');
       if (!overlay || !titleEl || !msgEl || !btn) return;
+      const skipBtn = document.getElementById('modalSkipImagesBtn');
+      const syncImgBtn = document.getElementById('modalSyncImagesBtn');
+      if (skipBtn) { skipBtn.style.display = 'none'; skipBtn.onclick = null; }
+      if (syncImgBtn) { syncImgBtn.style.display = 'none'; syncImgBtn.onclick = null; }
+      btn.style.display = '';
       titleEl.textContent = 'Refresh failed';
       msgEl.textContent = message || 'Could not fetch current price.';
       if (url && supplierName) {
@@ -1950,7 +3224,7 @@ HTML = """
       if (selectedIndices.size === 0) return;
       const company = getCompany();
       if (!company) {
-        showSyncError('Select a company first to sync.');
+        showSyncError('Choose a company in the Company dropdown at the top of this page, then try again.');
         return;
       }
       const indices = Array.from(selectedIndices);
@@ -1985,48 +3259,66 @@ HTML = """
         showSyncError(skipped.length ? 'Selected products missing dimensions, weight, or category. Add them first.' : 'No valid products to sync.');
         return;
       }
-      const syncBtn = document.getElementById('syncSelectedBtn');
+      const selectedCount = indices.length;
+      const skipSummary = (function () {
+        if (!skipped.length) return '';
+        const by = {};
+        skipped.forEach(function (s) { const r = s.reason || 'other'; by[r] = (by[r] || 0) + 1; });
+        return Object.keys(by).map(function (k) { return by[k] + ' ' + k; }).join(', ');
+      })();
+      const imgChoice = await showImageSyncChoice(
+        'Sync images?',
+        'Sync images: re-upload local photos and replace CRM gallery. Skip images: update fields only; images upload only if CRM has none.'
+      );
+      if (imgChoice === null) return;
+
       const msgEl = document.getElementById('msg');
       syncSelectedRunning = true;
-      if (msgEl) { msgEl.textContent = 'Syncing ' + toSync.length + ' product(s)...'; msgEl.className = 'msg'; }
-      let synced = 0;
-      const errors = [];
-      for (const i of toSync) {
-        const p = products[i];
-        const src = p._source || source;
-        const idx = p._sourceIndex !== undefined ? p._sourceIndex : i;
-        const prodsForSource = viewAllSuppliers
-          ? products.filter(pp => pp._source === src).sort((a, b) => (a._sourceIndex ?? 0) - (b._sourceIndex ?? 0)).map(pp => { const { _source, _sourceIndex, ...rest } = pp; return rest; })
-          : products.map(pp => { const { _source, _sourceIndex, ...rest } = pp; return rest; });
-        try {
-          const r = await fetch(apiUrl('api/sync-product'), {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ source: src, index: idx, company_slug: company, category_id: p.category_id, products: prodsForSource })
-          });
-          const data = await r.json();
-          if (data.ok) {
-            if (!p.production_ids) p.production_ids = {};
-            p.production_ids[company] = data.product_id;
-            synced++;
-          } else {
-            errors.push((p.name || '').slice(0, 30) + ': ' + (data.error || 'failed'));
-          }
-        } catch (e) {
-          errors.push((p.name || '').slice(0, 30) + ': ' + e.message);
-        }
-        if (msgEl) msgEl.textContent = 'Synced ' + synced + '/' + toSync.length + '...';
-        render();
-      }
-      syncSelectedRunning = false;
-      if (msgEl) {
-        let txt = 'Synced ' + synced + ' product(s).';
-        if (skipped.length) txt += ' Skipped ' + skipped.length + ' (missing dimensions/weight/category).';
-        if (errors.length) txt += ' Errors: ' + errors.slice(0, 3).join('; ');
-        msgEl.textContent = txt;
-        msgEl.className = errors.length ? 'msg err' : 'msg ok';
-      }
       render();
+      if (msgEl) {
+        var pre = 'Syncing ' + toSync.length + ' of ' + selectedCount + ' selected';
+        if (skipped.length) pre += ' (' + skipped.length + ' skipped: ' + skipSummary + ')';
+        msgEl.textContent = pre + '…';
+        msgEl.className = 'msg';
+      }
+
+      const targets = toSync.map(function (i) {
+        const p = products[i];
+        return {
+          source: p._source || source,
+          index: p._sourceIndex !== undefined ? p._sourceIndex : i,
+          category_id: p.category_id,
+          name: p.name || ''
+        };
+      });
+      const productsBySource = buildProductsBySourceForSync(toSync);
+      openSyncModal();
+      try {
+        const r = await fetch(apiUrl('api/sync-start'), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            company_slug: company,
+            sync_images: imgChoice,
+            targets: targets,
+            products_by_source: productsBySource
+          })
+        });
+        const data = await r.json();
+        if (!data.ok) {
+          closeSyncModal();
+          syncSelectedRunning = false;
+          render();
+          showSyncError(data.error || 'Could not start sync');
+          return;
+        }
+        pollSyncStatus();
+      } catch (e) {
+        closeSyncModal();
+        syncSelectedRunning = false;
+        render();
+        showSyncError('Error: ' + e.message);
+      }
     }
 
     async function reactivateSelected() {
@@ -2133,7 +3425,7 @@ HTML = """
       const company = getCompany();
       if (!company) {
         const msg = document.getElementById('msg');
-        msg.textContent = 'Select company on Dashboard first.';
+        msg.textContent = 'Choose a company in the Company dropdown at the top of this page.';
         msg.className = 'msg err';
         return;
       }
@@ -2181,7 +3473,10 @@ HTML = """
     }
     document.getElementById('resetBtn').onclick = resetToUnsynced;
 
-    initTabs();
+    (async function () {
+      await loadCompanySelector();
+      await initTabs();
+    })();
   </script>
 </body>
 </html>

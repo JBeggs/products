@@ -1,0 +1,3 @@
+# Vinyl Cutters product URLs (one per line)
+# https://vinylcutters.co.za/
+https://vinylcutters.co.za/products/combo-sublimation-printer-with-mug-heat-press

@@ -1,0 +1,55 @@
+{
+  "updated": "2026-05-29T08:54:21.344570",
+  "product_count": 7,
+  "products": [
+    {
+      "name": "Smart LED Display Soldering Iron black",
+      "price": 376.2,
+      "temu_price": 209,
+      "goods_id": "601105315766855",
+      "variant": null
+    },
+    {
+      "name": "Constant Temperature Digital Display Adjustable",
+      "price": 268.8,
+      "temu_price": 140,
+      "goods_id": "606021024067804",
+      "variant": null
+    },
+    {
+      "name": "Portable Soldering Iron, Rechargeable Welding",
+      "price": 259.2,
+      "temu_price": 135,
+      "goods_id": "606046793860117",
+      "variant": null
+    },
+    {
+      "name": "1 Mini Portable Handheld Sewing",
+      "price": 320.4,
+      "temu_price": 178,
+      "goods_id": "601101616624336",
+      "variant": null
+    },
+    {
+      "name": "GOXAWEE Electronic Digital Display Vernier",
+      "price": 110.16,
+      "temu_price": 54,
+      "goods_id": "601101328087423",
+      "variant": null
+    },
+    {
+      "name": "Air Fryer 6L Large Capacity",
+      "price": 676.8,
+      "temu_price": 376,
+      "goods_id": "605877679551705",
+      "variant": null
+    },
+    {
+      "name": "Home Mini Exhaust Fan Set,",
+      "price": 351.0,
+      "temu_price": 195,
+      "goods_id": "605994935486151",
+      "variant": null
+    }
+  ]
+}

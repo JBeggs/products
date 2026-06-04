@@ -1,0 +1,94 @@
+{
+  "products": [
+    {
+      "compare_at_price": 189.03,
+      "cost": 138,
+      "description": "az decor Skirt Costume Wear (Black)\n",
+      "dimension_height": 30,
+      "dimension_length": 2,
+      "dimension_width": 20,
+      "goods_id": "CTWH863HABSGHGHF",
+      "images": [
+        "images/az_decor_skirt_costu_CTWH863HABSGHGHF_01.webp"
+      ],
+      "in_stock": true,
+      "makro_price": 138,
+      "name": "az decor Skirt Costume Wear",
+      "price": 165.6,
+      "short_description": "az decor Skirt Costume Wear\u00a0\u00a0(Black)",
+      "status": "active",
+      "stock_quantity": 0,
+      "tags": [
+        "makro"
+      ],
+      "url": "https://www.makro.co.za/az-decor-skirt-costume-wear/p/itm00cfb0d45608c",
+      "variants": [],
+      "weight": 300,
+      "category_id": "6bd9a41a-e7cc-494a-a415-5e48b48957df",
+      "production_ids": {
+        "clothing": "c51fd84c-5700-4718-8a43-12bb2f316982"
+      }
+    },
+    {
+      "compare_at_price": 308.91,
+      "cost": 216,
+      "description": "Add a splash of color to your child's imaginative play with the Dress Up Bug Tutu Set in Red. This playful set includes a vibrant red tutu, a pair of matching ladybug antennae headband, and a delicate pair of wings. Designed for budding entomologists or fairy enthusiasts, the set promises endless fun while fostering a love for nature and creativity. The soft, elastic waistband ensures a comfortable fit, while the multi-layered tutu provides a dramatic flair, perfect for twirls and spins. Ideal for outdoor adventures, dress-up days, or festive gatherings.\n",
+      "dimension_height": 30,
+      "dimension_length": 2,
+      "dimension_width": 20,
+      "goods_id": "CTWH864VDAZKHSGM",
+      "images": [
+        "images/az_decor_skirt_set_c_CTWH864VDAZKHSGM_01.webp"
+      ],
+      "in_stock": true,
+      "makro_price": 216,
+      "name": "AZ DECOR Skirt Set Costume",
+      "price": 259.2,
+      "short_description": "AZ DECOR Skirt Set Costume Wear\u00a0\u00a0(Black, Red)",
+      "status": "active",
+      "stock_quantity": 0,
+      "tags": [
+        "makro"
+      ],
+      "url": "https://www.makro.co.za/az-decor-skirt-set-costume-wear/p/itm35074e6b1a514",
+      "variants": [],
+      "weight": 300,
+      "category_id": "6bd9a41a-e7cc-494a-a415-5e48b48957df",
+      "production_ids": {
+        "clothing": "35bdd079-fdf9-4563-9d54-f65668b1922d"
+      }
+    },
+    {
+      "compare_at_price": 353.98,
+      "cost": 250,
+      "description": "This is a dress-up and playset.\n\nTo ensure safety and durability, these are made from high-quality materials and assembled with precision manufacturing standards.\n\nThese toys provide educational skills, learning, thinking, shape recognition, problem-solving, communication, social skills, creativity, and play and life skills. Suitable for most children between the ages of 3 and 6 years.\n\nWe recommend handing wash these garments for longevity. Ideal for preschool children to explore their social learning environment through dramatic and imaginative role play.\n\nRoleplay has many developmental benefits. It helps children to develop language and communication skills.\n\nIt develops and promotes creativity and imagination.\n\nDramatic and imaginative play also encourages children to become increasingly confident and develop a stronger sense of identity.\n\nWhen children come together in role-play, it aids in their social and emotional development.\n\nListening to others, negotiation, and co-operation all result from authentic dramatic play.\n\nIt\u2019s also a great way for children to learn from others, while also sharing their own skills and experiences in an interchange of knowledge.\n\nThe benefits are endless!\n\nWhat's in the box\n1 x Costume with accessories",
+      "dimension_height": 30,
+      "dimension_length": 2,
+      "dimension_width": 20,
+      "goods_id": "CTWH6PW9DQABYUCH",
+      "images": [
+        "images/lesheng_construction_CTWH6PW9DQABYUCH_01.webp",
+        "images/lesheng_construction_CTWH6PW9DQABYUCH_02.jpg",
+        "images/lesheng_construction_CTWH6PW9DQABYUCH_03.webp"
+      ],
+      "in_stock": true,
+      "makro_price": 250,
+      "name": "Lesheng Construction Worker Role Play",
+      "price": 300,
+      "short_description": "Lesheng Construction Worker Role Play Costume Set with Tools Costume Wear\u00a0\u00a0(Yellow)",
+      "status": "active",
+      "stock_quantity": 0,
+      "tags": [
+        "makro"
+      ],
+      "url": "https://www.makro.co.za/lesheng-construction-worker-role-play-costume-set-tools-wear/p/itm765d3465f84b6",
+      "variants": [],
+      "weight": 300,
+      "category_id": "6bd9a41a-e7cc-494a-a415-5e48b48957df",
+      "production_ids": {
+        "clothing": "40408f2d-3fd9-4b5c-93e5-137efcea648b"
+      }
+    }
+  ],
+  "updated": "2026-05-17T09:48:52.622570"
+}

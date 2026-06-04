@@ -1,0 +1,42 @@
+{
+  "updated": "2026-04-17T14:38:52.529341",
+  "product_count": 6,
+  "products": [
+    {
+      "name": "Pinnacle MIGARC 145 Gasless Welder",
+      "price": 1566.88,
+      "tsawelding_price": 1399,
+      "goods_id": "pinnacle-migarc-145-flux-core-mig-mma-tig-welding-machine"
+    },
+    {
+      "name": "Pinnacle MIGARC 165 MIG-ARC Welding",
+      "price": 2910.88,
+      "tsawelding_price": 2599,
+      "goods_id": "pinnacle-migarc-165-mig-arc-welding-inverter"
+    },
+    {
+      "name": "1Kg Gasless Stainless Steel Flux",
+      "price": 339.25,
+      "tsawelding_price": 295,
+      "goods_id": "stainless-steel-flux-core-e308lt0-3-gasless-wire-0-8mm-1kg"
+    },
+    {
+      "name": "1Kg 0.8mm Flux Core MIG",
+      "price": 153.4,
+      "tsawelding_price": 130,
+      "goods_id": "1kg-flux-core-mig-welding-wire-e71t-11-gasless-0-8mm"
+    },
+    {
+      "name": "1Kg 1.0mm Flux Core MIG",
+      "price": 153.4,
+      "tsawelding_price": 130,
+      "goods_id": "1kg-flux-core-mig-welding-wire-e71t-11-gasless-1-0mm"
+    },
+    {
+      "name": "1Kg 0.9mm Flux Core MIG",
+      "price": 147.5,
+      "tsawelding_price": 125,
+      "goods_id": "1kg-flux-core-mig-welding-wire-e71t-11-gasless-0-9mm"
+    }
+  ]
+}

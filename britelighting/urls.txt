@@ -1,0 +1,2 @@
+# Britelighting — add product page URLs (one per line), or browse and Save in the scraper UI.
+# https://britelighting.co.za/

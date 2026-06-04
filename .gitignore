@@ -19,13 +19,25 @@ build/
 *_session.json
 chrome_profile/
 
-# Scraped output
-# scraped/
-# **/scraped/
+# Scraped / crawled binary media only (keep products.json trackable if you want)
+**/scraped/images/
+**/scraped/**/images/
+**/scraped/**/*.png
+**/scraped/**/*.jpg
+**/scraped/**/*.jpeg
+**/scraped/**/*.webp
+**/scraped/**/*.gif
+**/scraped/**/*.bmp
+**/scraped/**/*.avif
+
+# Debug captures
 **/debug_html/
 
 # Gumtree crawler SQLite
 gumtree_crawler/gumtree_crawler.db
+junkmail_crawler/junkmail_crawler.db
+junkmail/chrome_profile/
+junkmail/junkmail_session.json
 
 # IDE & OS
 .idea/

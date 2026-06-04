@@ -1,0 +1,2 @@
+# Add Junk Mail listing URLs (one per line)
+# Or use Start scrape — a browser opens; browse listings and click Save product (Ctrl+Shift+S).

@@ -1,0 +1,18 @@
+# Perfect Dealz product URLs (one per line)
+# Example: https://perfectdealz.co.za/products/v8-chrome-rear-badge-sticker
+
+https://perfectdealz.co.za/collections/clothing-accessories/products/unisex-golf-polo-shirt
+https://perfectdealz.co.za/collections/clothing-accessories/products/reusable-waterproof-rain-coat
+https://perfectdealz.co.za/collections/clothing-accessories/products/super-long-winter-wearable-blanket-with-hoodie
+https://perfectdealz.co.za/collections/clothing-accessories/products/tactical-vest-ceramic-armour-plates-nij-level-3-4
+https://perfectdealz.co.za/collections/clothing-accessories/products/pe-aramid-protective-body-plate
+https://perfectdealz.co.za/collections/clothing-accessories/products/classic-plain-sweatshirt
+https://perfectdealz.co.za/collections/clothing-accessories/products/usb-heated-electric-shawl-blanket
+https://perfectdealz.co.za/collections/clothing-accessories/products/oversized-plush-blanket-hoodie
+https://perfectdealz.co.za/collections/clothing-accessories/products/migraine-hat
+https://perfectdealz.co.za/collections/toys-kids-baby/products/glow-in-the-dark-pink-unicorn-blanket
+https://perfectdealz.co.za/collections/toys-kids-baby/products/rabbit-plush-crossbody-bag
+https://perfectdealz.co.za/collections/toys-kids-baby/products/3d-printing-doodle-arts-craft-drawing-usb-pen-set
+https://perfectdealz.co.za/collections/toys-kids-baby/products/flashing-roller-skates
+https://perfectdealz.co.za/collections/toys-kids-baby/products/kids-police-role-play-costume
+https://perfectdealz.co.za/collections/toys-kids-baby/products/glow-in-the-dark-hoodie-blanket-for-kids

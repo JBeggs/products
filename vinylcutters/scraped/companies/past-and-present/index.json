@@ -1,0 +1,24 @@
+{
+  "updated": "2026-05-26T16:05:03.878331",
+  "product_count": 3,
+  "products": [
+    {
+      "name": "Combo Sublimation Printer with Mug",
+      "price": 13437.5,
+      "vinylcutters_price": 12500,
+      "goods_id": "combo-sublimation-printer-with-mug-heat-press"
+    },
+    {
+      "name": "Combo Sublimation Printer kit",
+      "price": 5400,
+      "vinylcutters_price": 5000,
+      "goods_id": "combo-sublimation-printer-kit"
+    },
+    {
+      "name": "Combo 8in1 28x38cm Heat Press",
+      "price": 9720,
+      "vinylcutters_price": 9000,
+      "goods_id": "combo-8in1-28x38cm-heat-press"
+    }
+  ]
+}

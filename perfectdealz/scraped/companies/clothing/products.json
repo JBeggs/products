@@ -1,0 +1,403 @@
+{
+  "products": [
+    {
+      "category_id": "e03f7131-c9ce-4dcd-8d8a-67c80a653870",
+      "compare_at_price": 108.57,
+      "cost": 79,
+      "description": "Unisex Golf & Polo Shirt Ideal for Casual Wear",
+      "dimension_height": 5,
+      "dimension_length": 1,
+      "dimension_width": 10,
+      "goods_id": "unisex-golf-polo-shirt",
+      "images": [
+        "images/unisex_golf_polo_sh_unisex-golf-polo-shirt_01.jpg",
+        "images/unisex_golf_polo_sh_unisex-golf-polo-shirt_02.png",
+        "images/unisex_golf_polo_sh_unisex-golf-polo-shirt_03.jpg",
+        "images/unisex_golf_polo_sh_unisex-golf-polo-shirt_04.jpg",
+        "images/unisex_golf_polo_sh_unisex-golf-polo-shirt_05.jpg"
+      ],
+      "in_stock": true,
+      "name": "Unisex Golf & Polo Shirt",
+      "perfectdealz_price": 79,
+      "price": 94.8,
+      "production_ids": {
+        "clothing": "db37ffe5-6543-43a2-b1c4-070e58ebbbc0"
+      },
+      "short_description": "Unisex Golf & Polo Shirt Ideal for Casual Wear",
+      "status": "active",
+      "stock_quantity": 0,
+      "tags": [
+        "perfectdealz"
+      ],
+      "url": "https://perfectdealz.co.za/collections/clothing-accessories/products/unisex-golf-polo-shirt",
+      "variants": [],
+      "weight": 250
+    },
+    {
+      "category_id": "e03f7131-c9ce-4dcd-8d8a-67c80a653870",
+      "compare_at_price": 58.13,
+      "cost": 39,
+      "description": "Reusable Waterproof Rain Coat",
+      "dimension_height": 5,
+      "dimension_length": 1,
+      "dimension_width": 10,
+      "goods_id": "reusable-waterproof-rain-coat",
+      "images": [
+        "images/reusable_waterproof_reusable-waterproof-rain-coat_01.jpg",
+        "images/reusable_waterproof_reusable-waterproof-rain-coat_03.jpg"
+      ],
+      "in_stock": true,
+      "name": "Reusable Waterproof Rain Coat",
+      "perfectdealz_price": 39,
+      "price": 46.8,
+      "production_ids": {
+        "clothing": "03aadc83-ce43-4dc2-a59e-e5194e39466e"
+      },
+      "short_description": "Reusable Waterproof Rain Coat",
+      "status": "active",
+      "stock_quantity": 0,
+      "tags": [
+        "perfectdealz"
+      ],
+      "url": "https://perfectdealz.co.za/collections/clothing-accessories/products/reusable-waterproof-rain-coat",
+      "variants": [],
+      "weight": 100
+    },
+    {
+      "category_id": "e03f7131-c9ce-4dcd-8d8a-67c80a653870",
+      "compare_at_price": 412.3,
+      "cost": 279,
+      "description": "Super Long Winter Wearable Blanket with Hoodie",
+      "dimension_height": 30,
+      "dimension_length": 2,
+      "dimension_width": 20,
+      "goods_id": "super-long-winter-wearable-blanket-with-hoodie",
+      "images": [
+        "images/super_long_winter_we_super-long-winter-wearable-bla_01.png",
+        "images/super_long_winter_we_super-long-winter-wearable-bla_02.png",
+        "images/super_long_winter_we_super-long-winter-wearable-bla_03.png",
+        "images/super_long_winter_we_super-long-winter-wearable-bla_04.png"
+      ],
+      "in_stock": true,
+      "name": "Super Long Winter Wearable Blanket",
+      "perfectdealz_price": 279,
+      "price": 334.8,
+      "production_ids": {
+        "clothing": "d30af3a7-ff77-4f25-b563-9ed9014d0f93"
+      },
+      "short_description": "Super Long Winter Wearable Blanket with Hoodie",
+      "status": "active",
+      "stock_quantity": 0,
+      "tags": [
+        "perfectdealz"
+      ],
+      "url": "https://perfectdealz.co.za/collections/clothing-accessories/products/super-long-winter-wearable-blanket-with-hoodie",
+      "variants": [],
+      "weight": 500
+    },
+    {
+      "category_id": "e03f7131-c9ce-4dcd-8d8a-67c80a653870",
+      "compare_at_price": 1311.72,
+      "cost": 999,
+      "description": "Tactical Vest Ceramic Armour Plates NIJ Level 3/4",
+      "dimension_height": 30,
+      "dimension_length": 20,
+      "dimension_width": 25,
+      "goods_id": "tactical-vest-ceramic-armour-plates-nij-level-3-4",
+      "images": [
+        "images/tactical_vest_cerami_tactical-vest-ceramic-armour-p_01.jpg",
+        "images/tactical_vest_cerami_tactical-vest-ceramic-armour-p_02.jpg",
+        "images/tactical_vest_cerami_tactical-vest-ceramic-armour-p_03.jpg"
+      ],
+      "in_stock": true,
+      "name": "Tactical Vest Ceramic Armour Plates",
+      "perfectdealz_price": 999,
+      "price": 1198.8,
+      "production_ids": {
+        "clothing": "5850d8fa-405a-4523-8721-3e99bf1a13a0"
+      },
+      "short_description": "Tactical Vest Ceramic Armour Plates NIJ Level 3/4",
+      "status": "active",
+      "stock_quantity": 0,
+      "tags": [
+        "perfectdealz"
+      ],
+      "url": "https://perfectdealz.co.za/collections/clothing-accessories/products/tactical-vest-ceramic-armour-plates-nij-level-3-4",
+      "variants": [],
+      "weight": 5000
+    },
+    {
+      "category_id": "e03f7131-c9ce-4dcd-8d8a-67c80a653870",
+      "compare_at_price": 1358.75,
+      "cost": 949,
+      "description": "PE Aramid Protective Body Plate",
+      "dimension_height": 30,
+      "dimension_length": 20,
+      "dimension_width": 25,
+      "goods_id": "pe-aramid-protective-body-plate",
+      "images": [
+        "images/pe_aramid_protective_pe-aramid-protective-body-plat_01.jpg",
+        "images/pe_aramid_protective_pe-aramid-protective-body-plat_02.jpg",
+        "images/pe_aramid_protective_pe-aramid-protective-body-plat_03.jpg"
+      ],
+      "in_stock": true,
+      "name": "PE Aramid Protective Body Plate",
+      "perfectdealz_price": 949,
+      "price": 1138.8,
+      "production_ids": {
+        "clothing": "e3120454-10a4-4138-874a-f2a6942bbecd"
+      },
+      "short_description": "PE Aramid Protective Body Plate",
+      "status": "active",
+      "stock_quantity": 0,
+      "tags": [
+        "perfectdealz"
+      ],
+      "url": "https://perfectdealz.co.za/collections/clothing-accessories/products/pe-aramid-protective-body-plate",
+      "variants": [],
+      "weight": 7500
+    },
+    {
+      "category_id": "a3bbf15d-daf3-4889-8e61-fa6543784b7c",
+      "compare_at_price": 441.94,
+      "cost": 299,
+      "description": "Classic Plain Sweatshirt for Daily Comfort",
+      "dimension_height": 10,
+      "dimension_length": 1,
+      "dimension_width": 15,
+      "goods_id": "classic-plain-sweatshirt",
+      "images": [
+        "images/classic_plain_sweats_classic-plain-sweatshirt_01.jpg",
+        "images/classic_plain_sweats_classic-plain-sweatshirt_02.jpg"
+      ],
+      "in_stock": true,
+      "name": "Classic Plain Sweatshirt for Daily",
+      "perfectdealz_price": 299,
+      "price": 358.8,
+      "production_ids": {
+        "clothing": "070b172b-2e88-4362-b11a-c73286e5c396"
+      },
+      "short_description": "Classic Plain Sweatshirt for Daily Comfort",
+      "status": "active",
+      "stock_quantity": 0,
+      "tags": [
+        "perfectdealz"
+      ],
+      "url": "https://perfectdealz.co.za/collections/clothing-accessories/products/classic-plain-sweatshirt",
+      "variants": [],
+      "weight": 300
+    },
+    {
+      "category_id": "a3bbf15d-daf3-4889-8e61-fa6543784b7c",
+      "compare_at_price": 416.19,
+      "cost": 289,
+      "description": "USB Heated Electric Shawl Blanket",
+      "dimension_height": 10,
+      "dimension_length": 1,
+      "dimension_width": 15,
+      "goods_id": "usb-heated-electric-shawl-blanket",
+      "images": [
+        "images/usb_heated_electric_usb-heated-electric-shawl-blan_01.jpg",
+        "images/usb_heated_electric_usb-heated-electric-shawl-blan_02.jpg",
+        "images/usb_heated_electric_usb-heated-electric-shawl-blan_03.jpg",
+        "images/usb_heated_electric_usb-heated-electric-shawl-blan_04.jpg"
+      ],
+      "in_stock": true,
+      "name": "USB Heated Electric Shawl Blanket",
+      "perfectdealz_price": 289,
+      "price": 346.8,
+      "production_ids": {
+        "clothing": "ad12ced4-54f6-47e4-ba34-72e00adbe214"
+      },
+      "short_description": "USB Heated Electric Shawl Blanket",
+      "status": "active",
+      "stock_quantity": 0,
+      "tags": [
+        "perfectdealz"
+      ],
+      "url": "https://perfectdealz.co.za/collections/clothing-accessories/products/usb-heated-electric-shawl-blanket",
+      "variants": [],
+      "weight": 400
+    },
+    {
+      "category_id": "a3bbf15d-daf3-4889-8e61-fa6543784b7c",
+      "compare_at_price": 351.98,
+      "cost": 265,
+      "description": "Oversized Plush Blanket Hoodie",
+      "dimension_height": 30,
+      "dimension_length": 2,
+      "dimension_width": 20,
+      "goods_id": "oversized-plush-blanket-hoodie",
+      "images": [
+        "images/oversized_plush_blan_oversized-plush-blanket-hoodie_01.jpg"
+      ],
+      "in_stock": true,
+      "name": "Oversized Plush Blanket Hoodie",
+      "perfectdealz_price": 265,
+      "price": 318,
+      "production_ids": {
+        "clothing": "57a47b5d-91af-4ba6-a85d-e4b1d144a60f"
+      },
+      "short_description": "Oversized Plush Blanket Hoodie",
+      "status": "active",
+      "stock_quantity": 0,
+      "tags": [
+        "perfectdealz"
+      ],
+      "url": "https://perfectdealz.co.za/collections/clothing-accessories/products/oversized-plush-blanket-hoodie",
+      "variants": [],
+      "weight": 200
+    },
+    {
+      "category_id": "a3bbf15d-daf3-4889-8e61-fa6543784b7c",
+      "compare_at_price": 263.83,
+      "cost": 189,
+      "description": "Migraine Hat",
+      "dimension_height": 10,
+      "dimension_length": 1,
+      "dimension_width": 15,
+      "goods_id": "migraine-hat",
+      "images": [
+        "images/migraine_hat_migraine-hat_01.jpg"
+      ],
+      "in_stock": true,
+      "name": "Migraine Hat",
+      "perfectdealz_price": 189,
+      "price": 226.8,
+      "production_ids": {
+        "clothing": "fbc14e9b-5f94-4a64-b296-96e4096f0217"
+      },
+      "short_description": "Migraine Hat",
+      "status": "active",
+      "stock_quantity": 0,
+      "tags": [
+        "perfectdealz"
+      ],
+      "url": "https://perfectdealz.co.za/collections/clothing-accessories/products/migraine-hat",
+      "variants": [],
+      "weight": 100
+    },
+    {
+      "category_id": "6bd9a41a-e7cc-494a-a415-5e48b48957df",
+      "compare_at_price": 112.7,
+      "cost": 85,
+      "description": "Glow in The Dark Pink Unicorn Blanket",
+      "dimension_height": 10,
+      "dimension_length": 1,
+      "dimension_width": 15,
+      "goods_id": "glow-in-the-dark-pink-unicorn-blanket",
+      "images": [
+        "images/glow_in_the_dark_pin_glow-in-the-dark-pink-unicorn-_01.jpg",
+        "images/glow_in_the_dark_pin_glow-in-the-dark-pink-unicorn-_02.jpg",
+        "images/glow_in_the_dark_pin_glow-in-the-dark-pink-unicorn-_03.jpg"
+      ],
+      "in_stock": true,
+      "name": "Glow in The Dark Pink",
+      "perfectdealz_price": 85,
+      "price": 102,
+      "production_ids": {
+        "clothing": "4f8b5183-4e4d-406a-96a9-a3a95bc516cb"
+      },
+      "short_description": "Glow in The Dark Pink Unicorn Blanket",
+      "status": "active",
+      "stock_quantity": 0,
+      "tags": [
+        "perfectdealz"
+      ],
+      "url": "https://perfectdealz.co.za/collections/toys-kids-baby/products/glow-in-the-dark-pink-unicorn-blanket",
+      "variants": [],
+      "weight": 500
+    },
+    {
+      "category_id": "6bd9a41a-e7cc-494a-a415-5e48b48957df",
+      "compare_at_price": 100.14,
+      "cost": 69,
+      "description": "Rabbit Plush Crossbody Bag - Brown",
+      "dimension_height": 30,
+      "dimension_length": 2,
+      "dimension_width": 20,
+      "goods_id": "rabbit-plush-crossbody-bag",
+      "images": [
+        "images/rabbit_plush_crossbo_rabbit-plush-crossbody-bag_05.png"
+      ],
+      "in_stock": true,
+      "name": "Rabbit Plush Crossbody Bag - Brown",
+      "perfectdealz_price": 69,
+      "price": 82.8,
+      "production_ids": {
+        "clothing": "1d9dfc29-3723-4cd9-9634-91e1e1f0fd67"
+      },
+      "short_description": "Rabbit Plush Crossbody Bag - Brown",
+      "status": "active",
+      "stock_quantity": 0,
+      "tags": [
+        "perfectdealz"
+      ],
+      "url": "https://perfectdealz.co.za/collections/toys-kids-baby/products/rabbit-plush-crossbody-bag",
+      "variants": [],
+      "weight": 300
+    },
+    {
+      "category_id": "6bd9a41a-e7cc-494a-a415-5e48b48957df",
+      "compare_at_price": 130.42,
+      "cost": 99,
+      "description": "Flashing Roller Skates",
+      "dimension_height": 25,
+      "dimension_length": 15,
+      "dimension_width": 20,
+      "goods_id": "flashing-roller-skates",
+      "images": [
+        "images/flashing_roller_skat_flashing-roller-skates_01.jpg",
+        "images/flashing_roller_skat_flashing-roller-skates_02.jpg"
+      ],
+      "in_stock": true,
+      "name": "Flashing Roller Skates",
+      "perfectdealz_price": 99,
+      "price": 118.8,
+      "production_ids": {
+        "clothing": "eacf1949-eb48-4bb7-b27c-3b407be21f18"
+      },
+      "short_description": "Flashing Roller Skates",
+      "status": "active",
+      "stock_quantity": 0,
+      "tags": [
+        "perfectdealz"
+      ],
+      "url": "https://perfectdealz.co.za/collections/toys-kids-baby/products/flashing-roller-skates",
+      "variants": [],
+      "weight": 1000
+    },
+    {
+      "category_id": "6bd9a41a-e7cc-494a-a415-5e48b48957df",
+      "compare_at_price": 289.85,
+      "cost": 219,
+      "description": "Kids Police Role Play Costume",
+      "dimension_height": 30,
+      "dimension_length": 2,
+      "dimension_width": 20,
+      "goods_id": "kids-police-role-play-costume",
+      "images": [
+        "images/kids_police_role_pla_kids-police-role-play-costume_01.png",
+        "images/kids_police_role_pla_kids-police-role-play-costume_02.png",
+        "images/kids_police_role_pla_kids-police-role-play-costume_03.png"
+      ],
+      "in_stock": true,
+      "name": "Kids Police Role Play Costume",
+      "perfectdealz_price": 219,
+      "price": 262.8,
+      "production_ids": {
+        "clothing": "6b8f0642-1088-46d5-a599-79e6878da332"
+      },
+      "short_description": "Kids Police Role Play Costume",
+      "status": "active",
+      "stock_quantity": 0,
+      "tags": [
+        "perfectdealz"
+      ],
+      "url": "https://perfectdealz.co.za/collections/toys-kids-baby/products/kids-police-role-play-costume",
+      "variants": [],
+      "weight": 200
+    }
+  ],
+  "updated": "2026-05-25T12:12:49.278506"
+}

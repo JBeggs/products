@@ -1,0 +1,6 @@
+# Hekpoort Honey Farms — product URLs (one per line), or browse and Save in the UI.
+# Store: https://hekpoorthoneyfarms.co.za/
+
+https://hekpoorthoneyfarms.co.za/shop/honey-and-cinnamon-infused-500g/
+https://hekpoorthoneyfarms.co.za/shop/honey-ginger-infused/
+https://hekpoorthoneyfarms.co.za/shop/macadamia-honey/

@@ -284,45 +284,8 @@ def build_scraped_index(output_dir: Path) -> None:
 
 
 def fetch_current_pricing(url: str) -> dict | None:
-    """
-    Fetch current price/cost from Construction Hyper URL. No persistence.
-    Returns {price, cost, source_price, valid: True} or None if invalid/blocked.
-    """
-    try:
-        with sync_playwright() as p:
-            browser = p.chromium.launch(headless=True)
-            page = browser.new_page(
-                user_agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36",
-                locale="en-ZA",
-            )
-            try:
-                page.goto(url, wait_until="domcontentloaded", timeout=30000)
-                page.wait_for_load_state("networkidle", timeout=15000)
-                time.sleep(2)
-            except Exception:
-                browser.close()
-                return None
-
-            data = extract_product_data(page, debug=False)
-            browser.close()
-            if not data or (not data.get("goodsName") and data.get("salePrice") is None):
-                return None
-
-            sale_price_zar = data.get("salePrice")
-            sale_price_cents = int(sale_price_zar * 100) if sale_price_zar is not None else 0
-            if sale_price_cents <= 0:
-                return None
-            sell_price = apply_tiered_markup(sale_price_cents, "constructionhyper")
-            cost = calculate_supplier_cost(sale_price_cents, "constructionhyper")
-            source_price = sale_price_zar if sale_price_zar is not None else (sale_price_cents / 100)
-            return {
-                "price": round(sell_price, 2),
-                "cost": round(cost, 2),
-                "source_price": round(source_price, 2),
-                "valid": True,
-            }
-    except Exception:
-        return None
+    from shared.verify_pricing import fetch_retail_pricing_http
+    return fetch_retail_pricing_http(url, "constructionhyper")
 
 
 def run_scrape_session(

@@ -1,0 +1,3 @@
+# Hekpoort Honey Farms — product URLs (one per line), or browse and Save in the UI.
+# Store: https://hekpoorthoneyfarms.co.za/
+

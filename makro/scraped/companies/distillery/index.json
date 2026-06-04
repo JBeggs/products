@@ -1,0 +1,196 @@
+{
+  "products": [
+    {
+      "name": "Cederberg Sustainable Viticulture Rose Wine",
+      "price": 133.28,
+      "makro_price": 119,
+      "goods_id": "WINHFHHHAGZGGG5G"
+    },
+    {
+      "name": "Laibach The Ladybird Red Wine",
+      "price": 144.48,
+      "makro_price": 129,
+      "goods_id": "WINHFR2YNRTPVFY7"
+    },
+    {
+      "name": "Douglas Green Chenin Blanc, Sauvignon (Pack of 6 x 750 ml)",
+      "price": 386.1,
+      "makro_price": 351,
+      "goods_id": "WINH4YAERMQYUFGY"
+    },
+    {
+      "name": "Kleine Zalze Family Reserve Sauvignon",
+      "price": 350.9,
+      "makro_price": 319,
+      "goods_id": "WINHFR2MTHAYTKTN"
+    },
+    {
+      "name": "Slanghoek Shiraz (Syrah) Red Wine (Pack of 6 x 750 ml)",
+      "price": 564.3,
+      "makro_price": 513,
+      "goods_id": "WINHFR2Y6E9YA7JC"
+    },
+    {
+      "name": "De Grendel Sauvignon Blanc White (Pack of 6 x 750 ml)",
+      "price": 801.9,
+      "makro_price": 729,
+      "goods_id": "WINHFRFDNRMDTHGF"
+    },
+    {
+      "name": "Swartland Jerepigo Red Wine (Pack of 6 x 750 ml)",
+      "price": 647.9,
+      "makro_price": 589,
+      "goods_id": "WINHFR2YF3JT44YW"
+    },
+    {
+      "name": "Black Bottle Blended Scotch Whisky",
+      "price": 361.9,
+      "makro_price": 329,
+      "goods_id": "SPRHFS7WYSJM7JGT"
+    },
+    {
+      "name": "Jack Daniel's Tennessee Whiskey ",
+      "price": 746.9,
+      "makro_price": 679,
+      "goods_id": "SPRH7KZ2GFNYMZ29"
+    },
+    {
+      "name": "Murphy's Law Irish Whiskey (Pack of 12 x 750 ml)",
+      "price": 2891.9,
+      "makro_price": 2629,
+      "goods_id": "SPRHGCJHGSQHGPHU"
+    },
+    {
+      "name": "Jameson Original Irish Whiskey ",
+      "price": 383.9,
+      "makro_price": 349,
+      "goods_id": "SPRH4UWQ6WZGNCGA"
+    },
+    {
+      "name": "Bushmills Irish Whiskey (Pack of 6 x 750 ml)",
+      "price": 2328.7,
+      "makro_price": 2117,
+      "goods_id": "SPRHBYE4GPAZDVQX"
+    },
+    {
+      "name": "Viceroy Brandy (750 ml)",
+      "price": 229.9,
+      "makro_price": 209,
+      "goods_id": "SPRH4UWWFFSYFPMN"
+    },
+    {
+      "name": "Klipdrift Blended Brandy (750 ml)",
+      "price": 200.48,
+      "makro_price": 179,
+      "goods_id": "SPRH4UWWJ89TBSZ2"
+    },
+    {
+      "name": "Van Ryns Brandy (750 ml)",
+      "price": 405.9,
+      "makro_price": 369,
+      "goods_id": "SPRHFS76NXCYUJCF"
+    },
+    {
+      "name": "Klipdrift Blended Brandy (Pack of 12 x 750 ml)",
+      "price": 2706,
+      "makro_price": 2460,
+      "goods_id": "SPRH4UWWHYXBQB7J"
+    },
+    {
+      "name": "KWV Brandy (Pack of 12 x 750 ml)",
+      "price": 1419,
+      "makro_price": 1290,
+      "goods_id": "SPRHBYE4YXWQSYRV"
+    },
+    {
+      "name": "Lion Lager Can (Pack of 6 x 500 ml)",
+      "price": 96.6,
+      "makro_price": 84,
+      "goods_id": "BEEHYRB58M7ZFY2M"
+    },
+    {
+      "name": "Lion Lager Can (Pack of 24 x 500 ml)",
+      "price": 346.5,
+      "makro_price": 315,
+      "goods_id": "BEEHYRB5ER5CGGUX"
+    },
+    {
+      "name": "Hansa Pilsener NRB Pilsner Bottle",
+      "price": 328.9,
+      "makro_price": 299,
+      "goods_id": "BEEHYRB5VMDY88AS"
+    },
+    {
+      "name": "Guinness Draught Stout Can (Pack of 24 x 440 ml)",
+      "price": 559.9,
+      "makro_price": 509,
+      "goods_id": "BEEHYRB5JAAQMBT5"
+    },
+    {
+      "name": "Hansa Pilsener Can (Pack of 24 x 500 ml)",
+      "price": 368.5,
+      "makro_price": 335,
+      "goods_id": "BEEHYRB5CBWGN7VV"
+    },
+    {
+      "name": "Corona Extra Lager Bottle (Pack of 24 x 355 ml)",
+      "price": 434.5,
+      "makro_price": 395,
+      "goods_id": "BEEHYRB5GWNBQGNY"
+    },
+    {
+      "name": "Windhoek Premium Draught Beer Can",
+      "price": 125.44,
+      "makro_price": 112,
+      "goods_id": "BEEH7Z2GYFGBBYU7"
+    },
+    {
+      "name": "Windhoek NRB Draught Beer Bottle",
+      "price": 456.5,
+      "makro_price": 415,
+      "goods_id": "BEEHYRB5H8GTBTDH"
+    },
+    {
+      "name": "Cactus Jack Blanco (Silver) Tequila",
+      "price": 178.08,
+      "makro_price": 159,
+      "goods_id": "SPRH4UWQFTKFR9F4"
+    },
+    {
+      "name": "Olmeca Blanco (Silver) Tequila (750",
+      "price": 350.9,
+      "makro_price": 319,
+      "goods_id": "SPRHFS76KETVJTXQ"
+    },
+    {
+      "name": "Olmeca Reposado Tequila (750 ml)",
+      "price": 350.9,
+      "makro_price": 319,
+      "goods_id": "SPRHFS76PXJJCPTT"
+    },
+    {
+      "name": "Olmeca Reposado Tequila Tequila (Pack",
+      "price": 4087.6,
+      "makro_price": 3716,
+      "goods_id": "SPRH7KZ22D5QKVXY"
+    },
+    {
+      "name": "Ponchos Extra Anejo Tequila (750",
+      "price": 350.9,
+      "makro_price": 319,
+      "goods_id": "SPRH4UWQRFRKNAT3"
+    },
+    {
+      "name": "Patron El Alto Tequila Anejo",
+      "price": 5278.9,
+      "makro_price": 4799,
+      "goods_id": "SPRH9STABG89HHSG"
+    },
+    {
+      "name": "Jose Cuervo Blanco (Silver) Tequila",
+      "price": 284.9,
+      "makro_price": 259,
+      "goods_id": "SPRH4UWQ9MZ7YUEN"
+    }
+  ]
+}

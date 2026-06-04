@@ -359,7 +359,22 @@ def fetch_current_pricing(url: str) -> dict | None:
                 page.goto(url, wait_until="domcontentloaded", timeout=30000)
                 page.wait_for_load_state("networkidle", timeout=15000)
                 data = extract_product_data(page, debug=False)
+                in_stock = True
+                try:
+                    from shared.verify_utils import playwright_page_in_stock
+                    in_stock = playwright_page_in_stock(page)
+                except Exception:
+                    pass
                 if not data or data.get("salePrice") is None:
+                    if not in_stock:
+                        return {
+                            "price": None,
+                            "cost": None,
+                            "source_price": None,
+                            "valid": True,
+                            "in_stock": False,
+                            "unavailable": False,
+                        }
                     return None
                 sale_price_zar = data.get("salePrice")
                 sale_price_cents = int(sale_price_zar * 100)
@@ -370,6 +385,8 @@ def fetch_current_pricing(url: str) -> dict | None:
                     "cost": round(cost, 2),
                     "source_price": round(sale_price_zar, 2),
                     "valid": True,
+                    "in_stock": in_stock,
+                    "unavailable": False,
                 }
             finally:
                 browser.close()

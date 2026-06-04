@@ -6,6 +6,7 @@ saves to local folders (for review/debugging), optionally uploads to Django API.
 import argparse
 import html
 import json
+import logging
 import os
 import re
 import sys
@@ -39,6 +40,213 @@ load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
 SESSION_FILE = Path(__file__).parent / "temu_session.json"
 CHROME_PROFILE = Path(__file__).parent / "chrome_profile"
+LOG = logging.getLogger("products.scraper")
+
+# Reused real Chrome for Verify all (Playwright launch fails Temu slider captcha).
+_temu_verify_session: dict = {}
+
+# Browser-only: parse ZA list price from #goods_price. Must live inside a single () => { ... } for Playwright.
+_TEMU_GOODS_PRICE_TEXT_TO_ZAR_FN = """function temuGoodsPriceTextToZAR(text) {
+  if (!text) return null;
+  const est = text.match(/Estimated\\s*R\\s*([\\d,]+)/i);
+  if (est) return parseInt(est[1].replace(/,/g, ''), 10) || null;
+  const lines = text.split(/\\r?\\n/).map(function (l) { return l.trim(); }).filter(Boolean);
+  for (let i = 0; i < lines.length; i++) {
+    const m = lines[i].match(/^R\\s*([\\d,]+)\\s*$/i);
+    if (m) return parseInt(m[1].replace(/,/g, ''), 10) || null;
+  }
+  const withoutPay = text.replace(/Pay\\s*R\\s*[\\d,]+/gi, '');
+  const any = withoutPay.match(/\\bR\\s*([\\d,]+)/i);
+  if (any) return parseInt(any[1].replace(/,/g, ''), 10) || null;
+  return null;
+}"""
+
+TEMU_WAIT_GOODS_PRICE_JS = (
+    "() => {\n"
+    + _TEMU_GOODS_PRICE_TEXT_TO_ZAR_FN
+    + """
+  const priceEl = document.getElementById('goods_price');
+  let text = priceEl ? (priceEl.innerText || priceEl.textContent || '').trim() : '';
+  if (!text) {
+    const rc = document.getElementById('rightContent');
+    if (rc) text = (rc.innerText || rc.textContent || '').trim();
+  }
+  const n = temuGoodsPriceTextToZAR(text);
+  return n != null && n > 0;
+}
+"""
+)
+
+
+def _raw_sale_price_to_zar(raw) -> float | None:
+    """Convert Temu rawData salePrice (often minor units) to ZAR."""
+    if raw is None:
+        return None
+    try:
+        n = int(raw) if isinstance(raw, str) else float(raw)
+    except (TypeError, ValueError):
+        return None
+    if n <= 0:
+        return None
+    if n >= 1000:
+        return round(n / 100, 2)
+    return round(float(n), 2)
+
+
+def _apply_dom_or_raw_price(data: dict, page) -> None:
+    """Prefer visible ZA list price; keep rawData/regex price when DOM is not ready."""
+    dom_price = extract_price_from_dom(page)
+    if dom_price is not None and dom_price > 0:
+        data["salePrice"] = dom_price
+        return
+    zar = _raw_sale_price_to_zar(data.get("salePrice"))
+    if zar is not None:
+        data["salePrice"] = zar
+
+
+def temu_page_in_stock(page) -> bool:
+    """Sold-out check on #goods_price and buy buttons only (not full rightContent)."""
+    try:
+        return page.evaluate(
+            """() => {
+  const priceEl = document.getElementById('goods_price');
+  const priceText = (priceEl?.innerText || priceEl?.textContent || '').toLowerCase();
+  if (/\\bsold out\\b|\\bout of stock\\b/.test(priceText)) return false;
+
+  let root = priceEl;
+  for (let i = 0; i < 8 && root; i++) root = root.parentElement;
+  const buttons = root ? Array.from(root.querySelectorAll('button, [role="button"]')) : [];
+  for (const btn of buttons) {
+    const bt = (btn.innerText || btn.textContent || '').toLowerCase();
+    if (/\\bsold out\\b|\\bout of stock\\b/.test(bt)) return false;
+    if (btn.disabled && /add to cart|buy now|add to basket/.test(bt)) return false;
+  }
+  return true;
+}"""
+        )
+    except Exception:
+        return True
+
+
+def normalize_temu_product_url(url: str) -> str:
+    """Strip order/referral query noise; keep goods_id for a stable PDP URL."""
+    goods_id = extract_goods_id(url)
+    if goods_id:
+        return f"https://www.temu.com/goods.html?goods_id={goods_id}"
+    return (url or "").split("#")[0]
+
+
+def is_temu_login_page(page) -> bool:
+    """True when Temu shows the login/sign-in page."""
+    try:
+        return "/login" in (page.url or "").lower()
+    except Exception:
+        return False
+
+
+def is_temu_verification_page(page) -> bool:
+    """True when Temu shows bot/captcha verification (not the login form)."""
+    if is_temu_login_page(page):
+        return False
+    try:
+        return page.evaluate(
+            """() => {
+  const body = (document.body?.innerText || '').toLowerCase();
+  if (/verify you are human|security check|robot check|slide to verify|captcha/.test(body)) return true;
+  if (document.getElementById('goods_price')) return false;
+  const sn = window.rawData?.store?.pageSn;
+  if (sn === 10032 && body.length > 800) return false;
+  if (body.length < 500) return true;
+  return false;
+}"""
+        )
+    except Exception:
+        return False
+
+
+def _wait_for_temu_product_ready(page, product_url: str, timeout_seconds: int = 600) -> bool:
+    """Navigate to PDP and wait until price is readable (never interrupts login/slider)."""
+    from temu.cdp_verify import _page_needs_user_action
+
+    target = normalize_temu_product_url(product_url)
+    deadline = time.monotonic() + timeout_seconds
+    while time.monotonic() < deadline:
+        if _page_needs_user_action(page):
+            time.sleep(2)
+            continue
+
+        current_gid = extract_goods_id(page.url or "")
+        target_gid = extract_goods_id(target)
+        if current_gid != target_gid:
+            try:
+                page.goto(target, wait_until="domcontentloaded", timeout=45000)
+                page.wait_for_function(
+                    "window.rawData || document.body?.innerText?.length > 500",
+                    timeout=15000,
+                )
+            except Exception:
+                pass
+            time.sleep(0.25)
+            continue
+
+        try:
+            page.wait_for_function(TEMU_WAIT_GOODS_PRICE_JS.strip(), timeout=10000)
+            time.sleep(0.2)
+            return True
+        except Exception:
+            time.sleep(1)
+    return False
+
+
+def close_temu_verify_session() -> None:
+    """Disconnect Playwright from Temu Chrome (Chrome on port 9223 keeps running)."""
+    _temu_verify_session.pop("routes_blocked", None)
+    tb = _temu_verify_session.pop("browser", None)
+    if tb is not None:
+        try:
+            tb.close()
+        except Exception:
+            pass
+
+
+def _ensure_temu_verify_routes(page) -> None:
+    """Block images/fonts/media during verify — price comes from rawData/DOM, not assets."""
+    if _temu_verify_session.get("routes_blocked"):
+        return
+
+    def _route(route):
+        req = route.request
+        if req.resource_type in {"image", "media", "font"}:
+            return route.abort()
+        url = (req.url or "").lower()
+        if "kwcdn.com" in url and req.resource_type in {"image", "media", "other", "fetch"}:
+            return route.abort()
+        return route.continue_()
+
+    page.route("**/*", _route)
+    _temu_verify_session["routes_blocked"] = True
+
+
+def _get_temu_verify_page():
+    """Attach to real Temu Chrome on CDP port 9223 (one tab reused for whole verify batch)."""
+    tb = _temu_verify_session.get("browser")
+    if tb is not None:
+        try:
+            if not tb.page.is_closed():
+                _ensure_temu_verify_routes(tb.page)
+                return tb.page
+        except Exception:
+            pass
+        close_temu_verify_session()
+
+    from temu.cdp_verify import _page_needs_user_action, open_temu_browser, wait_for_temu_user_ready
+
+    tb = open_temu_browser()
+    if _page_needs_user_action(tb.page) is not None:
+        wait_for_temu_user_ready(tb.page)
+    _temu_verify_session["browser"] = tb
+    _ensure_temu_verify_routes(tb.page)
+    return tb.page
 
 
 def extract_goods_id(url: str) -> str | None:
@@ -50,6 +258,11 @@ def extract_goods_id(url: str) -> str | None:
         return match.group(1)
     qs = parse_qs(parsed.query)
     return qs.get("goods_id", [None])[0]
+
+
+def is_temu_product_url(url: str) -> bool:
+    """True if we can resolve a Temu goods id from the URL (SEO path -g-ID.html or goods.html?goods_id=)."""
+    return bool((url or "").strip() and extract_goods_id(url))
 
 
 def extract_description_from_dom(page):
@@ -134,24 +347,26 @@ def extract_category_from_breadcrumb(page):
 
 
 def extract_price_from_dom(page):
-    """Extract sale price from visible DOM. Uses ONLY 'Estimated R' - no fallbacks."""
+    """Extract sale price (ZAR) from visible DOM #goods_price (Estimated R, or R-only lines)."""
     try:
-        result = page.evaluate("""
-            () => {
-                const priceEl = document.getElementById('goods_price');
-                let text = priceEl ? (priceEl.innerText || priceEl.textContent || '').trim() : '';
-                if (!text) {
-                    const rightContent = document.getElementById('rightContent');
-                    if (rightContent) text = (rightContent.innerText || rightContent.textContent || '').trim();
-                }
-                if (!text) {
-                    const alt = document.querySelector('[data-price], [id*="price"], [class*="goods_price"]');
-                    if (alt) text = (alt.innerText || alt.textContent || '').trim();
-                }
-                const estMatch = text.match(/Estimated\\s*R\\s*([\\d,]+)/i);
-                return estMatch ? (parseInt(estMatch[1].replace(/,/g, ''), 10) || null) : null;
-            }
-        """)
+        result = page.evaluate(
+            "() => {\n"
+            + _TEMU_GOODS_PRICE_TEXT_TO_ZAR_FN
+            + """
+  const priceEl = document.getElementById('goods_price');
+  let text = priceEl ? (priceEl.innerText || priceEl.textContent || '').trim() : '';
+  if (!text) {
+    const rightContent = document.getElementById('rightContent');
+    if (rightContent) text = (rightContent.innerText || rightContent.textContent || '').trim();
+  }
+  if (!text) {
+    const alt = document.querySelector('[data-price], [id*="price"], [class*="goods_price"]');
+    if (alt) text = (alt.innerText || alt.textContent || '').trim();
+  }
+  return temuGoodsPriceTextToZAR(text);
+}
+"""
+        )
         return result
     except Exception:
         return None
@@ -234,10 +449,9 @@ def extract_product_data(page, debug: bool = False) -> dict | None:
             }
         """)
         if data and (data.get("goodsName") or data.get("salePrice") is not None):
-            dom_price = extract_price_from_dom(page)
             if debug:
-                print(f"  DEBUG: rawData salePrice={data.get('salePrice')}, dom_price (Estimated R only)={dom_price}")
-            data["salePrice"] = dom_price
+                print(f"  DEBUG: rawData salePrice={data.get('salePrice')}, dom_price (goods_price ZAR)={extract_price_from_dom(page)}")
+            _apply_dom_or_raw_price(data, page)
             dom_desc = extract_description_from_dom(page)
             if dom_desc:
                 data["desc"] = dom_desc
@@ -290,22 +504,21 @@ def extract_product_data(page, debug: bool = False) -> dict | None:
             gallery_urls.insert(0, top_gallery)
 
         if goods_name or sale_price is not None:
-            dom_price = extract_price_from_dom(page)
             if debug:
-                print(f"  DEBUG: regex salePrice={sale_price}, dom_price (Estimated R only)={dom_price}")
-            sale_price = dom_price
-            dom_desc = extract_description_from_dom(page)
-            desc = dom_desc or (detail_text + "\n\n" + goods_name if detail_text and goods_name else (detail_text or goods_name))
-            variants = extract_variants_from_dom(page)
-            return {
+                print(f"  DEBUG: regex salePrice={sale_price}, dom_price (goods_price ZAR)={extract_price_from_dom(page)}")
+            payload = {
                 "goodsName": goods_name,
                 "salePrice": sale_price,
                 "goodsId": goods_id,
                 "topGalleryUrl": top_gallery,
                 "gallery": gallery_urls,
-                "desc": desc,
-                "variants": variants,
+                "desc": None,
+                "variants": extract_variants_from_dom(page),
             }
+            _apply_dom_or_raw_price(payload, page)
+            dom_desc = extract_description_from_dom(page)
+            payload["desc"] = dom_desc or (detail_text + "\n\n" + goods_name if detail_text and goods_name else (detail_text or goods_name))
+            return payload
         if debug:
             print(f"  DEBUG: regex found goodsName={goods_name!r}, salePrice={sale_price}, goods_id={goods_id}")
     except Exception as e:
@@ -388,7 +601,8 @@ def _images_exist_for_goods_id(output_dir: Path, products: list, goods_id: str) 
 
 
 URLS_HEADER = """# Add Temu product URLs (one per line)
-# Example: https://www.temu.com/za/your-product-name-g-123456789.html
+# Example (SEO slug): https://www.temu.com/za/your-product-name-g-123456789.html
+# Example (goods.html from orders): https://www.temu.com/goods.html?goods_id=123456789012345
 
 """
 
@@ -400,7 +614,7 @@ def sync_urls_from_products(products: list, output_dir: Path) -> None:
     urls = []
     for p in products:
         url = (p.get("url") or "").strip()
-        if not url or "-g-" not in url:
+        if not url or not extract_goods_id(url):
             continue
         base = url.split("?")[0].strip()
         if base and base not in seen:
@@ -412,7 +626,7 @@ def sync_urls_from_products(products: list, output_dir: Path) -> None:
 
 def _build_and_save_product(data: dict, url: str, output_dir: Path, variant_name: str | None = None) -> dict | None:
     """Build product dict from extracted data and append to products.json. Does not navigate.
-    Only saves when salePrice (Estimated R) is present and > 0."""
+    Only saves when salePrice from DOM (ZAR) is present and > 0."""
     sale_price_rands = data.get("salePrice")
     if sale_price_rands is None or sale_price_rands <= 0:
         return None
@@ -514,8 +728,8 @@ def scrape_url(page, url: str, output_dir: Path, debug: bool = False, variant_na
     data = extract_product_data(page, debug=debug)
     if not data or data.get("salePrice") is None or data.get("salePrice") <= 0:
         diag = _get_page_diagnostics(page)
-        _save_debug_html(page, output_dir, "Extraction failed or no Estimated R price", diag)
-        print(f"  ERROR: Could not extract product data or no Estimated R price found. HTML saved to debug_html/")
+        _save_debug_html(page, output_dir, "Extraction failed or no ZAR list price in goods_price", diag)
+        print(f"  ERROR: Could not extract product data or no ZAR price in goods_price. HTML saved to debug_html/")
         if debug:
             print(f"  DEBUG: goods_price: {repr((diag or {}).get('goodsPriceText', ''))[:120]}")
         return None
@@ -538,40 +752,50 @@ def scrape_url(page, url: str, output_dir: Path, debug: bool = False, variant_na
 def fetch_current_pricing(url: str) -> dict | None:
     """
     Fetch current price/cost from Temu URL. No persistence.
-    Returns {price, cost, source_price, valid: True} or None if invalid/blocked.
+    Uses headed Chrome (Temu blocks headless) and waits for verification if shown.
+    Raises RuntimeError when verification is not completed in time.
     """
+    url = normalize_temu_product_url(url)
     try:
-        with sync_playwright() as p:
-            browser = p.chromium.launch(channel="chrome", headless=True, args=["--disable-blink-features=AutomationControlled"])
-            context = create_browser_context(browser)
-            page = context.new_page()
-            try:
-                page.goto(url, wait_until="domcontentloaded", timeout=30000)
-                page.wait_for_function("window.rawData || document.body?.innerText?.length > 500", timeout=20000)
-                time.sleep(1.5)
-            except Exception:
-                browser.close()
-                return None
+        page = _get_temu_verify_page()
+        if not _wait_for_temu_product_ready(page, url):
+            raise RuntimeError(
+                "Temu verification not completed — pass verification in the Temu Chrome window and retry Verify all"
+            )
 
-            data = extract_product_data(page, debug=False)
-            browser.close()
-            if not data or (not data.get("goodsName") and data.get("salePrice") is None):
-                return None
+        data = extract_product_data(page, debug=False)
+        if not data or (not data.get("goodsName") and data.get("salePrice") is None):
+            return None
 
-            sale_price_rands = data.get("salePrice")
-            sale_price_cents = int(sale_price_rands * 100) if sale_price_rands is not None else 0
-            if sale_price_cents <= 0:
-                return None
-
-            sell_price = apply_tiered_markup(sale_price_cents, "temu")
-            cost = calculate_supplier_cost(sale_price_cents, "temu")
-            temu_price = sale_price_rands if sale_price_rands is not None else (sale_price_cents / 100)
+        sale_price_rands = data.get("salePrice")
+        sale_price_cents = int(round(float(sale_price_rands) * 100)) if sale_price_rands is not None else 0
+        # Readable ZAR price means purchasable — ignore broader page text (variants, recommendations).
+        in_stock = True if sale_price_cents > 0 else temu_page_in_stock(page)
+        if sale_price_cents <= 0 and not in_stock:
             return {
-                "price": round(sell_price, 2),
-                "cost": round(cost, 2),
-                "source_price": round(temu_price, 2),
+                "price": None,
+                "cost": None,
+                "source_price": None,
                 "valid": True,
+                "in_stock": False,
+                "unavailable": False,
             }
+        if sale_price_cents <= 0:
+            return None
+
+        sell_price = apply_tiered_markup(sale_price_cents, "temu")
+        cost = calculate_supplier_cost(sale_price_cents, "temu")
+        temu_price = sale_price_rands if sale_price_rands is not None else (sale_price_cents / 100)
+        return {
+            "price": round(sell_price, 2),
+            "cost": round(cost, 2),
+            "source_price": round(temu_price, 2),
+            "valid": True,
+            "in_stock": in_stock,
+            "unavailable": False,
+        }
+    except RuntimeError:
+        raise
     except Exception:
         return None
 
@@ -620,28 +844,21 @@ def _save_debug_html(page, output_dir: Path, reason: str, diagnostics: dict | No
 
 
 def scrape_current_page(page, output_dir: Path, debug: bool = False) -> bool:
-    """Scrape current page without navigating. Returns True if saved. URL must be a product page (-g-XXX.html)."""
+    """Scrape current page without navigating. Returns True if saved.
+    Accepts SEO URLs (-g-XXX.html) or goods.html?goods_id=… (e.g. from order detail links)."""
     url = page.url
-    if not re.search(r"-g-\d+\.html", url):
+    if not is_temu_product_url(url):
         return False
     debug = debug or (os.environ.get("SCRAPER_DEBUG", "").lower() in ("1", "true", "yes"))
-    # Wait for product content to load (Estimated R price) - Temu pages can load slowly
+    # Wait for #goods_price to show a parsable ZA list price (Estimated R or plain R lines)
     try:
         page.wait_for_function(
-            """() => {
-                const priceEl = document.getElementById('goods_price');
-                let text = priceEl ? (priceEl.innerText || priceEl.textContent || '').trim() : '';
-                if (!text) {
-                    const rc = document.getElementById('rightContent');
-                    if (rc) text = (rc.innerText || rc.textContent || '').trim();
-                }
-                return /Estimated\\s*R\\s*[\\d,]+/i.test(text);
-            }""",
+            TEMU_WAIT_GOODS_PRICE_JS.strip(),
             timeout=15000,
         )
     except Exception as e:
         diag = _get_page_diagnostics(page)
-        _save_debug_html(page, output_dir, f"Estimated R price never appeared (timeout 15s): {e}", diag)
+        _save_debug_html(page, output_dir, f"goods_price ZAR never became readable (timeout 15s): {e}", diag)
         print(f"  DEBUG: goods_price text: {repr((diag or {}).get('goodsPriceText', ''))[:120]}")
         if debug:
             print(f"  DEBUG: Full diagnostics: {diag}")
@@ -649,7 +866,7 @@ def scrape_current_page(page, output_dir: Path, debug: bool = False) -> bool:
     data = extract_product_data(page, debug=debug)
     if not data or data.get("salePrice") is None or data.get("salePrice") <= 0:
         diag = _get_page_diagnostics(page)
-        _save_debug_html(page, output_dir, "Extraction failed or no Estimated R price", diag)
+        _save_debug_html(page, output_dir, "Extraction failed or no ZAR list price", diag)
         print(f"  DEBUG: goods_price text: {repr((diag or {}).get('goodsPriceText', ''))[:120]}")
         if debug:
             print(f"  DEBUG: extract_product_data returned: {data}")
@@ -666,14 +883,15 @@ def scrape_current_page(page, output_dir: Path, debug: bool = False) -> bool:
 def _get_variant_snapshot(page):
     """Get current price and selected variant from DOM. Handles Color, Size, Number Of Products, etc."""
     try:
-        return page.evaluate("""
-            () => {
-                const priceEl = document.getElementById('goods_price');
-                let text = priceEl ? (priceEl.innerText || priceEl.textContent || '') : '';
-                const estMatch = text.match(/Estimated\\s*R\\s*([\\d,]+)/i);
-                const price = estMatch ? parseInt(estMatch[1].replace(/,/g, ''), 10) : null;
+        return page.evaluate(
+            "() => {\n"
+            + _TEMU_GOODS_PRICE_TEXT_TO_ZAR_FN
+            + """
+  const priceEl = document.getElementById('goods_price');
+  let text = priceEl ? (priceEl.innerText || priceEl.textContent || '') : '';
+  const price = temuGoodsPriceTextToZAR(text);
 
-                let variant = null;
+  let variant = null;
                 const specRoot = document.getElementById('rightContent') || document.body;
                 // 1) Collect ALL selected values from <em> in spec sections (Color:, Size:, Number Of Products:, etc.)
                 const btns = document.querySelectorAll('[role="button"][aria-label]');
@@ -718,9 +936,10 @@ def _get_variant_snapshot(page):
                     const selected = document.querySelector('[role="button"][aria-pressed="true"]');
                     if (selected) variant = (selected.getAttribute('aria-label') || selected.textContent || '').trim() || null;
                 }
-                return { price, variant };
-            }
-        """)
+  return { price, variant };
+}
+"""
+        )
     except Exception:
         return None
 
@@ -961,13 +1180,13 @@ else {
     bar.style.top = startY + 'px';
     bar.style[startRight ? 'right' : 'left'] = margin + 'px';
     if (startRight) bar.style.left = 'auto'; else bar.style.right = 'auto';
-    bar.innerHTML = '<span style="cursor:grab">⋮⋮</span><button style="padding:6px 16px!important;background:#fff!important;color:#1a5!important;border:none!important;border-radius:6px!important;cursor:pointer!important;font-size:13px!important;font-weight:bold!important;">Save product</button><span style="font-size:11px!important;font-weight:normal!important;">Ctrl+Shift+S</span>';
+    bar.innerHTML = '<span style="cursor:grab">⋮⋮</span><button type="button" style="padding:6px 16px!important;background:#fff!important;color:#1a5!important;border:none!important;border-radius:6px!important;cursor:pointer!important;font-size:13px!important;font-weight:bold!important;">Save product</button><span style="font-size:11px!important;font-weight:normal!important;">Ctrl+Shift+S</span>';
     var btn = bar.querySelector('button');
-    btn.onclick = function(e) { e.stopPropagation(); };
-    bar.onclick = function(e) {
-      if (e.target === btn || btn.contains(e.target)) {
-        try { fireSave(); } catch (err) { btn.textContent = 'Error'; setTimeout(function(){ btn.textContent = 'Save product'; }, 2000); }
-      }
+    // Call fireSave on the button directly. stopPropagation on btn alone (without fireSave)
+    // prevented the bar.onclick bubble path, so clicks did nothing.
+    btn.onclick = function(e) {
+      e.stopPropagation();
+      try { fireSave(); } catch (err) { btn.textContent = 'Error'; setTimeout(function(){ btn.textContent = 'Save product'; }, 2000); }
     };
     var drag = { active: false, startX: 0, startY: 0, startLeft: 0, startTop: 0 };
     bar.addEventListener('mousedown', function(e) {
@@ -1112,10 +1331,10 @@ def run_scrape_session(
                                 if scrape_current_page(pg, output_dir, debug=debug):
                                     print(f"  Saved: {pg.url[:70]}...")
                                 else:
-                                    if re.search(r"-g-\d+\.html", pg.url):
+                                    if is_temu_product_url(pg.url):
                                         print("  Could not extract product data. Check debug_html/ for saved page.")
                                     else:
-                                        print("  Not a product page. Open a product (URL with -g-XXX.html) first.")
+                                        print("  Not a product page. Open a Temu product (-g-XXX.html or goods.html?goods_id=…).")
                                 break
                         except Exception as e:
                             if "Target" in str(e) and "closed" in str(e):

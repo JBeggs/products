@@ -1,0 +1,36 @@
+{
+  "products": [
+    {
+      "compare_at_price": 2088.77,
+      "cost": 1579,
+      "description": "Kit includes:\n\n1x Ingco Cordless Angle Grinder 900W 115MM 20V\n\n2x Ingco Li-Ion Battery Pack 20V (4.0AH)\n\n1x Ingco Intelligent Charger 20V\n\n5x Abrasive metal cutting disc (115mm)\n\n1x Carry case\n\nIngco Cordless Angle Grinder 900W 115MM 20V\n\nProduct details:\n- Brushless motor\n- Voltage: 20V\n- Max input power: 900W\n- No-load speed: 3 000/6 000/9 000 rpm\n- Disc diameter: 115 mm\n- Spindle thread: M14 Ingco\n- Li-Ion Battery Pack\n- (20V\n- 4.0AH)\n\nProduct Details:\n- Voltage: 20V\n- Lithium-Ion 4.0Ah battery\n- LED battery power indicator\n- Suitable for INGCO 20V multiple tools\n\nIngco Intelligent Charger\n\nProduct Details:\n- Rated Input voltage: 220V-240V~50/60Hz\n- Output voltage: 20V\n- Charge current: 2A\n- Rated Input power: 50W\n- Charges 20V 2.0Ah battery in 1Hr",
+      "dimension_height": 60,
+      "dimension_length": 60,
+      "dimension_width": 45,
+      "goods_id": "ingco-cordless-angle-grinder-20v-115mm-brushless-kit-with-carry-case-copy",
+      "images": [
+        "images/special_ingco_cord_ingco-cordless-angle-grinder-2_01.png",
+        "images/special_ingco_cord_ingco-cordless-angle-grinder-2_02.png"
+      ],
+      "in_stock": true,
+      "name": "Special - Ingco Cordless Angle",
+      "northernbolt_price": 1579,
+      "price": 1900,
+      "short_description": "Special - Ingco Cordless Angle Grinder 900W 115Mm Brushless Kit (2x 4Ah Battery, Charger & Case)",
+      "status": "active",
+      "stock_quantity": 0,
+      "tags": [
+        "northernbolt",
+        "northern-bolt"
+      ],
+      "url": "https://www.northernbolt.co.za/products/ingco-cordless-angle-grinder-20v-115mm-brushless-kit-with-carry-case-copy",
+      "variants": [],
+      "weight": 3000,
+      "category_id": "7de7efca-00cd-440d-9132-5f5bd279287b",
+      "production_ids": {
+        "wire-and-bead": "c535fac4-3a33-4c37-8306-525095b86782"
+      }
+    }
+  ],
+  "updated": "2026-05-09T10:02:56.200529"
+}

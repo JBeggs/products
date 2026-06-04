@@ -1,0 +1,348 @@
+{
+  "products": [
+    {
+      "category_id": "618ba180-2cac-4778-8baf-98b801083893",
+      "compare_at_price": 320.95,
+      "cost": 215,
+      "description": "A truly South African experience. Not just from one flower but from a whole biome, this honey is usually dark with a uniquely strong taste. The only place in the world where you will find this honey is the mountains of the southernmost tip of Africa. It is harvested during the winter months.",
+      "dimension_height": 30,
+      "dimension_length": 20,
+      "dimension_width": 25,
+      "goods_id": "fynbos-honey-1-5kg",
+      "images": [
+        "images/buy_fynbos_honey_15_fynbos-honey-1-5kg_01.jpg",
+        "images/buy_fynbos_honey_15_fynbos-honey-1-5kg_02.png"
+      ],
+      "in_stock": true,
+      "name": "Buy Fynbos Honey \u2013 1.5kg",
+      "overberghoney_price": 215,
+      "price": 258,
+      "production_ids": {
+        "honey": "80eae535-1645-472b-a087-890283bdca14"
+      },
+      "short_description": "Buy Fynbos Honey \u2013 1.5kg | Overberg Honey Company",
+      "status": "active",
+      "stock_quantity": 0,
+      "tags": [
+        "overberghoney",
+        "overberg-honey"
+      ],
+      "url": "https://www.overberghoney.co.za/shop/fynbos-honey-1-5kg/",
+      "variants": [],
+      "weight": 1500
+    },
+    {
+      "category_id": "618ba180-2cac-4778-8baf-98b801083893",
+      "compare_at_price": 604.31,
+      "cost": 425,
+      "description": "A truly South African experience. Not just from one flower but from a whole biome, this honey is usually dark with a uniquely strong taste. The only place in the world where you will find this honey is the mountains of the southernmost tip of Africa. It is harvested during the winter months.",
+      "dimension_height": 30,
+      "dimension_length": 20,
+      "dimension_width": 25,
+      "goods_id": "fynbos-honey-3kg",
+      "images": [
+        "images/buy_fynbos_honey_3k_fynbos-honey-3kg_01.jpg",
+        "images/buy_fynbos_honey_3k_fynbos-honey-3kg_02.png"
+      ],
+      "in_stock": true,
+      "name": "Buy Fynbos Honey \u2013 3kg",
+      "overberghoney_price": 425,
+      "price": 510,
+      "production_ids": {
+        "honey": "c045739a-fc05-44a0-a167-cbfc0066f632"
+      },
+      "short_description": "Buy Fynbos Honey \u2013 3kg | Overberg Honey Company",
+      "status": "active",
+      "stock_quantity": 0,
+      "tags": [
+        "overberghoney",
+        "overberg-honey"
+      ],
+      "url": "https://www.overberghoney.co.za/shop/fynbos-honey-3kg/",
+      "variants": [],
+      "weight": 3000
+    },
+    {
+      "category_id": "618ba180-2cac-4778-8baf-98b801083893",
+      "compare_at_price": 600.62,
+      "cost": 425,
+      "description": "This amber-coloured honey is mild in taste and a safe option for any new honey enthusiast. Bluegum honey, also known as eucalyptus honey, is the most common honey in South Africa and although this specific honey is harvested in the Western Cape, it is found all over the country. The honey is produced when the bees visit the eucalyptus trees during the summer months.",
+      "dimension_height": 30,
+      "dimension_length": 20,
+      "dimension_width": 25,
+      "goods_id": "bluegum-honey-3kg",
+      "images": [
+        "images/buy_bluegum_honey_3_bluegum-honey-3kg_01.jpg",
+        "images/buy_bluegum_honey_3_bluegum-honey-3kg_02.png"
+      ],
+      "in_stock": true,
+      "name": "Buy Bluegum Honey \u2013 3kg",
+      "overberghoney_price": 425,
+      "price": 510,
+      "production_ids": {
+        "honey": "0ad2d05a-d83c-4664-9d5c-7a58b56f1147"
+      },
+      "short_description": "Buy Bluegum Honey \u2013 3kg | Overberg Honey Company",
+      "status": "active",
+      "stock_quantity": 0,
+      "tags": [
+        "overberghoney",
+        "overberg-honey"
+      ],
+      "url": "https://www.overberghoney.co.za/shop/bluegum-honey-3kg/",
+      "variants": [],
+      "weight": 3000
+    },
+    {
+      "category_id": "618ba180-2cac-4778-8baf-98b801083893",
+      "compare_at_price": 299.43,
+      "cost": 215,
+      "description": "This amber-coloured honey is mild in taste and a safe option for any new honey enthusiast. Bluegum honey, also known as eucalyptus honey, is the most common honey in South Africa and although this specific honey is harvested in the Western Cape, it is found all over the country. The honey is produced when the bees visit the eucalyptus trees during the summer months.",
+      "dimension_height": 30,
+      "dimension_length": 20,
+      "dimension_width": 25,
+      "goods_id": "bluegum-honey-1-5kg",
+      "images": [
+        "images/buy_bluegum_honey_1_bluegum-honey-1-5kg_01.jpg",
+        "images/buy_bluegum_honey_1_bluegum-honey-1-5kg_02.png"
+      ],
+      "in_stock": true,
+      "name": "Buy Bluegum Honey \u2013 1.5kg",
+      "overberghoney_price": 215,
+      "price": 258,
+      "production_ids": {
+        "honey": "e01268f9-5c4d-49ad-b7c0-e83b9f25b6be"
+      },
+      "short_description": "Buy Bluegum Honey \u2013 1.5kg | Overberg Honey Company",
+      "status": "active",
+      "stock_quantity": 0,
+      "tags": [
+        "overberghoney",
+        "overberg-honey"
+      ],
+      "url": "https://www.overberghoney.co.za/shop/bluegum-honey-1-5kg/",
+      "variants": [],
+      "weight": 1500
+    },
+    {
+      "category_id": "618ba180-2cac-4778-8baf-98b801083893",
+      "compare_at_price": 578.78,
+      "cost": 425,
+      "description": "Multiflora honey is exactly that \u2013 honey that is harvested when there are multiple wild flowers blooming, usually in spring, and so the taste cannot be traced to only one type of flower. This adds to its allure, since it will never taste the same.",
+      "dimension_height": 30,
+      "dimension_length": 20,
+      "dimension_width": 25,
+      "goods_id": "multiflora-honey-3kg",
+      "images": [
+        "images/buy_multiflora_honey_multiflora-honey-3kg_01.jpg",
+        "images/buy_multiflora_honey_multiflora-honey-3kg_02.png"
+      ],
+      "in_stock": true,
+      "name": "Buy Multiflora Honey \u2013 3kg",
+      "overberghoney_price": 425,
+      "price": 510,
+      "production_ids": {
+        "honey": "6f09a5d7-f93b-452d-934a-c861622a8512"
+      },
+      "short_description": "Buy Multiflora Honey \u2013 3kg | Overberg Honey Company",
+      "status": "active",
+      "stock_quantity": 0,
+      "tags": [
+        "overberghoney",
+        "overberg-honey"
+      ],
+      "url": "https://www.overberghoney.co.za/shop/multiflora-honey-3kg/",
+      "variants": [],
+      "weight": 3000
+    },
+    {
+      "category_id": "618ba180-2cac-4778-8baf-98b801083893",
+      "compare_at_price": 637.64,
+      "cost": 460,
+      "description": "All the way from the dry savanna of the Northern Cape, this honey is light in colour and takes a long time to crystallise. It is harvested in the summer months. It has an exquisite taste and is a personal favourite. A great option in beverages.",
+      "dimension_height": 30,
+      "dimension_length": 20,
+      "dimension_width": 25,
+      "goods_id": "acacia-honey-3kg",
+      "images": [
+        "images/buy_acacia_honey_3k_acacia-honey-3kg_01.jpg",
+        "images/buy_acacia_honey_3k_acacia-honey-3kg_02.png"
+      ],
+      "in_stock": true,
+      "name": "Buy Acacia Honey \u2013 3kg",
+      "overberghoney_price": 460,
+      "price": 552,
+      "production_ids": {
+        "honey": "c9a4e24d-84ec-44f8-a02a-8a72c466aa79"
+      },
+      "short_description": "Buy Acacia Honey \u2013 3kg | Overberg Honey Company",
+      "status": "active",
+      "stock_quantity": 0,
+      "tags": [
+        "overberghoney",
+        "overberg-honey"
+      ],
+      "url": "https://www.overberghoney.co.za/shop/acacia-honey-3kg/",
+      "variants": [],
+      "weight": 3000
+    },
+    {
+      "category_id": "618ba180-2cac-4778-8baf-98b801083893",
+      "compare_at_price": 188.37,
+      "cost": 125,
+      "description": "Wild Blossom comb honey!",
+      "dimension_height": 20,
+      "dimension_length": 10,
+      "dimension_width": 15,
+      "goods_id": "honey-comb-cassettes",
+      "images": [
+        "images/buy_honey_comb_casse_honey-comb-cassettes_01.jpg",
+        "images/buy_honey_comb_casse_honey-comb-cassettes_02.png"
+      ],
+      "in_stock": true,
+      "name": "Buy Honey Comb Cassettes |",
+      "overberghoney_price": 125,
+      "price": 153.75,
+      "production_ids": {
+        "honey": "d6a1a4d7-b525-4077-91fa-7199e0b39380"
+      },
+      "short_description": "Buy Honey Comb Cassettes | Overberg Honey Company",
+      "status": "active",
+      "stock_quantity": 0,
+      "tags": [
+        "overberghoney",
+        "overberg-honey"
+      ],
+      "url": "https://www.overberghoney.co.za/shop/honey-comb-cassettes/",
+      "variants": [],
+      "weight": 500
+    },
+    {
+      "category_id": "618ba180-2cac-4778-8baf-98b801083893",
+      "compare_at_price": 120.26,
+      "cost": 85,
+      "description": "A truly South African experience. Not just from one flower but from a whole biome, this honey is usually dark with a uniquely strong taste. The only place in the world where you will find this honey is the mountains of the southernmost tip of Africa. It is harvested during the winter months.",
+      "dimension_height": 20,
+      "dimension_length": 10,
+      "dimension_width": 15,
+      "goods_id": "fynbos-honey-in-a-teddy-bear-500g",
+      "images": [
+        "images/buy_fynbos_honey_in_fynbos-honey-in-a-teddy-bear-5_01.jpg",
+        "images/buy_fynbos_honey_in_fynbos-honey-in-a-teddy-bear-5_02.png"
+      ],
+      "in_stock": true,
+      "name": "Buy Fynbos Honey in a",
+      "overberghoney_price": 85,
+      "price": 106.25,
+      "production_ids": {
+        "honey": "fab67a61-383d-4720-b0d3-04b8b2640829"
+      },
+      "short_description": "Buy Fynbos Honey in a Teddy Bear \u2013 500g | Overberg Honey Company",
+      "status": "active",
+      "stock_quantity": 0,
+      "tags": [
+        "overberghoney",
+        "overberg-honey"
+      ],
+      "url": "https://www.overberghoney.co.za/shop/fynbos-honey-in-a-teddy-bear-500g/",
+      "variants": [],
+      "weight": 500
+    },
+    {
+      "category_id": "618ba180-2cac-4778-8baf-98b801083893",
+      "compare_at_price": 158.69,
+      "cost": 110,
+      "description": "100% Pure Beeswax Candle",
+      "dimension_height": 20,
+      "dimension_length": 10,
+      "dimension_width": 15,
+      "goods_id": "tall-voltive-candle",
+      "images": [
+        "images/buy_tall_voltive_can_tall-voltive-candle_01.jpg",
+        "images/buy_tall_voltive_can_tall-voltive-candle_02.png"
+      ],
+      "in_stock": true,
+      "name": "Buy Tall Voltive Candle |",
+      "overberghoney_price": 110,
+      "price": 135.3,
+      "production_ids": {
+        "honey": "2ecbc97f-68c3-4e61-b132-526912088083"
+      },
+      "short_description": "Buy Tall Voltive Candle | Overberg Honey Company",
+      "status": "active",
+      "stock_quantity": 0,
+      "tags": [
+        "overberghoney",
+        "overberg-honey"
+      ],
+      "url": "https://www.overberghoney.co.za/shop/tall-voltive-candle/",
+      "variants": [],
+      "weight": 500
+    },
+    {
+      "category_id": "618ba180-2cac-4778-8baf-98b801083893",
+      "compare_at_price": 163.36,
+      "cost": 115,
+      "description": "100% Pure Beeswax Candles",
+      "dimension_height": 10,
+      "dimension_length": 10,
+      "dimension_width": 10,
+      "goods_id": "square-heart-candle",
+      "images": [
+        "images/buy_square_heart_can_square-heart-candle_01.jpg",
+        "images/buy_square_heart_can_square-heart-candle_02.png"
+      ],
+      "in_stock": true,
+      "name": "Buy Square Heart Candle |",
+      "overberghoney_price": 115,
+      "price": 141.45,
+      "production_ids": {
+        "honey": "0e7bfb60-3381-415e-9248-51b67b4e2add"
+      },
+      "short_description": "Buy Square Heart Candle | Overberg Honey Company",
+      "status": "active",
+      "stock_quantity": 0,
+      "tags": [
+        "overberghoney",
+        "overberg-honey"
+      ],
+      "url": "https://www.overberghoney.co.za/shop/square-heart-candle/",
+      "variants": [],
+      "weight": 500
+    },
+    {
+      "category_id": "618ba180-2cac-4778-8baf-98b801083893",
+      "compare_at_price": 170.12,
+      "cost": 115,
+      "description": "100% South African Beeswax Candle",
+      "dimension_height": 10,
+      "dimension_length": 10,
+      "dimension_width": 10,
+      "goods_id": "triangle-of-balls-beeswax-candles",
+      "images": [
+        "images/buy_triangle_beeswax_triangle-of-balls-beeswax-cand_01.jpg",
+        "images/buy_triangle_beeswax_triangle-of-balls-beeswax-cand_02.jpg",
+        "images/buy_triangle_beeswax_triangle-of-balls-beeswax-cand_03.jpg",
+        "images/buy_triangle_beeswax_triangle-of-balls-beeswax-cand_04.jpg"
+      ],
+      "in_stock": true,
+      "name": "Buy Triangle Beeswax Candles |",
+      "overberghoney_price": 115,
+      "price": 141.45,
+      "production_ids": {
+        "honey": "a667297b-4e90-4d5e-bd06-b1e96237a176"
+      },
+      "short_description": "Buy Triangle Beeswax Candles | Overberg Honey Company",
+      "status": "active",
+      "stock_quantity": 0,
+      "tags": [
+        "overberghoney",
+        "overberg-honey"
+      ],
+      "url": "https://www.overberghoney.co.za/shop/triangle-of-balls-beeswax-candles/",
+      "variants": [],
+      "weight": 500
+    }
+  ],
+  "updated": "2026-05-12T17:01:32.568705"
+}

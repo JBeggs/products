@@ -1,0 +1,456 @@
+{
+  "products": [
+    {
+      "brendas_price": 75,
+      "category_id": "8c6d74ec-e78d-49af-a206-e58814aa4b98",
+      "compare_at_price": 112.94,
+      "cost": 75,
+      "description": "Product Description\n\n375 ml\n\nIngredients:\n\nTomatoes red pepper, onions, sugar, water, vinegar, canola oil, ginger, chilli, garlic and salt.\n\nServing suggestions:\n\nTangy and spicy. perfect as a dip, enjoy with cream cheese or add to hot winter dishes.\n\nWarning:\n\nThis product has been made in a factory that uses tree nuts, eggs, soy, wheat, fish and cow's milk.",
+      "dimension_height": 20,
+      "dimension_length": 10,
+      "dimension_width": 15,
+      "goods_id": "sweet-red-pepper-chutney",
+      "images": [
+        "images/sweet_red_pepper_chu_sweet-red-pepper-chutney_01.png",
+        "images/sweet_red_pepper_chu_sweet-red-pepper-chutney_02.png",
+        "images/sweet_red_pepper_chu_sweet-red-pepper-chutney_03.jpg"
+      ],
+      "in_stock": true,
+      "name": "Sweet Red Pepper Chutney",
+      "price": 93.75,
+      "production_ids": {
+        "jams-and-sauces": "9205e0b5-a9b9-4873-9641-b3028a43fd89"
+      },
+      "short_description": "Sweet Red Pepper Chutney",
+      "status": "active",
+      "stock_quantity": 0,
+      "tags": [
+        "brendas",
+        "brendas-preserves"
+      ],
+      "url": "https://www.brendas.co.za/products/sweet-red-pepper-chutney",
+      "variants": [],
+      "weight": 400
+    },
+    {
+      "brendas_price": 75,
+      "category_id": "8c6d74ec-e78d-49af-a206-e58814aa4b98",
+      "compare_at_price": 104.82,
+      "cost": 75,
+      "description": "Product Description\n\n375 ml\n\nIngredients:\n\nApples, sugar, vinegar, onions, red pepper, water, raisins, mustard seeds, salt, tumeric, paprika, garlic.\n\nServing suggestions:\n\nDelicious with Malay style curries or on cheese platter.\n\nWarning:\n\nThis product has been made in a factory that uses tree nuts, eggs, soy, wheat, fish and cow's milk.",
+      "dimension_height": 20,
+      "dimension_length": 10,
+      "dimension_width": 15,
+      "goods_id": "apple-chutney",
+      "images": [
+        "images/apple_chutney_apple-chutney_01.jpg",
+        "images/apple_chutney_apple-chutney_02.jpg",
+        "images/apple_chutney_apple-chutney_03.jpg"
+      ],
+      "in_stock": true,
+      "name": "Apple Chutney",
+      "price": 93.75,
+      "production_ids": {
+        "jams-and-sauces": "2e10b83d-3222-4459-a300-4fa91cef35f8"
+      },
+      "short_description": "Apple Chutney",
+      "status": "active",
+      "stock_quantity": 0,
+      "tags": [
+        "brendas",
+        "brendas-preserves"
+      ],
+      "url": "https://www.brendas.co.za/products/apple-chutney",
+      "variants": [],
+      "weight": 400
+    },
+    {
+      "brendas_price": 75,
+      "category_id": "8c6d74ec-e78d-49af-a206-e58814aa4b98",
+      "compare_at_price": 102.38,
+      "cost": 75,
+      "description": "Product Description\n\n375 ml\n\nIngredients:\n\nTomatoes, apples, onions, sugar, vinegar, raisins, water, coriander, mustard seeds, tumeric, garlic, paprika, salt, ginger, cumin and chilli.\n\nServing suggestions:\n\nDelicious with Malay style curries and warm winter dishes.\n\nWarning:\n\nThis product has been made in a factory that uses tree nuts, eggs, soy, wheat, fish and cow's milk.",
+      "dimension_height": 20,
+      "dimension_length": 10,
+      "dimension_width": 15,
+      "goods_id": "dhania-chutney",
+      "images": [
+        "images/dhania_chutney_dhania-chutney_01.png",
+        "images/dhania_chutney_dhania-chutney_02.png",
+        "images/dhania_chutney_dhania-chutney_03.jpg"
+      ],
+      "in_stock": true,
+      "name": "Dhania Chutney",
+      "price": 93.75,
+      "production_ids": {
+        "jams-and-sauces": "a0765b92-78af-44cc-8299-48c10bf53688"
+      },
+      "short_description": "Dhania Chutney",
+      "status": "active",
+      "stock_quantity": 0,
+      "tags": [
+        "brendas",
+        "brendas-preserves"
+      ],
+      "url": "https://www.brendas.co.za/products/dhania-chutney",
+      "variants": [],
+      "weight": 400
+    },
+    {
+      "brendas_price": 162,
+      "category_id": "a03a4e4c-28bc-4794-a5de-aa2589d0023e",
+      "compare_at_price": 215.93,
+      "cost": 162,
+      "description": "Product Description\n\n 1 litre\n\n--\n\n 1000 g\n\nIngredients:\n\nSugar Syrup, water, green figs, lemon juice, ginger & fig leave.\n\nServing suggestion:\n\nLovely condiment for blue stilton cheese, cake toppings and Christmas cakes.\n\nWarning:\n\nThis product has been made in a factory that uses tree nuts, eggs, soy, wheat, fish and cow's milk.",
+      "dimension_height": 25,
+      "dimension_length": 15,
+      "dimension_width": 20,
+      "goods_id": "green-fig-preserve",
+      "images": [
+        "images/green_fig_preserve_green-fig-preserve_01.jpg",
+        "images/green_fig_preserve_green-fig-preserve_02.jpg",
+        "images/green_fig_preserve_green-fig-preserve_03.jpg",
+        "images/green_fig_preserve_green-fig-preserve_04.jpg",
+        "images/green_fig_preserve_green-fig-preserve_05.jpg"
+      ],
+      "in_stock": true,
+      "name": "Green Fig Preserve (1 litre)",
+      "price": 199.26,
+      "production_ids": {
+        "jams-and-sauces": "58d9be15-559a-4e4c-80f6-6804faa7a8fc"
+      },
+      "short_description": "Green Fig Preserve (1 litre)",
+      "status": "active",
+      "stock_quantity": 0,
+      "tags": [
+        "brendas",
+        "brendas-preserves"
+      ],
+      "url": "https://www.brendas.co.za/products/green-fig-preserve",
+      "variants": [],
+      "weight": 1300
+    },
+    {
+      "brendas_price": 139,
+      "category_id": "a03a4e4c-28bc-4794-a5de-aa2589d0023e",
+      "compare_at_price": 204.14,
+      "cost": 139,
+      "description": "Product Description\n\n1 litre - 1300 g\n\nIngredients:\n\nGuavas, water, sugar and lemon juice.\n\nServing suggestions:\n\nA lovely desert on its own with custard. Perfect on an almond or guava tart.\n\nWarning:\n\nThis product has been made in a factory that uses tree nuts, eggs, soy, wheat, fish and cow's milk.",
+      "dimension_height": 25,
+      "dimension_length": 15,
+      "dimension_width": 20,
+      "goods_id": "guava-preserve",
+      "images": [
+        "images/guava_preserve_guava-preserve_01.png",
+        "images/guava_preserve_guava-preserve_02.png",
+        "images/guava_preserve_guava-preserve_03.jpg"
+      ],
+      "in_stock": true,
+      "name": "Guava Preserve (1 litre)",
+      "price": 170.97,
+      "production_ids": {
+        "jams-and-sauces": "411c3b8a-65b5-45f1-8e2b-1afc2f126534"
+      },
+      "short_description": "Guava Preserve (1 litre)",
+      "status": "active",
+      "stock_quantity": 0,
+      "tags": [
+        "brendas",
+        "brendas-preserves"
+      ],
+      "url": "https://www.brendas.co.za/products/guava-preserve",
+      "variants": [],
+      "weight": 1300
+    },
+    {
+      "brendas_price": 145,
+      "category_id": "a03a4e4c-28bc-4794-a5de-aa2589d0023e",
+      "compare_at_price": 193.06,
+      "cost": 145,
+      "description": "Product Description\n\n 1 litre\n\n--\n\n280 g | 1300 g\n\nIngredients:\n\nWater, sugar, oranges and lemon juice.\n\nServing suggestion:\n\nEnjoy with dark chocolate cake or add to cheese platters.\n\nWarning:\n\nThis product has been made in a factory that uses tree nuts, eggs, soy, wheat, fish and cow's milk.",
+      "dimension_height": 20,
+      "dimension_length": 10,
+      "dimension_width": 15,
+      "goods_id": "orange-preserve-2",
+      "images": [
+        "images/orange_preserve_orange-preserve-2_01.jpg",
+        "images/orange_preserve_orange-preserve-2_02.jpg",
+        "images/orange_preserve_orange-preserve-2_03.jpg",
+        "images/orange_preserve_orange-preserve-2_04.jpg"
+      ],
+      "in_stock": true,
+      "name": "Orange Preserve (1 litre)",
+      "price": 178.35,
+      "production_ids": {
+        "jams-and-sauces": "fe1e7425-81f5-4e08-b95e-89932c736adc"
+      },
+      "short_description": "Orange Preserve (1 litre)",
+      "status": "active",
+      "stock_quantity": 0,
+      "tags": [
+        "brendas",
+        "brendas-preserves"
+      ],
+      "url": "https://www.brendas.co.za/products/orange-preserve-2",
+      "variants": [],
+      "weight": 1300
+    },
+    {
+      "brendas_price": 64,
+      "category_id": "0507549c-cccc-4577-8137-fb7595b13b0d",
+      "compare_at_price": 93.61,
+      "cost": 64,
+      "description": "Product Description\n\n280g - 260ml\n\nIngredients:\n\nPeaches, sugar, lemon juice and ascorbic acid.\n\nWarning:\n\nThis product has been made in a factory that uses tree nuts, eggs, soy, wheat, fish and cow's milk.\n\nServing suggestion:\n\nLovely on toast, delicious on sponge cake. Compliments venison dishes.",
+      "dimension_height": 10,
+      "dimension_length": 10,
+      "dimension_width": 10,
+      "goods_id": "peach-jam",
+      "images": [
+        "images/peach_jam_peach-jam_01.jpg",
+        "images/peach_jam_peach-jam_02.jpg",
+        "images/peach_jam_peach-jam_03.jpg"
+      ],
+      "in_stock": true,
+      "name": "Peach Jam",
+      "price": 80,
+      "short_description": "Peach Jam",
+      "status": "active",
+      "stock_quantity": 0,
+      "tags": [
+        "brendas",
+        "brendas-preserves"
+      ],
+      "url": "https://www.brendas.co.za/products/peach-jam",
+      "variants": [],
+      "weight": 280,
+      "production_ids": {
+        "jams-and-sauces": "d5c276e1-4af8-4c9a-93c9-95bfbc9b3367"
+      }
+    },
+    {
+      "brendas_price": 64,
+      "category_id": "0507549c-cccc-4577-8137-fb7595b13b0d",
+      "compare_at_price": 87.68,
+      "cost": 64,
+      "description": "Product Description\n\n280g - 260ml\n\nIngredients:\n\nTomatoes, sugar, ginger and citric acid.\n\nWarning:\n\nThis product has been made in a factory that uses tree nuts, eggs, soy, wheat, fish and cow's milk.\n\nServing Suggestion:\n\nLovely on grilled cheese sandwiches or add a dash to burgers. Compliments cheesecake.",
+      "dimension_height": 10,
+      "dimension_length": 10,
+      "dimension_width": 10,
+      "goods_id": "tomato-jam",
+      "images": [
+        "images/tomato_jam_tomato-jam_01.jpg",
+        "images/tomato_jam_tomato-jam_02.jpg",
+        "images/tomato_jam_tomato-jam_03.jpg"
+      ],
+      "in_stock": true,
+      "name": "Tomato Jam",
+      "price": 80,
+      "short_description": "Tomato Jam",
+      "status": "active",
+      "stock_quantity": 0,
+      "tags": [
+        "brendas",
+        "brendas-preserves"
+      ],
+      "url": "https://www.brendas.co.za/products/tomato-jam",
+      "variants": [],
+      "weight": 280,
+      "production_ids": {
+        "jams-and-sauces": "d8e6b172-3731-43c2-9980-df892923239e"
+      }
+    },
+    {
+      "brendas_price": 64,
+      "category_id": "0507549c-cccc-4577-8137-fb7595b13b0d",
+      "compare_at_price": 95.99,
+      "cost": 64,
+      "description": "Product Description\n\n280g - 260ml\n\nIngredients:\n\nSugar, water, oranges, grapefruit and lemons.\n\nWarning:\n\nThis product has been made in a factory that uses tree nuts, eggs, soy, wheat, fish and cow's milk.\n\nServing suggestion:\n\nLovely with toast and tea. Add to smoke pork dishes for sauce and roasting.",
+      "dimension_height": 10,
+      "dimension_length": 10,
+      "dimension_width": 10,
+      "goods_id": "citrus_marmalade",
+      "images": [
+        "images/citrus_marmalade_citrus_marmalade_01.jpg",
+        "images/citrus_marmalade_citrus_marmalade_02.jpg",
+        "images/citrus_marmalade_citrus_marmalade_03.jpg"
+      ],
+      "in_stock": true,
+      "name": "Citrus Marmalade",
+      "price": 80,
+      "short_description": "Citrus Marmalade",
+      "status": "active",
+      "stock_quantity": 0,
+      "tags": [
+        "brendas",
+        "brendas-preserves"
+      ],
+      "url": "https://www.brendas.co.za/products/citrus_marmalade",
+      "variants": [],
+      "weight": 280,
+      "production_ids": {
+        "jams-and-sauces": "01de0e2d-1bb3-44e5-b402-d1cdfb9644a5"
+      }
+    },
+    {
+      "brendas_price": 64,
+      "category_id": "0507549c-cccc-4577-8137-fb7595b13b0d",
+      "compare_at_price": 91.39,
+      "cost": 64,
+      "description": "Product Description\n\n280g - 260ml\n\nIngredients:\n\nRipe figs, sugar, lemon juice, ginger, salt and ascorbic acid.\n\nWarning:\n\nThis product has been made in a factory that uses tree nuts, eggs, soy, wheat, fish and cow's milk.\n\nServing suggestion:\n\nSpread on hot buttered toast and deserts. Add to cheeseboards with fresh goats cheese.",
+      "dimension_height": 10,
+      "dimension_length": 10,
+      "dimension_width": 10,
+      "goods_id": "ripe-fig-preserve",
+      "images": [
+        "images/ripe_fig_jam_ripe-fig-preserve_01.jpg",
+        "images/ripe_fig_jam_ripe-fig-preserve_02.jpg",
+        "images/ripe_fig_jam_ripe-fig-preserve_03.jpg"
+      ],
+      "in_stock": true,
+      "name": "Ripe Fig Jam",
+      "price": 80,
+      "short_description": "Ripe Fig Jam",
+      "status": "active",
+      "stock_quantity": 0,
+      "tags": [
+        "brendas",
+        "brendas-preserves"
+      ],
+      "url": "https://www.brendas.co.za/products/ripe-fig-preserve",
+      "variants": [],
+      "weight": 280,
+      "production_ids": {
+        "jams-and-sauces": "8ac77881-6e04-4b1f-bd27-9a8651530b8a"
+      }
+    },
+    {
+      "brendas_price": 79,
+      "category_id": "0507549c-cccc-4577-8137-fb7595b13b0d",
+      "compare_at_price": 117.17,
+      "cost": 79,
+      "description": "Product Description\n\n280g - 260ml\n\nIngredients:\n\nStrawberries, sugar, pectin and ascorbic acid.\n\nWarning:\n\nThis product has been made in a factory that uses tree nuts, eggs, soy, wheat, fish and cow's milk.\n\nServing Suggestion:\n\nDelicious on scones and breads. Delectable on sponge cake.",
+      "dimension_height": 10,
+      "dimension_length": 10,
+      "dimension_width": 10,
+      "goods_id": "strawberry-jam",
+      "images": [
+        "images/strawberry_jam_strawberry-jam_01.jpg",
+        "images/strawberry_jam_strawberry-jam_02.jpg",
+        "images/strawberry_jam_strawberry-jam_03.jpg"
+      ],
+      "in_stock": true,
+      "name": "Strawberry Jam",
+      "price": 98.75,
+      "short_description": "Strawberry Jam",
+      "status": "active",
+      "stock_quantity": 0,
+      "tags": [
+        "brendas",
+        "brendas-preserves"
+      ],
+      "url": "https://www.brendas.co.za/products/strawberry-jam",
+      "variants": [],
+      "weight": 280,
+      "production_ids": {
+        "jams-and-sauces": "d8efa883-786b-4844-807b-2c15f879a7cf"
+      }
+    },
+    {
+      "brendas_price": 81,
+      "category_id": "0507549c-cccc-4577-8137-fb7595b13b0d",
+      "compare_at_price": 109.58,
+      "cost": 81,
+      "description": "Product Description\n\n280g - 260ml\n\nIngredients:\n\nNastergal berries, sugar and lemon juice.\n\nWarning:\n\nThis product has been made in a factory that uses tree nuts, eggs, soy, wheat, fish and cow's milk.\n\nServing suggestion:\n\nIt\u2019s got a lovely indigo purple colour. Lovely to add colour to desert.\n\nAfter braaiing a steak, role it in the jam and let it rest.",
+      "dimension_height": 10,
+      "dimension_length": 10,
+      "dimension_width": 10,
+      "goods_id": "nastergal-jam",
+      "images": [
+        "images/nastergal_jam_nastergal-jam_01.jpg",
+        "images/nastergal_jam_nastergal-jam_02.jpg",
+        "images/nastergal_jam_nastergal-jam_03.jpg"
+      ],
+      "in_stock": true,
+      "name": "Nastergal Jam",
+      "price": 101.25,
+      "short_description": "Nastergal Jam",
+      "status": "active",
+      "stock_quantity": 0,
+      "tags": [
+        "brendas",
+        "brendas-preserves"
+      ],
+      "url": "https://www.brendas.co.za/products/nastergal-jam",
+      "variants": [],
+      "weight": 280,
+      "production_ids": {
+        "jams-and-sauces": "2214eeb5-bce5-4bf5-b162-1f7b9d1871cc"
+      }
+    },
+    {
+      "brendas_price": 64,
+      "category_id": "0507549c-cccc-4577-8137-fb7595b13b0d",
+      "compare_at_price": 90.03,
+      "cost": 64,
+      "description": "Product Description\n\n280g - 260ml\n\nIngredients:\n\nPeaches, sugar, lemon juice, granadilla, and ascorbic acid.\n\nWarning:\n\nThis product has been made in a factory that uses tree nuts, eggs, soy, wheat, fish and cow's milk.\n\nServing suggestion:\n\nCompliments any desert like ice cream, meringues and use as dressings for cakes.",
+      "dimension_height": 10,
+      "dimension_length": 10,
+      "dimension_width": 10,
+      "goods_id": "peach-granadilla-jam",
+      "images": [
+        "images/peach_granadilla_ja_peach-granadilla-jam_01.jpg",
+        "images/peach_granadilla_ja_peach-granadilla-jam_02.jpg",
+        "images/peach_granadilla_ja_peach-granadilla-jam_03.jpg"
+      ],
+      "in_stock": true,
+      "name": "Peach & Granadilla Jam",
+      "price": 80,
+      "short_description": "Peach & Granadilla Jam",
+      "status": "active",
+      "stock_quantity": 0,
+      "tags": [
+        "brendas",
+        "brendas-preserves"
+      ],
+      "url": "https://www.brendas.co.za/products/peach-granadilla-jam",
+      "variants": [],
+      "weight": 280,
+      "production_ids": {
+        "jams-and-sauces": "8a394251-2186-489d-b102-b38072a2e6ae"
+      }
+    },
+    {
+      "brendas_price": 64,
+      "category_id": "0507549c-cccc-4577-8137-fb7595b13b0d",
+      "compare_at_price": 97.3,
+      "cost": 64,
+      "description": "Product Description\n\n280g - 260ml\n\nIngredients:\n\nApricots, sugar, ascorbic acid.\n\nWarning:\n\nThis product has been made in a factory that uses tree nuts, eggs, soy, wheat, fish and cow's milk.\n\nServing suggestion:\n\nDelicious with bread, tea, and scones.\n\nEssential ingredient to malva pudding and bobotie.",
+      "dimension_height": 10,
+      "dimension_length": 10,
+      "dimension_width": 10,
+      "goods_id": "apricot-jam",
+      "images": [
+        "images/apricot_jam_apricot-jam_01.jpg",
+        "images/apricot_jam_apricot-jam_02.jpg",
+        "images/apricot_jam_apricot-jam_03.jpg"
+      ],
+      "in_stock": true,
+      "name": "Apricot Jam",
+      "price": 80,
+      "short_description": "Apricot Jam",
+      "status": "active",
+      "stock_quantity": 0,
+      "tags": [
+        "brendas",
+        "brendas-preserves"
+      ],
+      "url": "https://www.brendas.co.za/products/apricot-jam",
+      "variants": [],
+      "weight": 280,
+      "production_ids": {
+        "jams-and-sauces": "ec56c8f4-d2a5-448f-bb08-289334daf460"
+      }
+    }
+  ],
+  "updated": "2026-05-17T14:32:31.519017"
+}

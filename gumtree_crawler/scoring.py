@@ -3,11 +3,22 @@ Scenario evaluation and location scoring for Gumtree crawler listings.
 """
 from __future__ import annotations
 
+import re
 from typing import Any
 
 
 def _normalize_text(value: str | None) -> str:
     return " ".join((value or "").lower().split())
+
+
+def _keyword_in_text(keyword: str, text: str) -> bool:
+    """Return True if keyword appears as a whole word/phrase in normalized text."""
+
+    normalized = _normalize_text(keyword)
+    if not normalized:
+        return False
+    pattern = r"\b" + re.escape(normalized).replace(r"\ ", r"\s+") + r"\b"
+    return bool(re.search(pattern, text))
 
 
 def _normalize_token(value: str | None) -> str:
@@ -21,6 +32,58 @@ def get_listing_text(listing: dict[str, Any]) -> str:
         listing.get("location") or "",
     ]
     return _normalize_text(" ".join(parts))
+
+
+def _find_search_for_listing(scenario: dict[str, Any], listing: dict[str, Any]) -> dict[str, Any] | None:
+    """Match a stored listing to the search row that collected it (by category label)."""
+
+    category = (listing.get("category") or "").strip().lower()
+    if not category:
+        return None
+    for search in scenario.get("searches") or []:
+        if (search.get("category") or "").strip().lower() == category:
+            return search
+    return None
+
+
+def _search_has_keyword_overrides(search: dict[str, Any]) -> bool:
+    return bool(
+        search.get("required_keywords_all")
+        or search.get("excluded_keywords")
+        or search.get("required_any_groups")
+    )
+
+
+def _effective_keyword_rules(scenario: dict[str, Any], listing: dict[str, Any]) -> dict[str, Any]:
+    """
+    Keyword rules for scoring: per-search overrides when set, otherwise scenario defaults.
+    """
+
+    search = _find_search_for_listing(scenario, listing)
+    if search and _search_has_keyword_overrides(search):
+        source: dict[str, Any] = search
+    else:
+        source = scenario
+    return {
+        "required_keywords_all": list(source.get("required_keywords_all") or []),
+        "excluded_keywords": list(source.get("excluded_keywords") or []),
+        "required_any_groups": list(source.get("required_any_groups") or []),
+    }
+
+
+def _allowed_categories(scenario: dict[str, Any]) -> set[str]:
+    """Categories a listing must belong to for this scenario (from search targets)."""
+
+    categories: set[str] = set()
+    for search in scenario.get("searches") or []:
+        category = (search.get("category") or "").strip().lower()
+        if category:
+            categories.add(category)
+    if not categories:
+        fallback = (scenario.get("category") or "").strip().lower()
+        if fallback:
+            categories.add(fallback)
+    return categories
 
 
 def score_location(
@@ -94,16 +157,24 @@ def evaluate_listing_for_scenario(listing: dict[str, Any], scenario: dict[str, A
     seller_text = _normalize_text(listing.get("seller"))
     reasons: list[str] = []
 
+    allowed_categories = _allowed_categories(scenario)
+    if allowed_categories:
+        listing_category = (listing.get("category") or "").strip().lower()
+        if listing_category not in allowed_categories:
+            reasons.append(f"wrong category ({listing_category or 'unknown'})")
+
     price = listing.get("price")
     min_price = scenario.get("min_price")
     max_price = scenario.get("max_price")
-    if price is None:
-        reasons.append("missing price")
-    else:
-        if min_price is not None and price < int(min_price):
-            reasons.append(f"price below R{min_price}")
-        if max_price is not None and price > int(max_price):
-            reasons.append(f"price above R{max_price}")
+    require_price = scenario.get("require_price", True)
+    if require_price:
+        if price is None:
+            reasons.append("missing price")
+        else:
+            if min_price is not None and price < int(min_price):
+                reasons.append(f"price below R{min_price}")
+            if max_price is not None and price > int(max_price):
+                reasons.append(f"price above R{max_price}")
 
     for field_name in scenario.get("required_fields_all") or []:
         if field_name == "price":
@@ -148,22 +219,24 @@ def evaluate_listing_for_scenario(listing: dict[str, Any], scenario: dict[str, A
         elif float(current) > float(max_value):
             reasons.append(f"{key} above {max_value}")
 
-    for keyword in scenario.get("required_keywords_all") or []:
-        if _normalize_text(keyword) not in text:
+    keywords = _effective_keyword_rules(scenario, listing)
+
+    for keyword in keywords.get("required_keywords_all") or []:
+        if not _keyword_in_text(keyword, text):
             reasons.append(f"missing keyword: {keyword}")
 
-    any_groups = scenario.get("required_any_groups") or []
+    any_groups = keywords.get("required_any_groups") or []
     if any_groups:
         group_match = False
         for group in any_groups:
-            if any(_normalize_text(keyword) in text for keyword in group):
+            if any(_keyword_in_text(keyword, text) for keyword in group):
                 group_match = True
                 break
         if not group_match:
             reasons.append("missing required keyword group")
 
-    for keyword in scenario.get("excluded_keywords") or []:
-        if _normalize_text(keyword) in text:
+    for keyword in keywords.get("excluded_keywords") or []:
+        if _keyword_in_text(keyword, text):
             reasons.append(f"excluded keyword: {keyword}")
 
     allowlist = [_normalize_text(v) for v in scenario.get("seller_allowlist") or [] if v]
@@ -175,8 +248,8 @@ def evaluate_listing_for_scenario(listing: dict[str, Any], scenario: dict[str, A
 
     urgency_keywords = scenario.get("urgency_keywords") or []
     strong_urgency_keywords = scenario.get("strong_urgency_keywords") or []
-    urgency_hits = [k for k in urgency_keywords if _normalize_text(k) in text]
-    strong_hits = [k for k in strong_urgency_keywords if _normalize_text(k) in text]
+    urgency_hits = [k for k in urgency_keywords if _keyword_in_text(k, text)]
+    strong_hits = [k for k in strong_urgency_keywords if _keyword_in_text(k, text)]
 
     price_score = 0.0
     if price is not None and min_price is not None and max_price is not None and int(max_price) > int(min_price):

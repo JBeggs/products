@@ -1,0 +1,7 @@
+# Vinyl Cutters — product URLs (one per line), or browse and Save in the UI.
+# Store: https://vinylcutters.co.za/
+# Example: https://vinylcutters.co.za/products/combo-sublimation-printer-with-mug-heat-press
+
+https://vinylcutters.co.za/products/combo-sublimation-printer-with-mug-heat-press
+https://vinylcutters.co.za/products/combo-sublimation-printer-kit
+https://vinylcutters.co.za/products/combo-8in1-28x38cm-heat-press

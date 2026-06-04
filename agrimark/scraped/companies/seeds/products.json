@@ -1,0 +1,36 @@
+{
+  "products": [
+    {
+      "url": "https://www.agrimark.co.za/product/westerman-s-canary-mix",
+      "name": "Westerman's Canary Mix",
+      "description": "Canary seed mixed with a variety of other seeds.",
+      "short_description": "Westerman's Canary Mix",
+      "price": 132.24,
+      "compare_at_price": 156.97,
+      "cost": 114.99,
+      "agrimark_price": 114.99,
+      "images": [
+        "images/westermans_canary_mi_westerman-s-canary-mix_01.png",
+        "images/westermans_canary_mi_westerman-s-canary-mix_02.jpg",
+        "images/westermans_canary_mi_westerman-s-canary-mix_03.jpg",
+        "images/westermans_canary_mi_westerman-s-canary-mix_04.jpg",
+        "images/westermans_canary_mi_westerman-s-canary-mix_05.jpg",
+        "images/westermans_canary_mi_westerman-s-canary-mix_06.jpg",
+        "images/westermans_canary_mi_westerman-s-canary-mix_07.jpg",
+        "images/westermans_canary_mi_westerman-s-canary-mix_08.jpg",
+        "images/westermans_canary_mi_westerman-s-canary-mix_09.jpg",
+        "images/westermans_canary_mi_westerman-s-canary-mix_10.png"
+      ],
+      "variants": [],
+      "in_stock": true,
+      "stock_quantity": 0,
+      "status": "active",
+      "tags": [
+        "agrimark",
+        "agrimark-co-za"
+      ],
+      "goods_id": "westerman-s-canary-mix"
+    }
+  ],
+  "updated": "2026-05-18T10:50:09.051033"
+}

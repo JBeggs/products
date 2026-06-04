@@ -17,17 +17,21 @@ playwright install chromium
 cp .env.example .env
 ```
 
+Dependencies (including `requests` for manual product saves) live in **`.venv`**. Activate it before any Python command:
+
+`source .venv/bin/activate` (Windows: `.venv\Scripts\activate`)
+
 ---
 
 ## Supplier Selection
 
-**Select the supplier before starting a scrape.** The web UI and CLI both support Temu, Gumtree, and AliExpress.
+**Select the supplier before starting a scrape.** The web UI and CLI support all registered suppliers, including Temu, Gumtree, AliExpress, and Nativechild.
 
 ### Web UI
 
-1. Run `python app.py` → http://127.0.0.1:5001
+1. From `products/`, activate `.venv`, then run `python app.py` → http://127.0.0.1:5001
 2. Click **Scrape**
-3. Choose supplier from the dropdown (Temu, Gumtree, or AliExpress)
+3. Choose supplier from the dropdown (for example Temu, Gumtree, AliExpress, or Nativechild)
 4. Click **Start scrape**
 
 - **Temu / Gumtree:** Interactive browse-and-save — a browser opens; browse the site and click the floating "Save" button to add products.
@@ -186,6 +190,96 @@ Important: after first seed, the app reads the crawler's saved scenario config f
 
 ---
 
+## Junk Mail Crawler
+
+The Junk Mail crawler is separate from the classic `junkmail/scrape_junkmail.py` product scraper.
+
+- **UI route:** `/junkmail-crawler`
+- **Purpose:** discover Junk Mail listings, score them against buying scenarios (same rule model as Gumtree), and surface strict matches in scenario tabs
+- **Storage:** `junkmail_crawler/junkmail_crawler.db`
+
+### Cloudflare and Chrome (required)
+
+Junk Mail is protected by Cloudflare. Headless Playwright is **not** used for crawls — the crawler connects to **real Chrome** via CDP (port 9222) and reuses a session that already passed verification.
+
+**First-time setup** (from `products/`):
+
+```bash
+python junkmail/setup_cloudflare.py
+```
+
+1. A Chrome window opens using `junkmail/chrome_profile/`
+2. Wait until junkmail.co.za shows **listings** (not “Performing security verification”)
+3. Press Enter in the terminal — cookies are saved to `junkmail/junkmail_session.json`
+4. Leave Chrome open for **Run now**, or close it — the crawler can auto-start Chrome on the next run
+
+If a crawl fails with a Cloudflare error, re-run setup or complete verification in the Junk Mail Chrome window.
+
+### Differences from Gumtree crawler
+
+| Topic | Junk Mail | Gumtree |
+|-------|-----------|---------|
+| Browser | Real Chrome CDP (`junkmail/cdp_fetch.py`) | Headless Playwright |
+| Price filter | Applied in Python after parse (no URL `?pr=`) | In search URL |
+| Pagination | `/page2`, `/page3`, … | `p2`, `p3` in URL |
+| Ad ID | 32-char hex UUID in path | 15+ digit numeric |
+| Default storage cap | 50 listings/search, 5 pages/search | No per-search cap |
+| Store-only matches | Off by default (stores all like Gumtree; scenario tabs filter visibility) | Stores all non-ignored cards |
+
+Crawl limits are editable in the Junk Mail crawler UI (**Filters**) or via `/api/junkmail-crawler/filters`:
+
+- `max_pages_per_search` (default 5)
+- `max_stored_per_search` (default 50)
+- `store_only_scenario_matches` (default false — store all listings; scenario tabs show strict matches only)
+
+Search URLs include Junk Mail price segments (`/pr{min}-{max}/`) built by `build_junkmail_search_url()` in `junkmail_crawler/parsers.py`. Example gaming PC search:
+
+`https://www.junkmail.co.za/pr10000-20000/computers-and-gaming/q-gaming%20pc/so-latest`
+
+Listings without a parsed card price are skipped when a price range is configured. On app startup, existing scenario configs in SQLite get updated search URLs from `config.py` (matched by search name).
+
+### Default scenarios
+
+On first run the crawler seeds from `junkmail_crawler/config.py` (mirrors Gumtree scenarios with Junk Mail search URLs), then persists in SQLite:
+
+- `motor-bikes`, `ai-hardware`, `personal-transport`, `cars`, `laptops`, `cell-phones`, `laser-cutters`, `t-shirt-printing`, …
+
+Deleting `junkmail_crawler/junkmail_crawler.db` recreates the schema and reseeds defaults on next init.
+
+### Images
+
+Images are **not** downloaded during crawl. Use **Fetch images** in the UI (or `POST /api/junkmail-crawler/listings/{id}/fetch-images`). That endpoint uses the same Chrome CDP session as the crawler and saves files under `junkmail/scraped/images/`.
+
+### Parser validation
+
+Offline fixture tests:
+
+```bash
+cd products
+python -m junkmail_crawler.debug_parse
+```
+
+Live probe (requires Cloudflare clearance):
+
+```bash
+python -m junkmail_crawler.debug_parse --live "https://www.junkmail.co.za/q-laser%20cutter/so-latest"
+```
+
+If live crawls return zero cards after Cloudflare passes, save search/detail HTML and compare against `junkmail_crawler/parsers.py` selectors.
+
+### Core files
+
+- `junkmail_crawler/config.py` — default scenarios and location preferences
+- `junkmail_crawler/crawler.py` — crawl orchestration (CDP)
+- `junkmail_crawler/crawler_limits.py` — price range and storage caps
+- `junkmail_crawler/db.py` — SQLite schema and queries
+- `junkmail_crawler/parsers.py` — search/detail parsing
+- `junkmail/cdp_fetch.py` — Chrome CDP fetch
+- `junkmail/setup_cloudflare.py` — one-time Cloudflare setup
+- `app.py` — `/junkmail-crawler` page and `/api/junkmail-crawler/*` routes
+
+---
+
 ## Adding a New Supplier
 
 1. Create `products/newsupplier/` with:
@@ -206,9 +300,64 @@ SUPPLIERS["newsupplier"] = SupplierInfo(
 )
 ```
 
-3. Add to `cli.py` choices: `choices=["temu", "gumtree", "aliexpress", "newsupplier"]`
+3. `python -m products list-suppliers` — the CLI scrape command uses slugs from `get_suppliers()` in `shared/suppliers.py`; you do not need to hardcode new slugs in `cli.py`.
 
 4. Edit UI tabs and SOURCES are sourced from the registry automatically.
+
+---
+
+## South Africa retail suppliers (browse-and-save)
+
+These use the same interactive session model as Loot (floating **Save product** button, `Ctrl+Shift+S`). PDP fields are extracted with shared JSON-LD / Open Graph / DOM heuristics in `shared/dom_product_extract.py`.
+
+| Slug | Folder | Session JSON |
+|------|--------|----------------|
+| `northernbolt` | `northernbolt/` | `northernbolt/northernbolt_session.json` |
+| `builders` | `builders/` | `builders/builders_session.json` |
+| `ahm` | `ahm/` | `ahm/ahm_session.json` |
+| `dailydiscounts` | `dailydiscounts/` | `dailydiscounts/dailydiscounts_session.json` |
+| `soundselect` | `soundselect/` | `soundselect/soundselect_session.json` |
+| `tsawelding` | `tsawelding/` | `tsawelding/tsawelding_session.json` |
+
+They are included in tiered markup (`shared/config.py` → `SUPPLIERS_USING_TIERED_MARKUP`). Configure per-supplier tiers in the scraper UI or `scraper_config.json` before scraping, same as other tiered suppliers.
+
+### Debugging extraction
+
+1. Set **`SCRAPER_DEBUG=1`** in the environment (or use the scrape UI debug option when available) so logs include extract probes.
+2. On failed save or empty extract, artifacts are written under **`{supplier}/scraped/debug_capture/`**: `.html`, `.png` (when possible), `.meta.json`, and optional `*_fields.json` with normalized title/price/gallery counts.
+3. Tighten PDP URL detection in `shared/retail_product_pipeline.default_is_product_url` or add supplier-specific checks in that supplier’s `scrape_*.py` if saves are skipped on valid product pages.
+
+---
+
+## Verify all (stock & price checker)
+
+On **Edit Products** (`/edit`), use **Verify all** to check every local product (company-scoped `products.json`) against its supplier URL.
+
+### Behaviour
+
+- **Price changed** — auto-updates local `price`, `cost`, and `{supplier}_price` in `products.json`
+- **Sold out / unavailable** — sets `in_stock=false`, `stock_quantity=0`, prepends `** SOLD OUT **` to the product name, and auto-selects the row so you can **Deactivate** or **Sync** in batch
+- **No change** — logged as OK
+- **Unsupported supplier** — skipped with a clear log line (no checker yet)
+
+Progress appears in a modal while the job runs. Changes are saved to disk after each product.
+
+**Junk Mail:** Verify uses saved Cloudflare cookies in `junkmail/junkmail_session.json`. Run `python junkmail/setup_cloudflare.py` first (same session as the Junk Mail crawler). Re-run setup if verify returns “Could not fetch price”.
+
+**Temu:** Verify uses **real Chrome** on port **9223** (not Playwright automation — the security slider fails there). First run `python temu/setup_verify.py`, complete login/slider in that Chrome window, then **Verify all**. Leave that Chrome open during the batch. Verify waits up to **180s** for Chrome to open on the first Temu run, then **120s per Temu product** (HTTP suppliers stay at 20s). If you see “Timed out after 20s”, restart the products app so the new limits apply.
+
+**All browser sessions (Temu + Junk Mail):** From `products/` run `python setup_browser_sessions.py` to walk through every real-Chrome setup in one go (`--only temu`, `--list`, `--status`).
+
+### Scope
+
+- **View all** mode — checks every supplier for the selected company
+- **Single supplier tab** — checks only that supplier’s products
+
+### Supported suppliers (have `fetch_current_pricing`)
+
+`temu`, `gumtree`, `junkmail`, `aliexpress`, `makro`, `constructionhyper`, `game`, `loot`, `perfectdealz`, `ubuy`, `myrunway`, `onedayonly`, `ahm`, `tsawelding`, `outdoorandvelocity`, `hekpoorthoneyfarms`, `seedsandall`, `brendas`, `elanas`
+
+Other suppliers are logged as unsupported until a checker is added.
 
 ---
 
@@ -219,3 +368,12 @@ SUPPLIERS["newsupplier"] = SupplierInfo(
 | Temu       | `temu/urls.txt`        | `temu/scraped/products.json`   |
 | Gumtree    | `gumtree/urls.txt`     | `gumtree/scraped/products.json` |
 | AliExpress | `aliexpress/urls.txt`  | `aliexpress/scraped/products.json` |
+| Northern Bolt | `northernbolt/urls.txt` | `northernbolt/scraped/products.json` |
+| Builders | `builders/urls.txt` | `builders/scraped/products.json` |
+| AHM Online | `ahm/urls.txt` | `ahm/scraped/products.json` |
+| Daily Discounts | `dailydiscounts/urls.txt` | `dailydiscounts/scraped/products.json` |
+| Sound Select | `soundselect/urls.txt` | `soundselect/scraped/products.json` |
+| TSA Welding | `tsawelding/urls.txt` | `tsawelding/scraped/products.json` |
+| Nativechild | `nativechild/urls.txt` | `nativechild/scraped/products.json` |
+| Black African | `blackafrican/urls.txt` | `blackafrican/scraped/products.json` |
+| Cosmetic Connection | `cosmeticconnection/urls.txt` | `cosmeticconnection/scraped/products.json` |

@@ -1,0 +1,5 @@
+# AHM Online — product URLs (one per line), or browse and Save in the UI.
+# Store: https://www.ahm.co.za/
+# Example PDP: https://www.ahm.co.za/products/your-product-handle
+
+https://www.ahm.co.za/products/ingco-20v-li-ion-pressure-washer

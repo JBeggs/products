@@ -26,8 +26,21 @@ Suppliers use one of two session mechanisms:
 | **Ubuy** | JSON session | `ubuy/ubuy_session.json` | Same as Makro. |
 | **MyRunway** | JSON session | `myrunway/myrunway_session.json` | Same as Makro. |
 | **OneDayOnly** | JSON session | `onedayonly/onedayonly_session.json` | Same as Makro. |
+| **Northern Bolt** | JSON session | `northernbolt/northernbolt_session.json` | Generic browse-and-save; `storage_state` on “Save session”. |
+| **Builders** | JSON session | `builders/builders_session.json` | Same; script injection skipped on paths containing `challenge` or `captcha`. |
+| **AHM Online** | JSON session | `ahm/ahm_session.json` | Shopify (`www.ahm.co.za`); same as Builders for session / captcha paths. |
+| **Nativechild** | JSON session | `nativechild/nativechild_session.json` | Generic browse-and-save; `storage_state` on “Save session”. |
+| **Black African** | JSON session | `blackafrican/blackafrican_session.json` | Generic browse-and-save; `storage_state` on “Save session”. |
+| **Cosmetic Connection** | JSON session | `cosmeticconnection/cosmeticconnection_session.json` | Generic browse-and-save; `storage_state` on “Save session”. |
+| **Daily Discounts** | JSON session | `dailydiscounts/dailydiscounts_session.json` | Same as Makro. |
+| **Sound Select** | JSON session | `soundselect/soundselect_session.json` | Same as Makro. |
+| **TSA Welding** | JSON session | `tsawelding/tsawelding_session.json` | Shopify; same as Makro; skip inject on `challenge` / `captcha` paths. |
 | **Temu** | Custom (Chrome profile) | `temu/chrome_profile/` | Uses `launch_persistent_context` directly, not `GenericScraperConfig`. |
 | **Gumtree** | Custom (Chrome profile + JSON save) | `gumtree/chrome_profile/`, `gumtree/gumtree_session.json` | Interactive Gumtree scraper uses the persistent profile for browsing/OAuth and can also save `storage_state` JSON. |
+
+## Debug captures (retail suppliers)
+
+For **Northern Bolt**, **Builders**, **AHM Online**, **Daily Discounts**, **Sound Select**, and **TSA Welding**, when `SCRAPER_DEBUG=1` or extraction/save fails, the scraper may write artifacts under `{supplier}/scraped/debug_capture/` (HTML, screenshot, JSON metadata, and field probe dumps). Use these to tune selectors or PDP URL heuristics without guessing from an empty `products.json`.
 
 ## JSON Session (storage_state)
 
@@ -62,6 +75,15 @@ There are now two different Gumtree flows:
 - Keeps images optional during crawl; images are fetched manually later from the crawler UI/API
 
 If you are working on login/session persistence for browsing Gumtree products, use the classic scraper paths above. If you are working on the scenario-based Gumtree discovery workflow, look at the crawler docs and code instead of the scraper session files.
+
+### Junk Mail scraper vs Junk Mail crawler
+
+Same split as Gumtree:
+
+1. **Classic Junk Mail product scraper** — `junkmail/scrape_junkmail.py` (browse-and-save, `junkmail_session.json`, `launch_junkmail_context`)
+2. **Junk Mail crawler** — `junkmail_crawler/` plus `/junkmail-crawler` in the app
+
+The crawler uses **real Chrome via CDP** (`junkmail/cdp_fetch.py`), not the session-file Playwright path. Run `python junkmail/setup_cloudflare.py` before the first crawl. See `products/README.md` (Junk Mail Crawler section).
 
 ## OAuth and Popups
 

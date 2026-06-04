@@ -1,0 +1,2 @@
+# Sound Select — add product page URLs (one per line), or browse and Save in the scraper UI.
+# https://soundselect.co.za/

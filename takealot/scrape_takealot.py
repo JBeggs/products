@@ -285,6 +285,30 @@ def build_scraped_index(output_dir: Path) -> None:
     (output_dir / "README.md").write_text("".join(lines), encoding="utf-8")
 
 
+def fetch_current_pricing(url: str, product: dict | None = None) -> dict | None:
+    from shared.takealot_pricing import fetch_takealot_product_via_api
+    from shared.verify_pricing import pricing_result_from_data
+
+    price_hint = None
+    label_hint = None
+    if product:
+        raw = product.get("takealot_price")
+        if raw is not None:
+            try:
+                price_hint = float(raw)
+            except (TypeError, ValueError):
+                price_hint = None
+        name = (product.get("name") or "").strip()
+        if " - " in name:
+            label_hint = name.rsplit(" - ", 1)[1].strip()
+    data = fetch_takealot_product_via_api(
+        url,
+        price_hint=price_hint,
+        label_hint=label_hint,
+    )
+    return pricing_result_from_data(data, "takealot")
+
+
 def run_scrape_session(
     output_dir: Path,
     stop_flag: threading.Event,

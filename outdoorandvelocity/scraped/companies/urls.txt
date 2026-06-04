@@ -1,0 +1,5 @@
+# Outdoor and Velocity — product URLs (one per line), or browse and Save in the UI.
+# Store: https://outdoorandvelocity.co.za/
+
+https://outdoorandvelocity.co.za/shop/12g-co2-canister-50-pack-2/
+https://outdoorandvelocity.co.za/shop/asg-12g-co2-gas-cannister-100-count/

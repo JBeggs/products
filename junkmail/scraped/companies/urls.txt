@@ -1,0 +1,10 @@
+# Add Junk Mail listing URLs (one per line)
+# Example: https://www.junkmail.co.za/office-and-business/gauteng/pretoria/listing-title/abc123...32hex
+
+https://www.junkmail.co.za/bikes/other/gauteng/benoni/pit-bike/291917d07b454890ad0680d9fbaf1550
+https://www.junkmail.co.za/bikes/ktm/gauteng/benoni/new-kickstart-2-stroke-bikes-for-sale/9a4f9244bc3f4619bc5f2e85a21e17f5
+https://www.junkmail.co.za/bikes/suzuki/gauteng/centurion/2004-suzuki-jr-80-two-stroke-manual-5-speed-transmission/4e121cb57f484d0f8a81d783755efdca
+https://www.junkmail.co.za/bikes/puzey/gauteng/florida/puzey-xp-125cc-pit-bike/b8845bfdc5e744198264a90bfaa49092
+https://www.junkmail.co.za/bikes/ktm/gauteng/johannesburg-south/ktm-sx50-junior-scrambler/2c4ca48d138443569fd13e4c2d4144c4
+https://www.junkmail.co.za/bikes/big-boy/gauteng/krugersdorp/big-boy-125cc-pit-bike/33d33e3d6fc84bcfbc1fbfcdb1512665
+https://www.junkmail.co.za/bikes/other/gauteng/pretoria/pretoria-north/motorbike-125cc/b48c31983c0042628d9439f8423e1ade

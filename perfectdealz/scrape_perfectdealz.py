@@ -287,38 +287,9 @@ def build_scraped_index(output_dir: Path) -> None:
     index_path.write_text(json.dumps({"products": index_items}, indent=2), encoding="utf-8")
 
 
-def fetch_current_pricing(url: str) -> dict | None:
-    """
-    Fetch current price/cost from Perfect Dealz URL. No persistence.
-    Returns {price, cost, source_price, valid: True} or None if invalid/blocked.
-    """
-    try:
-        with sync_playwright() as p:
-            browser = p.chromium.launch(headless=True)
-            page = browser.new_page(
-                user_agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36",
-                locale="en-ZA",
-            )
-            try:
-                page.goto(url, wait_until="domcontentloaded", timeout=30000)
-                page.wait_for_load_state("networkidle", timeout=15000)
-                data = extract_product_data(page, debug=False)
-                if not data or data.get("salePrice") is None:
-                    return None
-                sale_price_zar = data.get("salePrice")
-                sale_price_cents = int(sale_price_zar * 100)
-                sell_price = apply_tiered_markup(sale_price_cents, "perfectdealz")
-                cost = calculate_supplier_cost(sale_price_cents, "perfectdealz")
-                return {
-                    "price": round(sell_price, 2),
-                    "cost": round(cost, 2),
-                    "source_price": round(sale_price_zar, 2),
-                    "valid": True,
-                }
-            finally:
-                browser.close()
-    except Exception:
-        return None
+def fetch_current_pricing(url: str, product: dict | None = None) -> dict | None:
+    from shared.verify_pricing import fetch_retail_pricing_http
+    return fetch_retail_pricing_http(url, "perfectdealz", product=product)
 
 
 def run_scrape_session(

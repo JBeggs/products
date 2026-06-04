@@ -47,6 +47,22 @@ SUPPLIERS: dict[str, SupplierInfo] = {
         urls_file=_path("gumtree/urls.txt"),
         supports_interactive=True,
     ),
+    "junkmail": SupplierInfo(
+        slug="junkmail",
+        display_name="Junk Mail",
+        module_name="junkmail.scrape_junkmail",
+        output_dir=_path("junkmail/scraped"),
+        urls_file=_path("junkmail/urls.txt"),
+        supports_interactive=True,
+    ),
+    "ahm": SupplierInfo(
+        slug="ahm",
+        display_name="AHM Online",
+        module_name="ahm.scrape_ahm",
+        output_dir=_path("ahm/scraped"),
+        urls_file=_path("ahm/urls.txt"),
+        supports_interactive=True,
+    ),
     "aliexpress": SupplierInfo(
         slug="aliexpress",
         display_name="AliExpress",
@@ -127,6 +143,30 @@ SUPPLIERS: dict[str, SupplierInfo] = {
         urls_file=_path("myrunway/urls.txt"),
         supports_interactive=True,
     ),
+    "blackafrican": SupplierInfo(
+        slug="blackafrican",
+        display_name="Black African",
+        module_name="blackafrican.scrape_blackafrican",
+        output_dir=_path("blackafrican/scraped"),
+        urls_file=_path("blackafrican/urls.txt"),
+        supports_interactive=True,
+    ),
+    "cosmeticconnection": SupplierInfo(
+        slug="cosmeticconnection",
+        display_name="Cosmetic Connection",
+        module_name="cosmeticconnection.scrape_cosmeticconnection",
+        output_dir=_path("cosmeticconnection/scraped"),
+        urls_file=_path("cosmeticconnection/urls.txt"),
+        supports_interactive=True,
+    ),
+    "nativechild": SupplierInfo(
+        slug="nativechild",
+        display_name="Nativechild",
+        module_name="nativechild.scrape_nativechild",
+        output_dir=_path("nativechild/scraped"),
+        urls_file=_path("nativechild/urls.txt"),
+        supports_interactive=True,
+    ),
     "onedayonly": SupplierInfo(
         slug="onedayonly",
         display_name="OneDayOnly",
@@ -135,24 +175,214 @@ SUPPLIERS: dict[str, SupplierInfo] = {
         urls_file=_path("onedayonly/urls.txt"),
         supports_interactive=True,
     ),
+    "northernbolt": SupplierInfo(
+        slug="northernbolt",
+        display_name="Northern Bolt",
+        module_name="northernbolt.scrape_northernbolt",
+        output_dir=_path("northernbolt/scraped"),
+        urls_file=_path("northernbolt/urls.txt"),
+        supports_interactive=True,
+    ),
+    "builders": SupplierInfo(
+        slug="builders",
+        display_name="Builders",
+        module_name="builders.scrape_builders",
+        output_dir=_path("builders/scraped"),
+        urls_file=_path("builders/urls.txt"),
+        supports_interactive=True,
+    ),
+    "dailydiscounts": SupplierInfo(
+        slug="dailydiscounts",
+        display_name="Daily Discounts",
+        module_name="dailydiscounts.scrape_dailydiscounts",
+        output_dir=_path("dailydiscounts/scraped"),
+        urls_file=_path("dailydiscounts/urls.txt"),
+        supports_interactive=True,
+    ),
+    "buythis": SupplierInfo(
+        slug="buythis",
+        display_name="BuyThis",
+        module_name="buythis.scrape_buythis",
+        output_dir=_path("buythis/scraped"),
+        urls_file=_path("buythis/urls.txt"),
+        supports_interactive=True,
+    ),
+    "vinylcutters": SupplierInfo(
+        slug="vinylcutters",
+        display_name="Vinyl Cutters",
+        module_name="vinylcutters.scrape_vinylcutters",
+        output_dir=_path("vinylcutters/scraped"),
+        urls_file=_path("vinylcutters/urls.txt"),
+        supports_interactive=True,
+    ),
+    "soundselect": SupplierInfo(
+        slug="soundselect",
+        display_name="Sound Select",
+        module_name="soundselect.scrape_soundselect",
+        output_dir=_path("soundselect/scraped"),
+        urls_file=_path("soundselect/urls.txt"),
+        supports_interactive=True,
+    ),
+    "tsawelding": SupplierInfo(
+        slug="tsawelding",
+        display_name="TSA Welding",
+        module_name="tsawelding.scrape_tsawelding",
+        output_dir=_path("tsawelding/scraped"),
+        urls_file=_path("tsawelding/urls.txt"),
+        supports_interactive=True,
+    ),
+    "gimmeonline": SupplierInfo(
+        slug="gimmeonline",
+        display_name="Gimme Online",
+        module_name="gimmeonline.scrape_gimmeonline",
+        output_dir=_path("gimmeonline/scraped"),
+        urls_file=_path("gimmeonline/urls.txt"),
+        supports_interactive=True,
+    ),
+    "outdoorandvelocity": SupplierInfo(
+        slug="outdoorandvelocity",
+        display_name="Outdoor and Velocity",
+        module_name="outdoorandvelocity.scrape_outdoorandvelocity",
+        output_dir=_path("outdoorandvelocity/scraped"),
+        urls_file=_path("outdoorandvelocity/urls.txt"),
+        supports_interactive=True,
+    ),
+    "overberghoney": SupplierInfo(
+        slug="overberghoney",
+        display_name="Overberg Honey Co",
+        module_name="overberghoney.scrape_overberghoney",
+        output_dir=_path("overberghoney/scraped"),
+        urls_file=_path("overberghoney/urls.txt"),
+        supports_interactive=True,
+    ),
+    "hekpoorthoneyfarms": SupplierInfo(
+        slug="hekpoorthoneyfarms",
+        display_name="Hekpoort Honey Farms",
+        module_name="hekpoorthoneyfarms.scrape_hekpoorthoneyfarms",
+        output_dir=_path("hekpoorthoneyfarms/scraped"),
+        urls_file=_path("hekpoorthoneyfarms/urls.txt"),
+        supports_interactive=True,
+    ),
+    "agrimark": SupplierInfo(
+        slug="agrimark",
+        display_name="Agrimark",
+        module_name="agrimark.scrape_agrimark",
+        output_dir=_path("agrimark/scraped"),
+        urls_file=_path("agrimark/urls.txt"),
+        supports_interactive=True,
+    ),
+    "bulkseed": SupplierInfo(
+        slug="bulkseed",
+        display_name="BulkSeed.co.za",
+        module_name="bulkseed.scrape_bulkseed",
+        output_dir=_path("bulkseed/scraped"),
+        urls_file=_path("bulkseed/urls.txt"),
+        supports_interactive=True,
+    ),
+    "seedsandall": SupplierInfo(
+        slug="seedsandall",
+        display_name="Seeds and All",
+        module_name="seedsandall.scrape_seedsandall",
+        output_dir=_path("seedsandall/scraped"),
+        urls_file=_path("seedsandall/urls.txt"),
+        supports_interactive=True,
+    ),
+    "seedsforafrica": SupplierInfo(
+        slug="seedsforafrica",
+        display_name="Seeds for Africa",
+        module_name="seedsforafrica.scrape_seedsforafrica",
+        output_dir=_path("seedsforafrica/scraped"),
+        urls_file=_path("seedsforafrica/urls.txt"),
+        supports_interactive=True,
+    ),
+    "britelighting": SupplierInfo(
+        slug="britelighting",
+        display_name="Britelighting",
+        module_name="britelighting.scrape_britelighting",
+        output_dir=_path("britelighting/scraped"),
+        urls_file=_path("britelighting/urls.txt"),
+        supports_interactive=True,
+    ),
+    "youngsindustrial": SupplierInfo(
+        slug="youngsindustrial",
+        display_name="Young's Industrial",
+        module_name="youngsindustrial.scrape_youngsindustrial",
+        output_dir=_path("youngsindustrial/scraped"),
+        urls_file=_path("youngsindustrial/urls.txt"),
+        supports_interactive=True,
+    ),
+    "brendas": SupplierInfo(
+        slug="brendas",
+        display_name="Brenda's Preserves",
+        module_name="brendas.scrape_brendas",
+        output_dir=_path("brendas/scraped"),
+        urls_file=_path("brendas/urls.txt"),
+        supports_interactive=True,
+    ),
+    "oldcapefarmstall": SupplierInfo(
+        slug="oldcapefarmstall",
+        display_name="Old Cape Farm Stall",
+        module_name="oldcapefarmstall.scrape_oldcapefarmstall",
+        output_dir=_path("oldcapefarmstall/scraped"),
+        urls_file=_path("oldcapefarmstall/urls.txt"),
+        supports_interactive=True,
+    ),
+    "elanas": SupplierInfo(
+        slug="elanas",
+        display_name="Elana's",
+        module_name="elanas.scrape_elanas",
+        output_dir=_path("elanas/scraped"),
+        urls_file=_path("elanas/urls.txt"),
+        supports_interactive=True,
+    ),
+    "manual": SupplierInfo(
+        slug="manual",
+        display_name="Manual Entry",
+        module_name="",  # no scraper; add products via /manual
+        output_dir=_path("manual/scraped"),
+        urls_file=_path("manual/urls.txt"),
+        supports_interactive=False,
+    ),
 }
 
 
 def get_suppliers() -> list[dict]:
-    """Return list of suppliers for API/UI."""
-    return [
+    """Return list of suppliers for API/UI (sorted by display name)."""
+    rows = [
         {
             "slug": s.slug,
             "display_name": s.display_name,
             "supports_interactive": s.supports_interactive,
+            "module_name": s.module_name,
         }
         for s in SUPPLIERS.values()
     ]
+    rows.sort(key=lambda r: (r["display_name"] or r["slug"]).lower())
+    return rows
+
+
+# Legacy supplier/domain names → canonical slug
+SUPPLIER_SLUG_ALIASES: dict[str, str] = {
+    "direct-to-film": "buythis",
+    "direct_to_film": "buythis",
+    "directtofilm": "buythis",
+}
+
+
+def normalize_supplier_slug(slug: str) -> str:
+    """Return canonical supplier slug, or empty string if input is blank."""
+    s = (slug or "").strip().lower()
+    if not s:
+        return ""
+    return SUPPLIER_SLUG_ALIASES.get(s, s)
 
 
 def get_supplier(slug: str) -> SupplierInfo | None:
-    """Get supplier by slug."""
-    return SUPPLIERS.get(slug)
+    """Get supplier by slug (accepts aliases such as direct-to-film)."""
+    canonical = normalize_supplier_slug(slug)
+    if not canonical:
+        return None
+    return SUPPLIERS.get(canonical)
 
 
 def get_sources_for_edit() -> dict[str, Path]:
@@ -191,6 +421,8 @@ def run_supplier_scrape(
     info = get_supplier(slug)
     if not info:
         raise ValueError(f"Unknown supplier: {slug}")
+    if not (info.module_name or "").strip():
+        raise ValueError(f"Supplier {slug!r} has no scraper module; use /manual to add products.")
 
     opts = scrape_options or {}
     from shared.config import set_scrape_company_slug

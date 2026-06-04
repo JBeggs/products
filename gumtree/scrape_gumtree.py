@@ -40,9 +40,16 @@ DEFAULT_HEADERS = {
     "Upgrade-Insecure-Requests": "1",
 }
 
-# Gumtree tiered markup (different from Temu)
+# Gumtree tiered markup for second-hand / brokered listings.
+# Higher margins on small items; tighter margins on expensive equipment (lasers, printing machines).
 TIER_MULTIPLIERS = [
-    (30, 2.0), (99, 2.0), (199, 2.0), (2000.01, 1.20), (10000.01, 1.08), (30000.01, 1.06), (float("inf"), 1.05),
+    (500, 1.35),
+    (2000, 1.25),
+    (10000, 1.18),
+    (30000, 1.12),
+    (100000, 1.08),
+    (250000, 1.06),
+    (float("inf"), 1.05),
 ]
 
 
@@ -280,12 +287,26 @@ def fetch_current_pricing(url: str) -> dict | None:
     if "The request is blocked" in html or "Service unavailable" in html:
         return None
 
+    from shared.verify_utils import page_text_indicates_sold_out, page_text_indicates_unavailable
+
+    if page_text_indicates_unavailable(html):
+        return None
+
     data = extract_listing_data(html, url, debug=False)
     if not data or (not data.get("title") and data.get("price") is None):
         return None
 
     price = data.get("price") or 0
     if not price:
+        if page_text_indicates_sold_out(html):
+            return {
+                "price": None,
+                "cost": None,
+                "source_price": None,
+                "valid": True,
+                "in_stock": False,
+                "unavailable": False,
+            }
         return None
 
     sell_price = apply_gumtree_markup(price)
@@ -296,6 +317,8 @@ def fetch_current_pricing(url: str) -> dict | None:
         "cost": round(cost, 2),
         "source_price": round(gumtree_price, 2),
         "valid": True,
+        "in_stock": True,
+        "unavailable": False,
     }
 
 
@@ -390,6 +413,8 @@ def create_browser_context(browser, load_session: bool = True):
 PREVENT_NEW_TAB_SCRIPT = """
 (function() {
   if (!location.hostname.includes('gumtree')) return;
+  if (window._gumtreePreventTabInit) return;
+  window._gumtreePreventTabInit = true;
   function allowPopup(u) {
     if (!u) return false;
     var l = (u + '').toLowerCase();
@@ -405,6 +430,7 @@ PREVENT_NEW_TAB_SCRIPT = """
     return null;
   };
   document.addEventListener('click', function(e) {
+    if (e.target && e.target.closest && e.target.closest('#gumtree-scraper-save-btn')) return;
     var a = e.target.closest('a');
     if (!a || !a.href) return;
     var href = (a.getAttribute('href') || a.href || '').trim();
@@ -423,14 +449,21 @@ PREVENT_NEW_TAB_SCRIPT = """
       el.removeAttribute('target');
     }); } catch(e) {}
   }
-  if (document.body) { stripBlankTarget(); var obs = new MutationObserver(stripBlankTarget); obs.observe(document.body, { childList: true, subtree: true }); }
-  else document.addEventListener('DOMContentLoaded', function() { stripBlankTarget(); var obs = new MutationObserver(stripBlankTarget); obs.observe(document.body, { childList: true, subtree: true }); });
+  function bootStrip() {
+    stripBlankTarget();
+    if (window._gumtreeStripInterval) return;
+    window._gumtreeStripInterval = setInterval(stripBlankTarget, 5000);
+  }
+  if (document.body) bootStrip();
+  else document.addEventListener('DOMContentLoaded', bootStrip, { once: true });
 })();
 """
 
 FLOATING_BUTTON_SCRIPT = """
 if (!location.hostname.includes('gumtree')) void 0;
+else if (window._gumtreeScraperFloatingInit) { void 0; }
 else {
+  window._gumtreeScraperFloatingInit = true;
   function fireSave() {
     if (window._gumtreeScraperSaveCooldown && Date.now() - window._gumtreeScraperSaveCooldown < 2500) return;
     window._gumtreeScraperSaveCooldown = Date.now();
@@ -475,13 +508,13 @@ else {
     bar.style.top = startY + 'px';
     bar.style[startRight ? 'right' : 'left'] = margin + 'px';
     if (startRight) bar.style.left = 'auto'; else bar.style.right = 'auto';
-    bar.innerHTML = '<span style="cursor:grab">⋮⋮</span><button style="padding:6px 16px!important;background:#fff!important;color:#2a7!important;border:none!important;border-radius:6px!important;cursor:pointer!important;font-size:13px!important;font-weight:bold!important;">Save product</button><span style="font-size:11px!important;font-weight:normal!important;">Ctrl+Shift+S</span>';
+    bar.innerHTML = '<span style="cursor:grab">⋮⋮</span><button type="button" style="padding:6px 16px!important;background:#fff!important;color:#2a7!important;border:none!important;border-radius:6px!important;cursor:pointer!important;font-size:13px!important;font-weight:bold!important;">Save product</button><span style="font-size:11px!important;font-weight:normal!important;">Ctrl+Shift+S</span>';
     var btn = bar.querySelector('button');
-    btn.onclick = function(e) { e.stopPropagation(); };
-    bar.onclick = function(e) {
-      if (e.target === btn || btn.contains(e.target)) {
-        try { fireSave(); } catch (err) { btn.textContent = 'Error'; setTimeout(function(){ btn.textContent = 'Save product'; }, 2000); }
-      }
+    // Clicks must run fireSave on the button itself — stopPropagation on the button alone blocked bar.onclick (no save).
+    btn.onclick = function(e) {
+      e.stopPropagation();
+      e.preventDefault();
+      try { fireSave(); } catch (err) { btn.textContent = 'Error'; setTimeout(function(){ btn.textContent = 'Save product'; }, 2000); }
     };
     var drag = { active: false, startX: 0, startY: 0, startLeft: 0, startTop: 0 };
     bar.addEventListener('mousedown', function(e) {
@@ -506,38 +539,54 @@ else {
     }, { passive: true });
     function onMove(e) {
       if (!drag.active) return;
+      var el = document.getElementById('gumtree-scraper-save-btn');
+      if (!el) { drag.active = false; return; }
       var x = (e.touches ? e.touches[0].clientX : e.clientX) - drag.startX;
       var y = (e.touches ? e.touches[0].clientY : e.clientY) - drag.startY;
-      var r = bar.getBoundingClientRect();
+      var r = el.getBoundingClientRect();
       var newLeft = Math.max(margin, Math.min(window.innerWidth - r.width - margin, drag.startLeft + x));
       var newTop = Math.max(0, Math.min(window.innerHeight - r.height, drag.startTop + y));
-      bar.style.left = newLeft + 'px';
-      bar.style.right = 'auto';
-      bar.style.top = newTop + 'px';
+      el.style.left = newLeft + 'px';
+      el.style.right = 'auto';
+      el.style.top = newTop + 'px';
     }
     function onUp(e) {
       if (!drag.active) return;
       drag.active = false;
-      bar.style.cursor = 'grab';
-      var rect = bar.getBoundingClientRect();
+      var el = document.getElementById('gumtree-scraper-save-btn');
+      if (!el) return;
+      el.style.cursor = 'grab';
+      var rect = el.getBoundingClientRect();
       var midX = rect.left + rect.width / 2;
       var snapRight = midX > window.innerWidth / 2;
-      bar.style.left = snapRight ? 'auto' : margin + 'px';
-      bar.style.right = snapRight ? margin + 'px' : 'auto';
-      rect = bar.getBoundingClientRect();
+      el.style.left = snapRight ? 'auto' : margin + 'px';
+      el.style.right = snapRight ? margin + 'px' : 'auto';
+      rect = el.getBoundingClientRect();
       savePos(rect.left, rect.top, snapRight);
     }
-    document.addEventListener('mousemove', onMove);
-    document.addEventListener('mouseup', onUp);
-    document.addEventListener('touchmove', onMove, { passive: true });
-    document.addEventListener('touchend', onUp);
+    if (!window._gumtreeScraperDragListeners) {
+      window._gumtreeScraperDragListeners = true;
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+      document.addEventListener('touchmove', onMove, { passive: true });
+      document.addEventListener('touchend', onUp);
+    }
     document.body.appendChild(bar);
   }
   function scheduleAdd() {
     if (document.body) {
       ensureBtn();
-      var obs = new MutationObserver(function() { if (!document.getElementById('gumtree-scraper-save-btn')) ensureBtn(); });
-      obs.observe(document.body, { childList: true, subtree: true });
+      if (!window._gumtreeScraperBtnObs) {
+        window._gumtreeScraperBtnObs = new MutationObserver(function() {
+          if (document.getElementById('gumtree-scraper-save-btn')) return;
+          if (window._gumtreeBtnObsT) clearTimeout(window._gumtreeBtnObsT);
+          window._gumtreeBtnObsT = setTimeout(function() {
+            window._gumtreeBtnObsT = null;
+            try { ensureBtn(); } catch (err) {}
+          }, 600);
+        });
+        window._gumtreeScraperBtnObs.observe(document.body, { childList: true, subtree: true });
+      }
     } else {
       document.addEventListener('DOMContentLoaded', function() { scheduleAdd(); }, { once: true });
     }
@@ -607,42 +656,37 @@ def run_scrape_session(
                     pass
 
             context.on("page", close_blank_popup)
+            # Init scripts already run on each navigation; avoid re-injecting here every tick (was stacking
+            # MutationObservers + click handlers and freezing the tab / breaking the Save button).
             try:
                 page.evaluate("(function(){ " + PREVENT_NEW_TAB_SCRIPT + FLOATING_BUTTON_SCRIPT + " })()")
             except Exception:
                 pass
 
-            inject_count = 0
             while not stop_flag.is_set():
-                inject_count += 1
                 try:
                     for pg in context.pages:
                         try:
                             if pg.url and "gumtree" in pg.url.lower() and "about:blank" not in pg.url:
-                                pg.evaluate("(function(){ " + FLOATING_BUTTON_SCRIPT + " })()")
+                                if pg.evaluate(check_script):
+                                    if scrape_current_page(pg, output_dir):
+                                        print(f"  Saved: {pg.url[:70]}...")
+                                    else:
+                                        if extract_ad_id(pg.url):
+                                            print("  Could not extract listing data.")
+                                        else:
+                                            print("  Not a listing page. Open a Gumtree listing first.")
+                                    break
                         except Exception:
                             pass
                 except Exception:
                     pass
-                try:
-                    for pg in context.pages:
-                        try:
-                            if pg.evaluate(check_script):
-                                if scrape_current_page(pg, output_dir):
-                                    print(f"  Saved: {pg.url[:70]}...")
-                                else:
-                                    if extract_ad_id(pg.url):
-                                        print("  Could not extract listing data.")
-                                    else:
-                                        print("  Not a listing page. Open a Gumtree listing first.")
-                                break
-                        except Exception:
-                            pass
                 if save_session_flag.is_set():
                     context.storage_state(path=str(SESSION_FILE))
                     save_session_flag.clear()
                     print("  Session saved to JSON (profile already persists).")
-                time.sleep(0.3)
+                # Save trigger only; UI comes from add_init_script. Slower poll = less Playwright RPC jank on Gumtree.
+                time.sleep(0.55)
         finally:
             context.close()
     build_scraped_index(output_dir)

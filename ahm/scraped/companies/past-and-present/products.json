@@ -1,0 +1,35 @@
+{
+  "products": [
+    {
+      "ahm_price": 699.0,
+      "category_id": "832d9c9c-8e1d-4d91-92e3-b66ac9520a1d",
+      "compare_at_price": 896.08,
+      "cost": 699.0,
+      "description": "Voltage: 20V Max. pressure: 24.8 Bar \n\nFlow rate: 2.8L/min \n\nAuto stop system Battery and charger sold separately \n\nIncludes: \n1 Set 2-pattern spray gun \n1 Piece 6m water inlet hose with quick connector \n1 Piece 300ml foam producer \n1 Piece self suction connector \n1 Piece portable bag",
+      "dimension_height": 60,
+      "dimension_length": 50,
+      "dimension_width": 35,
+      "goods_id": "ingco-20v-li-ion-pressure-washer",
+      "images": [
+        "images/ingco_20v_li_ion_pre_ingco-20v-li-ion-pressure-wash_01.png"
+      ],
+      "in_stock": true,
+      "name": "Ingco 20V Li-Ion Pressure Washer",
+      "price": 803.85,
+      "production_ids": {
+        "past-and-present": "c5d5b796-b76f-48c4-80e8-09b02132fc69"
+      },
+      "short_description": "Ingco 20V Li-Ion Pressure Washer",
+      "status": "active",
+      "stock_quantity": 0,
+      "tags": [
+        "ahm",
+        "ahm-online"
+      ],
+      "url": "https://www.ahm.co.za/products/ingco-20v-li-ion-pressure-washer",
+      "variants": [],
+      "weight": 2000
+    }
+  ],
+  "updated": "2026-05-25T16:30:47.869837"
+}

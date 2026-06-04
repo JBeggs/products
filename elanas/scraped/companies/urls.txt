@@ -1,0 +1,11 @@
+# Elana's — product URLs (one per line), or browse and Save in the UI.
+# Store: https://elanas.co.za/
+
+https://elanas.co.za/product/jam-tomato-chilli/
+https://elanas.co.za/product/jam-grape/
+https://elanas.co.za/product/chillies-jalapenos-sliced-out-of-stock/
+https://elanas.co.za/product/olives-sweet-sour/
+https://elanas.co.za/product/green-figs/
+https://elanas.co.za/product/guava-halves-2/
+https://elanas.co.za/product/peach-halves-2/
+https://elanas.co.za/product/quince-slices-2/

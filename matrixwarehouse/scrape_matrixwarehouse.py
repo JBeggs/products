@@ -307,6 +307,11 @@ def build_scraped_index(output_dir: Path) -> None:
     (output_dir / "README.md").write_text("".join(lines), encoding="utf-8")
 
 
+def fetch_current_pricing(url: str, product: dict | None = None) -> dict | None:
+    from shared.verify_pricing import fetch_retail_pricing_http
+    return fetch_retail_pricing_http(url, "matrixwarehouse", product=product)
+
+
 def run_scrape_session(
     output_dir: Path,
     stop_flag: threading.Event,

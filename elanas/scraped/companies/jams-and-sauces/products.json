@@ -1,0 +1,222 @@
+{
+  "products": [
+    {
+      "category_id": "8c6d74ec-e78d-49af-a206-e58814aa4b98",
+      "compare_at_price": 68.02,
+      "cost": 47,
+      "description": "250ml / 300g",
+      "dimension_height": 10,
+      "dimension_length": 10,
+      "dimension_width": 10,
+      "elanas_price": 47,
+      "goods_id": "jam-tomato-chilli",
+      "images": [
+        "images/cheese_topper_tomat_jam-tomato-chilli_01.jpg",
+        "images/cheese_topper_tomat_jam-tomato-chilli_02.png"
+      ],
+      "in_stock": true,
+      "name": "CHEESE TOPPER- Tomato & Chilli",
+      "price": 58.75,
+      "production_ids": {
+        "jams-and-sauces": "5fcb10c6-062c-4297-b54d-4e2702337cdf"
+      },
+      "short_description": "CHEESE TOPPER- Tomato & Chilli",
+      "status": "active",
+      "stock_quantity": 0,
+      "tags": [
+        "elanas",
+        "elanas-robertson"
+      ],
+      "url": "https://elanas.co.za/product/jam-tomato-chilli/",
+      "variants": [],
+      "weight": 300
+    },
+    {
+      "category_id": "0507549c-cccc-4577-8137-fb7595b13b0d",
+      "compare_at_price": 73.02,
+      "cost": 47,
+      "description": "250ml / 300g",
+      "dimension_height": 10,
+      "dimension_length": 10,
+      "dimension_width": 10,
+      "elanas_price": 47,
+      "goods_id": "jam-grape",
+      "images": [
+        "images/jam_grape_jam-grape_01.jpg",
+        "images/jam_grape_jam-grape_02.png"
+      ],
+      "in_stock": true,
+      "name": "Jam - Grape",
+      "price": 58.75,
+      "production_ids": {
+        "jams-and-sauces": "a90406df-545a-4bd3-a7e8-0916eb5e22e3"
+      },
+      "short_description": "Jam - Grape",
+      "status": "active",
+      "stock_quantity": 0,
+      "tags": [
+        "elanas",
+        "elanas-robertson"
+      ],
+      "url": "https://elanas.co.za/product/jam-grape/",
+      "variants": [],
+      "weight": 300
+    },
+    {
+      "category_id": "8c6d74ec-e78d-49af-a206-e58814aa4b98",
+      "compare_at_price": 66.93,
+      "cost": 48,
+      "description": "375ml / 400g",
+      "dimension_height": 10,
+      "dimension_length": 10,
+      "dimension_width": 10,
+      "elanas_price": 48,
+      "goods_id": "chillies-jalapenos-sliced-out-of-stock",
+      "images": [
+        "images/chillies_jalapenos_chillies-jalapenos-sliced-out-_01.jpg",
+        "images/chillies_jalapenos_chillies-jalapenos-sliced-out-_02.png"
+      ],
+      "in_stock": true,
+      "name": "Chillies - Jalapeno's Sliced",
+      "price": 60,
+      "production_ids": {
+        "jams-and-sauces": "a8add103-41a4-4d49-8793-9d42b37a48f1"
+      },
+      "short_description": "Chillies - Jalapeno's Sliced",
+      "status": "active",
+      "stock_quantity": 0,
+      "tags": [
+        "elanas",
+        "elanas-robertson"
+      ],
+      "url": "https://elanas.co.za/product/chillies-jalapenos-sliced-out-of-stock/",
+      "variants": [],
+      "weight": 400
+    },
+    {
+      "category_id": "8c6d74ec-e78d-49af-a206-e58814aa4b98",
+      "compare_at_price": 88.62,
+      "cost": 65,
+      "description": "Olives - Sweet & Sour 375ml",
+      "dimension_height": 10,
+      "dimension_length": 10,
+      "dimension_width": 10,
+      "elanas_price": 65,
+      "goods_id": "olives-sweet-sour",
+      "images": [
+        "images/olives_sweet_ampam_olives-sweet-sour_01.jpg",
+        "images/olives_sweet_ampam_olives-sweet-sour_02.png"
+      ],
+      "in_stock": true,
+      "name": "Olives - Sweet & Sour",
+      "price": 81.25,
+      "production_ids": {
+        "jams-and-sauces": "ea636189-5d5e-4462-a0f6-debf76e23693"
+      },
+      "short_description": "Olives - Sweet & Sour 375ml",
+      "status": "active",
+      "stock_quantity": 0,
+      "tags": [
+        "elanas",
+        "elanas-robertson"
+      ],
+      "url": "https://elanas.co.za/product/olives-sweet-sour/",
+      "variants": [],
+      "weight": 400
+    },
+    {
+      "category_id": "a03a4e4c-28bc-4794-a5de-aa2589d0023e",
+      "compare_at_price": 233.39,
+      "cost": 79,
+      "description": "Green Figs (1 litre)",
+      "dimension_height": 30,
+      "dimension_length": 20,
+      "dimension_width": 25,
+      "elanas_price": 79,
+      "goods_id": "green-figs",
+      "images": [
+        "images/green_figs_green-figs_01.jpg",
+        "images/green_figs_green-figs_02.png"
+      ],
+      "in_stock": true,
+      "name": "Green Figs (1 litre)",
+      "price": 98.75,
+      "production_ids": {
+        "jams-and-sauces": "6211fb60-efc5-41f7-8bb4-46afad079d7d"
+      },
+      "short_description": "Green Figs (1 litre)",
+      "status": "active",
+      "stock_quantity": 0,
+      "tags": [
+        "elanas",
+        "elanas-robertson"
+      ],
+      "url": "https://elanas.co.za/product/green-figs/",
+      "variants": [],
+      "weight": 1200
+    },
+    {
+      "category_id": "a03a4e4c-28bc-4794-a5de-aa2589d0023e",
+      "compare_at_price": 138.72,
+      "cost": 42,
+      "description": "Peach Halves (1 litre)",
+      "dimension_height": 30,
+      "dimension_length": 20,
+      "dimension_width": 25,
+      "elanas_price": 42,
+      "goods_id": "peach-halves-2",
+      "images": [
+        "images/peach_halves_peach-halves-2_01.jpg",
+        "images/peach_halves_peach-halves-2_02.png"
+      ],
+      "in_stock": true,
+      "name": "Peach Halves (1 litre)",
+      "price": 52.5,
+      "production_ids": {
+        "jams-and-sauces": "320bb179-e248-4f03-801f-02dc627932be"
+      },
+      "short_description": "Peach Halves (1 litre)",
+      "status": "active",
+      "stock_quantity": 0,
+      "tags": [
+        "elanas",
+        "elanas-robertson"
+      ],
+      "url": "https://elanas.co.za/product/peach-halves-2/",
+      "variants": [],
+      "weight": 1200
+    },
+    {
+      "category_id": "a03a4e4c-28bc-4794-a5de-aa2589d0023e",
+      "compare_at_price": 150.4,
+      "cost": 53,
+      "description": "Quince Slices (1 litre)",
+      "dimension_height": 30,
+      "dimension_length": 20,
+      "dimension_width": 25,
+      "elanas_price": 53,
+      "goods_id": "quince-slices-2",
+      "images": [
+        "images/quince_slices_l_quince-slices-2_01.jpg",
+        "images/quince_slices_l_quince-slices-2_02.png"
+      ],
+      "in_stock": true,
+      "name": "Quince Slices (1 litre)",
+      "price": 66.25,
+      "production_ids": {
+        "jams-and-sauces": "cca7a7e4-60fc-41b1-b03d-ef2bbace1010"
+      },
+      "short_description": "Quince Slices (1 litre)",
+      "status": "active",
+      "stock_quantity": 0,
+      "tags": [
+        "elanas",
+        "elanas-robertson"
+      ],
+      "url": "https://elanas.co.za/product/quince-slices-2/",
+      "variants": [],
+      "weight": 1200
+    }
+  ],
+  "updated": "2026-05-25T15:52:53.870279"
+}

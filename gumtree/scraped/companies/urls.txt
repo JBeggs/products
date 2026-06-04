@@ -1,0 +1,9 @@
+# Add Gumtree listing URLs (one per line)
+# Example: https://www.gumtree.co.za/a-cars-bakkies/diep-river/listing-title/10013494682001010915604009
+
+https://www.gumtree.co.za/a-motorcycles-scooters/other/2015-ktm-350-exc+f/10013544194761012757057609
+https://www.gumtree.co.za/a-motorcycles-scooters/northern-pretoria/2018-big-boy-yeti/10013527203351013300532709
+https://www.gumtree.co.za/a-gaming-pcs/eastern-pretoria/amd-am5-ryzen-5-8400f-32gb-ddr5-gaming-pc/10013543757051012995150709
+https://www.gumtree.co.za/a-motorcycles-scooters/other/dirt-bike-pit-bike/10013559303781013447995309
+https://www.gumtree.co.za/a-motorcycles-scooters/eastern-pretoria/kawasaki-kdx-200/10013574014761010353848809
+https://www.gumtree.co.za/a-motorcycles-scooters/eastern-pretoria/suzuki-drz-125/10013564678371013391244509

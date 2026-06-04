@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """
 Unified product scraper app: Scrape, Edit, Upload.
-Run: python app.py [--port 5001]
+Run from products/ with the project venv active:
+  source .venv/bin/activate && python app.py [--port 5001]
 Open: http://127.0.0.1:5001
 """
 import argparse
@@ -30,6 +31,8 @@ from shared.config import (
     save_supplier_delivery,
     get_tier_multipliers,
     save_supplier_tiers,
+    get_company_suppliers,
+    save_company_suppliers,
     SUPPLIERS_USING_TIERED_MARKUP,
 )
 from shared.suppliers import get_supplier, get_suppliers, run_supplier_scrape
@@ -48,6 +51,7 @@ if not LOG.handlers:
     LOG.addHandler(h)
 
 app = Flask(__name__)
+app.config["MAX_CONTENT_LENGTH"] = 100 * 1024 * 1024  # multipart manual product images (100 MB)
 
 # Scrape session state
 scrape_stop_flag = threading.Event()
@@ -83,6 +87,12 @@ _makro_crawler_running = False
 _makro_crawler_thread = None
 _makro_crawler_lock = threading.Lock()
 MAKRO_CRAWLER_SCHEDULER_ENABLED = os.environ.get("MAKRO_CRAWLER_SCHEDULER", "").lower() in ("1", "true", "yes")
+
+# Junk Mail crawler state
+_junkmail_crawler_running = False
+_junkmail_crawler_thread = None
+_junkmail_crawler_lock = threading.Lock()
+JUNKMAIL_CRAWLER_SCHEDULER_ENABLED = os.environ.get("JUNKMAIL_CRAWLER_SCHEDULER", "").lower() in ("1", "true", "yes")
 
 
 def _order_run_key(company: str, order_id: str, supplier: str) -> tuple:
@@ -129,23 +139,36 @@ INDEX_HTML = """
     .company-bar { margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
     .company-bar label { font-size: 0.9rem; color: #888; }
     .company-bar select { padding: 0.5rem 0.75rem; background: #252525; border: 1px solid #444; border-radius: 6px; color: #e0e0e0; min-width: 180px; }
+    .company-bar button { padding: 0.5rem 0.75rem; font-size: 0.9rem; border: none; border-radius: 6px; cursor: pointer; }
+    .company-bar button.primary { background: #2a7; color: white; }
+    .company-bar button.primary:hover { background: #3b8; }
+    .company-bar button.secondary { background: #444; color: #e0e0e0; }
+    .company-bar button.secondary:hover { background: #555; }
   </style>
 </head>
 <body>
   <h1>Product Scrapers</h1>
-  <p class="sub">Scrape, edit, and upload products from Temu, Gumtree, AliExpress, Ubuy, MyRunway, OneDayOnly</p>
+  <p class="sub">Scrape, edit, and upload products from any supplier in the list (including Temu, Gumtree, Gimme Online, Takealot, and others)</p>
   <div class="company-bar">
     <label for="companySelect">Company</label>
     <select id="companySelect"><option value="">Loading...</option></select>
   </div>
+  <div class="company-bar" style="margin-top: -0.75rem; margin-bottom: 1.5rem; align-items: flex-start;">
+    <button type="button" class="primary" id="btnCompanySuppliers" onclick="goCompanySuppliers()" disabled>Configure suppliers for this company</button>
+    <span style="font-size: 0.85rem; color: #888; max-width: 420px;">Pick which suppliers appear on the Scrape page for the selected company (checkboxes on the next page).</span>
+  </div>
     <div class="cards">
     <a href="/scrape" class="card">
       <h2>Scrape</h2>
-      <p>Select supplier (Temu, Gumtree, AliExpress, Ubuy, MyRunway, OneDayOnly) and start scraping</p>
+      <p>Select a supplier from the dropdown and start scraping (browse-and-save or URLs per supplier)</p>
+    </a>
+    <a href="/manual" class="card">
+      <h2>Manual product</h2>
+      <p>Add a product by hand with photos; saved like scraped data for Edit and Sync to CRM</p>
     </a>
     <a href="/edit/" class="card">
       <h2>Edit Products</h2>
-      <p>Edit name, price, cost, images for Temu, Gumtree, AliExpress, Ubuy, MyRunway, OneDayOnly</p>
+      <p>Edit name, price, cost, images for scraped products from any configured supplier</p>
     </a>
     <a href="/orders" class="card">
       <h2>Orders</h2>
@@ -157,6 +180,10 @@ INDEX_HTML = """
       <h2>Gumtree Crawler</h2>
       <p>Daily crawler for laptops and motorcycles, track price changes and ignore rules</p>
     </a>
+    <a href="/junkmail-crawler" class="card">
+      <h2>Junk Mail Crawler</h2>
+      <p>Daily crawler for classifieds on Junk Mail — same scenarios as Gumtree, separate export supplier</p>
+    </a>
     <a href="/makro-crawler" class="card">
       <h2>Makro Crawler</h2>
       <p>Daily crawler for food products and preowned mobiles, track price changes and ignore rules</p>
@@ -164,6 +191,17 @@ INDEX_HTML = """
   </div>
   <script>
     const COMPANY_STORAGE_KEY = 'edit_products_company_slug';
+    function goCompanySuppliers() {
+      const company = (document.getElementById('companySelect').value || '').trim();
+      if (!company) return;
+      localStorage.setItem(COMPANY_STORAGE_KEY, company);
+      location.href = '/company-suppliers?company=' + encodeURIComponent(company);
+    }
+    function updateCompanySuppliersButton() {
+      const company = (document.getElementById('companySelect') && document.getElementById('companySelect').value || '').trim();
+      const btn = document.getElementById('btnCompanySuppliers');
+      if (btn) btn.disabled = !company;
+    }
     async function loadCompanies() {
       try {
         const r = await fetch('/api/companies');
@@ -173,13 +211,18 @@ INDEX_HTML = """
         sel.innerHTML = companies.length
           ? '<option value="">Select company</option>' + companies.map(c => '<option value="' + c + '">' + c + '</option>').join('')
           : '<option value="">Set COMPANY_SLUGS in .env</option>';
-        const saved = localStorage.getItem(COMPANY_STORAGE_KEY);
+        const saved = (localStorage.getItem(COMPANY_STORAGE_KEY) || '').trim();
         if (saved && companies.includes(saved)) sel.value = saved;
         else if (companies.length === 1) sel.value = companies[0];
+        if (saved && !companies.includes(saved)) localStorage.removeItem(COMPANY_STORAGE_KEY);
+        if (sel.value) localStorage.setItem(COMPANY_STORAGE_KEY, sel.value);
         sel.onchange = () => {
-          const v = sel.value;
+          const v = (sel.value || '').trim();
           if (v) localStorage.setItem(COMPANY_STORAGE_KEY, v);
+          else localStorage.removeItem(COMPANY_STORAGE_KEY);
+          updateCompanySuppliersButton();
         };
+        updateCompanySuppliersButton();
       } catch (e) {
         document.getElementById('companySelect').innerHTML = '<option value="">Error loading companies</option>';
       }
@@ -243,7 +286,7 @@ SCRAPE_HTML = """
   </style>
 </head>
 <body>
-  <div class="top-nav"><a href="/">← Dashboard</a></div>
+  <div class="top-nav"><a href="/">← Dashboard</a> · <a href="/manual">Manual</a> · <a href="/edit/">Edit</a></div>
   <h1>Scrape Products</h1>
   <div id="companyBar" style="margin-bottom: 1rem; font-size: 0.9rem; color: #888;"></div>
   <div class="field">
@@ -261,16 +304,18 @@ SCRAPE_HTML = """
       <p class="help" style="margin-bottom: 0.75rem;">Delivery time, cost, and free-delivery threshold. Editable; scraped when available.</p>
       <div class="delivery-fields">
         <div class="field">
-          <label>Delivery time</label>
+          <label for="deliveryTime">Delivery time</label>
           <input type="text" id="deliveryTime" placeholder="e.g. 7-13 business days">
         </div>
         <div class="field">
-          <label>Delivery cost (R)</label>
-          <input type="number" id="deliveryCost" placeholder="0" step="0.01" min="0">
+          <label for="deliveryCost">Supplier delivery cost (flat fee, R)</label>
+          <input type="number" id="deliveryCost" name="supplier_flat_delivery_fee" placeholder="0" step="0.01" min="0" autocomplete="off">
+          <span class="help" style="display:block;font-size:0.75rem;color:#777;margin-top:0.25rem;">Stored as <code>delivery_cost</code> here → Django <strong>supplier_delivery_cost</strong> (charged once per supplier group in cart).</span>
         </div>
         <div class="field">
-          <label>Free delivery over (R)</label>
-          <input type="number" id="freeDeliveryThreshold" placeholder="e.g. 200" step="0.01" min="0">
+          <label for="freeDeliveryThreshold">Free delivery threshold (R)</label>
+          <input type="number" id="freeDeliveryThreshold" name="free_delivery_threshold" placeholder="e.g. 500" step="0.01" min="0" autocomplete="off">
+          <span class="help" style="display:block;font-size:0.75rem;color:#777;margin-top:0.25rem;">Stored as <code>free_delivery_threshold</code> here → Django <strong>free_delivery_threshold</strong> (order subtotal to waive that flat fee).</span>
         </div>
       </div>
       <button type="button" class="secondary save-delivery" onclick="saveDeliveryConfig()">Save delivery</button>
@@ -336,14 +381,35 @@ SCRAPE_HTML = """
   </p>
   <script>
     let suppliers = [];
+    let lastCompanyBarLockNote = '';
     async function loadSuppliers() {
-      updateCompanyBar();
       const r = await fetch('/api/suppliers');
       suppliers = await r.json();
       const sel = document.getElementById('supplierSelect');
-      sel.innerHTML = '<option value="">Select supplier</option>' + suppliers.map(s => 
+      let scrapeable = suppliers.filter(s => (s.module_name || '').trim());
+      const company = getCompany();
+      let lockNote = '';
+      if (company) {
+        try {
+          const cr = await fetch('/api/company-suppliers?company=' + encodeURIComponent(company));
+          const cd = await cr.json();
+          const allowed = Array.isArray(cd.suppliers) ? cd.suppliers.map(function (x) { return String(x || '').trim().toLowerCase(); }).filter(Boolean) : [];
+          if (allowed.length) {
+            const filtered = scrapeable.filter(function (s) { return allowed.indexOf((s.slug || '').toLowerCase()) >= 0; });
+            if (filtered.length) {
+              scrapeable = filtered;
+              lockNote = 'Scrape list limited to ' + filtered.length + ' supplier(s) configured for this company (Dashboard → Configure suppliers).';
+            } else {
+              lockNote = 'Configured suppliers for this company are not scrapeable; showing all suppliers. Update on Dashboard → Configure suppliers.';
+            }
+          }
+        } catch (e) { /* ignore */ }
+      }
+      sel.innerHTML = '<option value="">Select supplier</option>' + scrapeable.map(s =>
         '<option value="' + s.slug + '">' + s.display_name + (s.supports_interactive ? ' (browse & save)' : ' (URL list)') + '</option>'
       ).join('');
+      if (scrapeable.length === 1) sel.value = scrapeable[0].slug;
+      updateCompanyBar(lockNote);
     }
     function setStatus(running, text) {
       const el = document.getElementById('status');
@@ -362,6 +428,11 @@ SCRAPE_HTML = """
     async function startScrape() {
       const slug = document.getElementById('supplierSelect').value;
       if (!slug) { setMsg('Select a supplier first.'); return; }
+      const sup = suppliers.find(s => s.slug === slug);
+      if (!sup || !(sup.module_name || '').trim()) {
+        setMsg('This supplier has no scraper. Use Manual to add products.');
+        return;
+      }
       setMsg('');
       const proxyEnabled = document.getElementById('proxyEnabled') && document.getElementById('proxyEnabled').checked;
       const proxyCountry = (document.getElementById('proxyCountry') && document.getElementById('proxyCountry').value) || 'ZA';
@@ -423,10 +494,15 @@ SCRAPE_HTML = """
       div.appendChild(row);
     }
     function getCompany() { return (localStorage.getItem('edit_products_company_slug') || '').trim(); }
-    function updateCompanyBar() {
+    function updateCompanyBar(lockNote) {
+      if (typeof lockNote === 'string') lastCompanyBarLockNote = lockNote;
       const company = getCompany();
       const bar = document.getElementById('companyBar');
-      bar.innerHTML = company ? 'Company: <strong>' + (company.replace(/</g,'&lt;').replace(/>/g,'&gt;')) + '</strong> — <a href="/" style="color:#2a7">Change on Dashboard</a>' : '<a href="/" style="color:#2a7">Select company on Dashboard first</a> (tiered markup is per-company)';
+      let base = company ? 'Company: <strong>' + (company.replace(/</g,'&lt;').replace(/>/g,'&gt;')) + '</strong> — <a href="/" style="color:#2a7">Change on Dashboard</a>' : '<a href="/" style="color:#2a7">Select company on Dashboard first</a> (tiered markup is per-company)';
+      if (lastCompanyBarLockNote) {
+        base += '<br><span style="color:#a98;">' + lastCompanyBarLockNote.replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</span>';
+      }
+      bar.innerHTML = base;
     }
     async function loadPricingConfig(slug) {
       if (!slug) return;
@@ -535,6 +611,198 @@ SCRAPE_HTML = """
 """
 
 
+COMPANY_SUPPLIERS_HTML = """
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Company suppliers - Product Scrapers</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: system-ui, sans-serif; margin: 2rem; background: #1a1a1a; color: #e0e0e0; max-width: 720px; }
+    h1 { font-size: 1.35rem; margin-bottom: 0.5rem; }
+    .sub { color: #888; margin-bottom: 1.25rem; }
+    .top-nav { margin-bottom: 1.25rem; }
+    .top-nav a { color: #2a7; text-decoration: none; margin-right: 1rem; }
+    .top-nav a:hover { text-decoration: underline; }
+    .actions { display: flex; gap: 0.5rem; flex-wrap: wrap; margin: 1rem 0; align-items: center; }
+    button { padding: 0.5rem 0.9rem; font-size: 0.9rem; border: none; border-radius: 6px; cursor: pointer; }
+    button.primary { background: #2a7; color: white; }
+    button.primary:hover { background: #3b8; }
+    button.secondary { background: #444; color: #e0e0e0; }
+    button.secondary:hover { background: #555; }
+    #msg { font-size: 0.9rem; margin-top: 0.75rem; min-height: 1.25rem; }
+    #msg.ok { color: #6c6; }
+    #msg.err { color: #c66; }
+    .supplier-grid { display: flex; flex-direction: column; gap: 0.35rem; margin-top: 0.75rem; padding: 1rem; background: #252525; border-radius: 8px; border: 1px solid #444; max-height: 60vh; overflow-y: auto; }
+    .supplier-grid label { display: flex; align-items: flex-start; gap: 0.5rem; cursor: pointer; font-size: 0.95rem; padding: 0.25rem 0; }
+    .supplier-grid input { margin-top: 0.2rem; }
+    .hint { font-size: 0.85rem; color: #888; margin-top: 0.5rem; }
+    .search-row { margin: 0.75rem 0; }
+    .search-row input { width: 100%; max-width: 360px; padding: 0.5rem 0.75rem; background: #1a1a1a; border: 1px solid #444; border-radius: 6px; color: #e0e0e0; font-size: 0.95rem; }
+  </style>
+</head>
+<body>
+  <div class="top-nav">
+    <a href="/">← Dashboard</a>
+    <a href="/scrape">Scrape</a>
+  </div>
+  <h1 id="pageTitle">Company suppliers</h1>
+  <p class="sub" id="pageSub">Choose which scrapeable suppliers appear on the Scrape page for this company. Leave none checked to allow all suppliers.</p>
+  <div id="mainBlock">
+    <p id="loading">Loading…</p>
+    <div id="formBlock" style="display:none;">
+      <div class="actions">
+        <button type="button" class="primary" onclick="saveSelection()">Save</button>
+        <button type="button" class="secondary" onclick="clearAll()">Clear all (allow all on Scrape)</button>
+      </div>
+      <div class="search-row">
+        <input type="search" id="supplierSearch" placeholder="Search suppliers (e.g. buythis)" oninput="filterSupplierChecks()">
+      </div>
+      <div class="supplier-grid" id="supplierChecks"></div>
+      <p class="hint">Saves to scraper config for this company. Tiered markup still applies per supplier on the Scrape page.</p>
+    </div>
+    <p id="errBlock" style="display:none;color:#c66;"></p>
+  </div>
+  <div id="msg"></div>
+  <script>
+    const COMPANY_STORAGE_KEY = 'edit_products_company_slug';
+    function escapeHtml(s) {
+      if (s == null) return '';
+      const d = document.createElement('div');
+      d.textContent = String(s);
+      return d.innerHTML;
+    }
+    function paramsCompany() {
+      var q = new URLSearchParams(window.location.search || '');
+      return (q.get('company') || '').trim();
+    }
+    function syncUrlCompany(company) {
+      if (!company) return;
+      localStorage.setItem(COMPANY_STORAGE_KEY, company);
+      var u = new URL(window.location.href);
+      if ((u.searchParams.get('company') || '').trim() !== company) {
+        u.searchParams.set('company', company);
+        window.history.replaceState({}, '', u.toString());
+      }
+    }
+    var stateCompany = '';
+    var scrapeableList = [];
+    var savedSet = {};
+    async function init() {
+      var fromUrl = paramsCompany();
+      var fromStorage = (localStorage.getItem(COMPANY_STORAGE_KEY) || '').trim();
+      var company = fromUrl || fromStorage;
+      document.getElementById('loading').style.display = 'block';
+      document.getElementById('formBlock').style.display = 'none';
+      document.getElementById('errBlock').style.display = 'none';
+      var companies = [];
+      try {
+        var r = await fetch('/api/companies');
+        var d = await r.json();
+        companies = d.companies || [];
+      } catch (e) {
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('errBlock').style.display = 'block';
+        document.getElementById('errBlock').textContent = 'Could not load companies.';
+        return;
+      }
+      if (!company || companies.indexOf(company) < 0) {
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('errBlock').style.display = 'block';
+        document.getElementById('errBlock').innerHTML = 'Select a company on the <a href="/" style="color:#2a7">Dashboard</a> and use <strong>Configure suppliers for this company</strong>, or open this page with <code>?company=</code>your-slug.';
+        document.getElementById('pageTitle').textContent = 'Company suppliers';
+        return;
+      }
+      stateCompany = company;
+      syncUrlCompany(company);
+      document.getElementById('pageTitle').textContent = 'Suppliers for ' + company;
+      var sr = await fetch('/api/suppliers');
+      var all = await sr.json();
+      scrapeableList = (all || []).filter(function (s) { return (s.module_name || '').trim(); });
+      scrapeableList.sort(function (a, b) {
+        return String(a.display_name || a.slug).localeCompare(String(b.display_name || b.slug), undefined, { sensitivity: 'base' });
+      });
+      var cr = await fetch('/api/company-suppliers?company=' + encodeURIComponent(company));
+      var cd = await cr.json();
+      var saved = Array.isArray(cd.suppliers) ? cd.suppliers : [];
+      savedSet = {};
+      saved.forEach(function (x) {
+        var t = String(x || '').trim().toLowerCase();
+        if (t) savedSet[t] = true;
+      });
+      var host = document.getElementById('supplierChecks');
+      host.innerHTML = '';
+      if (!scrapeableList.length) {
+        host.innerHTML = '<p style="color:#888;margin:0;">No scrapeable suppliers in config.</p>';
+      } else {
+        scrapeableList.forEach(function (s) {
+          var slug = s.slug || '';
+          var low = slug.toLowerCase();
+          var id = 'sup_' + low.replace(/[^a-z0-9_-]/g, '_');
+          var lab = document.createElement('label');
+          lab.innerHTML = '<input type="checkbox" id="' + escapeHtml(id) + '" data-slug="' + escapeHtml(slug) + '"' + (savedSet[low] ? ' checked' : '') + '> ' +
+            '<span>' + escapeHtml(s.display_name || slug) + ' <span style="color:#666">(' + escapeHtml(slug) + ')</span></span>';
+          host.appendChild(lab);
+        });
+      }
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('formBlock').style.display = 'block';
+      filterSupplierChecks();
+    }
+    function filterSupplierChecks() {
+      var q = (document.getElementById('supplierSearch') && document.getElementById('supplierSearch').value || '').trim().toLowerCase();
+      document.querySelectorAll('#supplierChecks label').forEach(function (lab) {
+        if (!q) {
+          lab.style.display = '';
+          return;
+        }
+        var slug = (lab.querySelector('input[data-slug]') && lab.querySelector('input[data-slug]').getAttribute('data-slug') || '').toLowerCase();
+        var text = (lab.textContent || '').toLowerCase();
+        var alt = slug.replace(/-/g, '');
+        var qAlt = q.replace(/[^a-z0-9]/g, '');
+        lab.style.display = (text.indexOf(q) >= 0 || slug.indexOf(q) >= 0 || alt.indexOf(qAlt) >= 0) ? '' : 'none';
+      });
+    }
+    function getCheckedSlugs() {
+      var out = [];
+      document.querySelectorAll('#supplierChecks input[type=checkbox][data-slug]').forEach(function (el) {
+        if (el.checked) out.push(el.getAttribute('data-slug'));
+      });
+      return out;
+    }
+    async function saveSelection() {
+      var msg = document.getElementById('msg');
+      msg.textContent = '';
+      msg.className = '';
+      if (!stateCompany) return;
+      var slugs = getCheckedSlugs();
+      var res = await fetch('/api/company-suppliers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ company: stateCompany, suppliers: slugs })
+      });
+      var data = await res.json();
+      if (data.ok) {
+        msg.textContent = slugs.length ? ('Saved ' + slugs.length + ' supplier(s) for ' + stateCompany + '.') : ('Cleared — Scrape page will list all suppliers for ' + stateCompany + '.');
+        msg.className = 'ok';
+      } else {
+        msg.textContent = data.error || 'Save failed';
+        msg.className = 'err';
+      }
+    }
+    async function clearAll() {
+      document.querySelectorAll('#supplierChecks input[type=checkbox][data-slug]').forEach(function (el) { el.checked = false; });
+      await saveSelection();
+    }
+    init();
+  </script>
+</body>
+</html>
+"""
+
+
 ORDERS_HTML = """
 <!DOCTYPE html>
 <html lang="en">
@@ -610,11 +878,43 @@ ORDERS_HTML = """
   </div>
   <script>
     let supplierDisplayNames = {};
-    function getCompany() { return (localStorage.getItem('edit_products_company_slug') || '').trim(); }
-    function updateCompanyBar() {
-      const company = getCompany();
+    const ORDERS_COMPANY_STORAGE_KEY = 'edit_products_company_slug';
+    function getCompany() { return (localStorage.getItem(ORDERS_COMPANY_STORAGE_KEY) || '').trim(); }
+    function escapeHtml(s) {
+      if (s == null) return '';
+      const d = document.createElement('div');
+      d.textContent = String(s);
+      return d.innerHTML;
+    }
+    async function loadOrdersCompanySelector() {
       const bar = document.getElementById('companyBar');
-      bar.innerHTML = company ? 'Company: <strong>' + escapeHtml(company) + '</strong> — <a href="/" style="color:#2a7">Change on Dashboard</a>' : '<a href="/" style="color:#2a7">Select company on Dashboard first</a>';
+      try {
+        const r = await fetch('/api/companies');
+        const d = await r.json();
+        const companies = d.companies || [];
+        if (!companies.length) {
+          bar.innerHTML = '<span style="color:#888;">No companies (COMPANY_SLUGS). <a href="/" style="color:#2a7">Dashboard</a></span>';
+          return;
+        }
+        bar.innerHTML = '<label for="ordersCompanySelect" style="margin-right:0.5rem;color:#888;">Company</label>' +
+          '<select id="ordersCompanySelect" style="padding:0.5rem;background:#252525;border:1px solid #444;border-radius:6px;color:#e0e0e0;min-width:180px;">' +
+          '<option value="">Select company</option>' +
+          companies.map(function (c) { return '<option value="' + escapeHtml(c) + '">' + escapeHtml(c) + '</option>'; }).join('') +
+          '</select>';
+        const sel = document.getElementById('ordersCompanySelect');
+        const saved = getCompany();
+        if (saved && companies.includes(saved)) sel.value = saved;
+        else if (companies.length === 1) sel.value = companies[0];
+        if (saved && !companies.includes(saved)) localStorage.removeItem(ORDERS_COMPANY_STORAGE_KEY);
+        if (sel.value) localStorage.setItem(ORDERS_COMPANY_STORAGE_KEY, sel.value);
+        sel.onchange = function () {
+          const v = (sel.value || '').trim();
+          if (v) localStorage.setItem(ORDERS_COMPANY_STORAGE_KEY, v); else localStorage.removeItem(ORDERS_COMPANY_STORAGE_KEY);
+          loadOrders();
+        };
+      } catch (e) {
+        bar.innerHTML = '<span style="color:#c66;">Could not load companies.</span>';
+      }
     }
     function supplierDisplay(slug) { return supplierDisplayNames[slug] || slug; }
     async function loadSuppliers() {
@@ -625,9 +925,10 @@ ORDERS_HTML = """
         (list || []).forEach(s => { supplierDisplayNames[(s.slug || '').toLowerCase()] = s.display_name || s.slug; });
       } catch (_) {}
     }
-    function initOrders() {
-      updateCompanyBar();
-      loadSuppliers().then(loadOrders);
+    async function initOrders() {
+      await loadOrdersCompanySelector();
+      await loadSuppliers();
+      await loadOrders();
     }
     async function loadOrders() {
       const company = getCompany();
@@ -635,7 +936,7 @@ ORDERS_HTML = """
       const msg = document.getElementById('msg');
       msg.textContent = '';
       if (!company) {
-        el.innerHTML = '';
+        el.innerHTML = '<p class="msg">Select a company above to load orders.</p>';
         return;
       }
       el.innerHTML = '<p>Loading...</p>';
@@ -687,12 +988,6 @@ ORDERS_HTML = """
         msg.textContent = 'Error: ' + e.message;
         msg.className = 'msg err';
       }
-    }
-    function escapeHtml(s) {
-      if (s == null) return '';
-      const d = document.createElement('div');
-      d.textContent = String(s);
-      return d.innerHTML;
     }
     function attachRunHandlers() {
       document.querySelectorAll('.supplier-group').forEach(grp => {
@@ -975,8 +1270,30 @@ GUMTREE_CRAWLER_HTML = """
     .thumbs { display: flex; gap: 0.35rem; flex-wrap: wrap; }
     .thumbs img { width: 52px; height: 52px; object-fit: cover; border-radius: 6px; }
     .inline-note { color: #aaa; font-size: 0.85rem; }
+    .scenario-editor-body.hidden { display: none; }
+    .scenario-editor-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 0.75rem; margin: 0.75rem 0 1rem; }
+    .scenario-editor-keywords { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 0.75rem; margin-top: 0.75rem; }
+    .scenario-searches-wrap { overflow-x: auto; margin: 0.75rem 0; }
+    .scenario-searches-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+    .scenario-searches-table th, .scenario-searches-table td { border: 1px solid #333; padding: 0.35rem; vertical-align: top; }
+    .scenario-searches-table input[type="text"], .scenario-searches-table input[type="number"] { width: 100%; min-width: 70px; }
+    .scenario-searches-table textarea { width: 100%; min-width: 90px; min-height: 2.4rem; font-size: 0.85rem; }
+    .scenario-searches-table .row-actions { white-space: nowrap; }
+    .msg.success { color: #2a7; }
+    .msg.error { color: #f66; }
     .changes-list li { margin-bottom: 0.45rem; }
     .changes-list a { color: #2a7; text-decoration: none; }
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 1rem; }
+    .modal-overlay.hidden { display: none; }
+    .modal-overlay .modal { background: #252525; border: 1px solid #444; border-radius: 8px; padding: 1.25rem; min-width: 320px; max-width: 420px; width: 100%; }
+    .modal-overlay .modal h3 { margin: 0 0 0.75rem 0; font-size: 1rem; }
+    .modal-overlay .modal p { margin: 0 0 1rem 0; color: #aaa; font-size: 0.9rem; line-height: 1.45; }
+    .modal-overlay .modal-actions { display: flex; justify-content: flex-end; gap: 0.5rem; flex-wrap: wrap; }
+    .modal-overlay .modal-actions button { padding: 0.5rem 1rem; border: none; border-radius: 4px; cursor: pointer; font-size: 0.9rem; }
+    .modal-overlay .modal-actions button.primary { background: #2a7; color: white; }
+    .modal-overlay .modal-actions button.primary:hover { background: #3b8; }
+    .modal-overlay .modal-actions button.secondary { background: #444; color: #e0e0e0; }
+    .modal-overlay .modal-actions button.secondary:hover { background: #555; }
   </style>
 </head>
 <body>
@@ -988,7 +1305,8 @@ GUMTREE_CRAWLER_HTML = """
     <h3>Scheduler status</h3>
     <div id="status" class="status">Loading...</div>
     <div class="controls">
-      <button id="runBtn" class="primary" onclick="runNow()">Run now</button>
+      <button id="runBtn" class="primary" onclick="runNow(false)">Run now</button>
+      <button id="freshBtn" class="secondary" onclick="openFreshConfirmModal()">Start fresh</button>
     </div>
   </div>
 
@@ -996,6 +1314,69 @@ GUMTREE_CRAWLER_HTML = """
     <h3>Scenario Tabs</h3>
     <div id="scenarioTabs" class="scenario-tabs"></div>
     <div id="scenarioSummary" class="scenario-summary">Loading scenarios...</div>
+  </div>
+
+  <div class="panel">
+    <h3>Scenario editor</h3>
+    <p class="inline-note">Edit site searches and keyword rules. Saved config is used on the next Run now.</p>
+    <div class="controls">
+      <label>Scenario</label>
+      <select id="scenarioEditorSelect" onchange="loadScenarioEditorForm()"></select>
+    </div>
+    <div id="scenarioEditorBody" class="scenario-editor-body hidden">
+      <div class="scenario-editor-grid">
+        <label><input type="checkbox" id="scenarioEditorEnabled"> Enabled</label>
+        <div>
+          <label>Scenario min price</label>
+          <input type="number" id="scenarioEditorMinPrice" min="0" step="1">
+        </div>
+        <div>
+          <label>Scenario max price</label>
+          <input type="number" id="scenarioEditorMaxPrice" min="0" step="1">
+        </div>
+      </div>
+      <h4 style="margin:0 0 0.5rem;color:#aaa;font-size:0.92rem;">Site searches</h4>
+      <p class="inline-note">Per-search Required / Excluded / OR groups override the scenario defaults for that search line only. Leave blank to use scenario defaults.</p>
+      <div class="scenario-searches-wrap">
+        <table class="scenario-searches-table">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Gumtree URL</th>
+              <th>Category</th>
+              <th>Min</th>
+              <th>Max</th>
+              <th>Required</th>
+              <th>Excluded</th>
+              <th>OR groups</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="scenarioEditorSearches"></tbody>
+        </table>
+      </div>
+      <div class="controls">
+        <button type="button" class="secondary" onclick="addScenarioEditorSearchRow()">Add search</button>
+      </div>
+      <div class="scenario-editor-keywords">
+        <div>
+          <label>Default required keywords (all searches)</label>
+          <textarea id="scenarioEditorRequired" placeholder="Comma separated"></textarea>
+        </div>
+        <div>
+          <label>Default excluded keywords</label>
+          <textarea id="scenarioEditorExcluded" placeholder="Comma separated"></textarea>
+        </div>
+        <div>
+          <label>Default OR groups (one group per line)</label>
+          <textarea id="scenarioEditorOrGroups" placeholder="iphone, samsung"></textarea>
+        </div>
+      </div>
+      <div class="controls">
+        <button type="button" class="primary" onclick="saveScenarioEditor()">Save scenario</button>
+      </div>
+      <div id="scenarioEditorMsg" class="msg"></div>
+    </div>
   </div>
 
   <div class="panel">
@@ -1011,6 +1392,11 @@ GUMTREE_CRAWLER_HTML = """
         <option value="cars-bakkies">Cars & bakkies</option>
         <option value="laptops">Laptops</option>
         <option value="cell-phones">Cell phones</option>
+        <option value="laser-cutting">Laser cutting</option>
+        <option value="screen-printing">Screen printing</option>
+        <option value="dtf-printing">DTF printing</option>
+        <option value="t-shirt-printing">T-shirt printing</option>
+        <option value="dev-jobs">Developer jobs</option>
       </select>
       <label>Price min</label>
       <input type="number" id="filterMinPrice" placeholder="Min" style="width:80px">
@@ -1077,11 +1463,33 @@ GUMTREE_CRAWLER_HTML = """
     <div id="changes"></div>
   </div>
 
+  <div id="freshConfirmModal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="freshConfirmTitle">
+    <div class="modal">
+      <h3 id="freshConfirmTitle">Start fresh crawl?</h3>
+      <p>This abandons any interrupted crawl and starts from the beginning. Stored listings stay in the database; only crawl progress resets.</p>
+      <div class="modal-actions">
+        <button type="button" class="secondary" onclick="closeFreshConfirmModal()">Cancel</button>
+        <button type="button" class="primary" onclick="confirmStartFresh()">Start fresh</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="crawlerErrorModal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="crawlerErrorTitle">
+    <div class="modal">
+      <h3 id="crawlerErrorTitle">Could not start crawl</h3>
+      <p id="crawlerErrorMessage"></p>
+      <div class="modal-actions">
+        <button type="button" class="primary" onclick="closeCrawlerErrorModal()">OK</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     const gumtreeState = {
       activeScenario: 'all',
       scenarios: [],
       counts: {},
+      matchSummary: null,
       locationPreferences: null,
     };
 
@@ -1108,21 +1516,30 @@ GUMTREE_CRAWLER_HTML = """
       const wrap = document.getElementById('scenarioTabs');
       const summary = document.getElementById('scenarioSummary');
       const allCount = gumtreeState.counts.all || {};
-      let html = '<button class="tab-btn' + (gumtreeState.activeScenario === 'all' ? ' active' : '') + '" onclick="setScenarioTab(\\'all\\')">All (' + (allCount.total_count || 0) + ')</button>';
+      const stored = allCount.total_count || 0;
+      let html = '<button class="tab-btn' + (gumtreeState.activeScenario === 'all' ? ' active' : '') + '" onclick="setScenarioTab(\\'all\\')">All (' + stored + ' stored)</button>';
       for (const scenario of gumtreeState.scenarios) {
         const counts = gumtreeState.counts[scenario.slug] || {};
-        html += '<button class="tab-btn' + (gumtreeState.activeScenario === scenario.slug ? ' active' : '') + '" onclick="setScenarioTab(\\'' + escapeHtml(scenario.slug) + '\\')">' + escapeHtml(scenario.name) + ' (' + (counts.visible_count || 0) + ')</button>';
+        html += '<button class="tab-btn' + (gumtreeState.activeScenario === scenario.slug ? ' active' : '') + '" onclick="setScenarioTab(\\'' + escapeHtml(scenario.slug) + '\\')">' + escapeHtml(scenario.name) + ' (' + (counts.visible_count || 0) + ' matches)</button>';
       }
       wrap.innerHTML = html;
       const active = getActiveScenario();
+      const ms = gumtreeState.matchSummary || {};
       if (active) {
         summary.textContent = active.description || '';
         document.getElementById('filterHint').textContent =
           'Scenario rules are strict here. Extra filters only narrow the already-matching results.';
       } else {
-        summary.textContent = 'All tab shows the full crawler view for debugging and admin review.';
+        const matched = ms.matched_unique || allCount.matched_unique || 0;
+        const unmatched = ms.unmatched || allCount.unmatched || Math.max(stored - matched, 0);
+        const overlap = Math.max((ms.matched_rows || allCount.matched_rows || 0) - matched, 0);
+        summary.textContent =
+          stored + ' listings stored. ' + matched + ' match at least one scenario tab'
+          + (unmatched ? ('; ' + unmatched + ' match none yet.') : '.')
+          + (overlap ? (' Tab counts overlap by ' + overlap + ' (same listing in multiple tabs).') : '')
+          + ' Scenario tabs will not add up to All — that is expected.';
         document.getElementById('filterHint').textContent =
-          'All tab shows everything the crawler stored. Switch to a scenario tab to see strict matches only.';
+          'All shows every stored listing. Scenario tabs show strict matches only.';
       }
     }
 
@@ -1131,11 +1548,186 @@ GUMTREE_CRAWLER_HTML = """
       const d = await r.json();
       gumtreeState.scenarios = d.scenarios || [];
       gumtreeState.counts = d.counts || {};
+      gumtreeState.matchSummary = d.match_summary || null;
       gumtreeState.locationPreferences = d.location_preferences || {};
       document.getElementById('prefProvinces').value = csvFromArray(gumtreeState.locationPreferences.preferred_provinces);
       document.getElementById('prefCities').value = csvFromArray(gumtreeState.locationPreferences.preferred_cities);
       document.getElementById('prefSuburbs').value = csvFromArray(gumtreeState.locationPreferences.preferred_suburbs);
       renderScenarioTabs();
+      populateScenarioEditorSelect();
+    }
+
+    const scenarioEditorDraft = { searches: [] };
+
+    function orGroupsToText(groups) {
+      return (groups || []).map(g => csvFromArray(g)).join('\\n');
+    }
+
+    function parseOrGroupsFromText(text) {
+      return String(text || '').split('\\n').map(line => arrayFromCsv(line)).filter(g => g.length);
+    }
+
+    function searchKeywordsToForm(row) {
+      return {
+        required_keywords_all: csvFromArray(row.required_keywords_all),
+        excluded_keywords: csvFromArray(row.excluded_keywords),
+        required_any_groups: orGroupsToText(row.required_any_groups),
+      };
+    }
+
+    function applySearchKeywordPayload(entry, row) {
+      const required = String(row.required_keywords_all || '').trim();
+      if (required) entry.required_keywords_all = required;
+      const excluded = String(row.excluded_keywords || '').trim();
+      if (excluded) entry.excluded_keywords = excluded;
+      const groups = String(row.required_any_groups || '').trim();
+      if (groups) entry.required_any_groups = groups;
+    }
+
+    function getEditorScenario() {
+      const slug = document.getElementById('scenarioEditorSelect').value;
+      return gumtreeState.scenarios.find(s => s.slug === slug) || null;
+    }
+
+    function populateScenarioEditorSelect() {
+      const sel = document.getElementById('scenarioEditorSelect');
+      if (!sel) return;
+      const prev = sel.value;
+      sel.innerHTML = '<option value="">Select scenario...</option>' +
+        gumtreeState.scenarios.map(s => '<option value="' + escapeHtml(s.slug) + '">' + escapeHtml(s.name) + '</option>').join('');
+      if (prev && gumtreeState.scenarios.some(s => s.slug === prev)) sel.value = prev;
+      else if (gumtreeState.scenarios.length) sel.value = gumtreeState.scenarios[0].slug;
+      loadScenarioEditorForm();
+    }
+
+    function loadScenarioEditorForm() {
+      const scenario = getEditorScenario();
+      const body = document.getElementById('scenarioEditorBody');
+      const msg = document.getElementById('scenarioEditorMsg');
+      if (msg) { msg.textContent = ''; msg.className = 'msg'; }
+      if (!scenario || !body) {
+        if (body) body.classList.add('hidden');
+        return;
+      }
+      body.classList.remove('hidden');
+      document.getElementById('scenarioEditorEnabled').checked = !!scenario.enabled;
+      document.getElementById('scenarioEditorMinPrice').value = scenario.min_price ?? '';
+      document.getElementById('scenarioEditorMaxPrice').value = scenario.max_price ?? '';
+      document.getElementById('scenarioEditorRequired').value = csvFromArray(scenario.required_keywords_all);
+      document.getElementById('scenarioEditorExcluded').value = csvFromArray(scenario.excluded_keywords);
+      document.getElementById('scenarioEditorOrGroups').value = orGroupsToText(scenario.required_any_groups);
+      scenarioEditorDraft.searches = (scenario.searches || []).map(s => ({
+        ...s,
+        ...searchKeywordsToForm(s),
+      }));
+      renderScenarioEditorSearches();
+    }
+
+    function renderScenarioEditorSearches() {
+      const tbody = document.getElementById('scenarioEditorSearches');
+      if (!tbody) return;
+      tbody.innerHTML = scenarioEditorDraft.searches.map((row, index) => {
+        const url = row.url || '';
+        const openLink = url ? '<a href="' + escapeHtml(url) + '" target="_blank" rel="noopener">Open</a>' : '';
+        return '<tr>' +
+          '<td><input type="text" value="' + escapeHtml(row.name || '') + '" onchange="updateScenarioEditorSearch(' + index + ', \\'name\\', this.value)"></td>' +
+          '<td><input type="text" value="' + escapeHtml(url) + '" onchange="updateScenarioEditorSearch(' + index + ', \\'url\\', this.value)"></td>' +
+          '<td><input type="text" value="' + escapeHtml(row.category || '') + '" onchange="updateScenarioEditorSearch(' + index + ', \\'category\\', this.value)"></td>' +
+          '<td><input type="number" value="' + escapeHtml(row.min_price ?? '') + '" onchange="updateScenarioEditorSearch(' + index + ', \\'min_price\\', this.value)"></td>' +
+          '<td><input type="number" value="' + escapeHtml(row.max_price ?? '') + '" onchange="updateScenarioEditorSearch(' + index + ', \\'max_price\\', this.value)"></td>' +
+          '<td><input type="text" value="' + escapeHtml(row.required_keywords_all || '') + '" placeholder="comma separated" onchange="updateScenarioEditorSearch(' + index + ', \\'required_keywords_all\\', this.value)"></td>' +
+          '<td><input type="text" value="' + escapeHtml(row.excluded_keywords || '') + '" placeholder="comma separated" onchange="updateScenarioEditorSearch(' + index + ', \\'excluded_keywords\\', this.value)"></td>' +
+          '<td><textarea rows="2" placeholder="one group per line" onchange="updateScenarioEditorSearch(' + index + ', \\'required_any_groups\\', this.value)">' + escapeHtml(row.required_any_groups || '') + '</textarea></td>' +
+          '<td class="row-actions">' +
+            openLink +
+            ' <button type="button" class="secondary" onclick="moveScenarioEditorSearch(' + index + ', -1)">Up</button>' +
+            ' <button type="button" class="secondary" onclick="moveScenarioEditorSearch(' + index + ', 1)">Down</button>' +
+            ' <button type="button" class="secondary" onclick="removeScenarioEditorSearchRow(' + index + ')">Remove</button>' +
+          '</td>' +
+        '</tr>';
+      }).join('');
+    }
+
+    function updateScenarioEditorSearch(index, field, value) {
+      const row = scenarioEditorDraft.searches[index];
+      if (!row) return;
+      if (field === 'min_price' || field === 'max_price') row[field] = parseInt(value, 10) || 0;
+      else row[field] = value;
+    }
+
+    function addScenarioEditorSearchRow() {
+      scenarioEditorDraft.searches.push({
+        name: 'New search',
+        url: 'https://www.gumtree.co.za/',
+        category: 'misc',
+        min_price: 0,
+        max_price: 999999,
+        seller_type: 'owner',
+        path_slugs: [],
+      });
+      renderScenarioEditorSearches();
+    }
+
+    function removeScenarioEditorSearchRow(index) {
+      scenarioEditorDraft.searches.splice(index, 1);
+      renderScenarioEditorSearches();
+    }
+
+    function moveScenarioEditorSearch(index, delta) {
+      const next = index + delta;
+      if (next < 0 || next >= scenarioEditorDraft.searches.length) return;
+      const tmp = scenarioEditorDraft.searches[index];
+      scenarioEditorDraft.searches[index] = scenarioEditorDraft.searches[next];
+      scenarioEditorDraft.searches[next] = tmp;
+      renderScenarioEditorSearches();
+    }
+
+    function collectScenarioEditorPayload() {
+      return {
+        enabled: document.getElementById('scenarioEditorEnabled').checked,
+        min_price: parseInt(document.getElementById('scenarioEditorMinPrice').value, 10) || 0,
+        max_price: parseInt(document.getElementById('scenarioEditorMaxPrice').value, 10) || 0,
+        required_keywords_all: arrayFromCsv(document.getElementById('scenarioEditorRequired').value),
+        excluded_keywords: arrayFromCsv(document.getElementById('scenarioEditorExcluded').value),
+        required_any_groups: parseOrGroupsFromText(document.getElementById('scenarioEditorOrGroups').value),
+        searches: scenarioEditorDraft.searches.map(row => {
+          const entry = {
+            name: String(row.name || '').trim(),
+            url: String(row.url || '').trim(),
+            category: String(row.category || '').trim(),
+            min_price: parseInt(row.min_price, 10) || 0,
+            max_price: parseInt(row.max_price, 10) || 0,
+            seller_type: row.seller_type || 'owner',
+            path_slugs: row.path_slugs || [],
+          };
+          applySearchKeywordPayload(entry, row);
+          return entry;
+        }),
+      };
+    }
+
+    async function saveScenarioEditor() {
+      const scenario = getEditorScenario();
+      const msg = document.getElementById('scenarioEditorMsg');
+      if (!scenario) return;
+      msg.textContent = 'Saving...';
+      msg.className = 'msg';
+      const r = await fetch('/api/gumtree-crawler/scenarios/' + encodeURIComponent(scenario.slug), {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(collectScenarioEditorPayload()),
+      });
+      const d = await r.json();
+      if (!r.ok || !d.ok) {
+        msg.textContent = d.error || 'Save failed';
+        msg.className = 'msg error';
+        return;
+      }
+      msg.textContent = 'Saved. Listing matches recomputed.';
+      msg.className = 'msg success';
+      await loadScenarioMeta();
+      renderScenarioTabs();
+      loadListings();
     }
 
     function setScenarioTab(slug) {
@@ -1158,16 +1750,49 @@ GUMTREE_CRAWLER_HTML = """
       const d = await r.json();
       const el = document.getElementById('status');
       const btn = document.getElementById('runBtn');
+      const freshBtn = document.getElementById('freshBtn');
       btn.disabled = d.running;
-      el.textContent = d.running ? 'Running...' : (d.last_run ? 'Last run: ' + (d.last_run.finished_at || d.last_run.started_at) + ' (' + (d.last_run.status || '') + ')' : 'Never run');
+      if (freshBtn) freshBtn.disabled = d.running;
+      let text = d.running ? 'Running...' : (d.last_run ? 'Last run: ' + (d.last_run.finished_at || d.last_run.started_at) + ' (' + (d.last_run.status || '') + ')' : 'Never run');
+      if (!d.running && d.resumable) {
+        text += ' | Interrupted crawl can resume (Run now continues where it left off)';
+      }
+      el.textContent = text;
       el.className = 'status' + (d.running ? ' running' : '');
       if (d.next_scheduled) el.textContent += ' | Next: ' + d.next_scheduled.slice(0,16);
     }
-    async function runNow() {
-      const r = await fetch('/api/gumtree-crawler/run-now', { method: 'POST' });
+
+    function openFreshConfirmModal() {
+      document.getElementById('freshConfirmModal').classList.remove('hidden');
+    }
+
+    function closeFreshConfirmModal() {
+      document.getElementById('freshConfirmModal').classList.add('hidden');
+    }
+
+    async function confirmStartFresh() {
+      closeFreshConfirmModal();
+      await runNow(true);
+    }
+
+    function showCrawlerError(message) {
+      document.getElementById('crawlerErrorMessage').textContent = message || 'Something went wrong.';
+      document.getElementById('crawlerErrorModal').classList.remove('hidden');
+    }
+
+    function closeCrawlerErrorModal() {
+      document.getElementById('crawlerErrorModal').classList.add('hidden');
+    }
+
+    async function runNow(fresh) {
+      const r = await fetch('/api/gumtree-crawler/run-now', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fresh: !!fresh }),
+      });
       const d = await r.json();
       if (d.ok) loadStatus();
-      else alert(d.error || 'Failed');
+      else showCrawlerError(d.error || 'Failed to start crawl');
     }
 
     async function saveLocationPreferences() {
@@ -1305,7 +1930,9 @@ GUMTREE_CRAWLER_HTML = """
         html += '</div></div>';
       }
       listEl.innerHTML = html;
-      msg.textContent = 'Total: ' + d.total + (gumtreeState.activeScenario !== 'all' ? ' strict matches in this scenario.' : ' listings stored.');
+      msg.textContent = gumtreeState.activeScenario !== 'all'
+        ? ('Total: ' + d.total + ' strict matches in this scenario.')
+        : ('Total: ' + d.total + ' stored listings (' + (gumtreeState.matchSummary?.matched_unique || gumtreeState.counts.all?.matched_unique || 0) + ' match a scenario tab).');
     }
     function toggleListingDetail(id) {
       const el = document.getElementById(id);
@@ -1361,12 +1988,23 @@ GUMTREE_CRAWLER_HTML = """
       if (!d.changes || !d.changes.length) { el.innerHTML = '<p class="msg">No price changes yet.</p>'; return; }
       el.innerHTML = '<ul class="changes-list">' + d.changes.map(c => '<li><a href="' + escapeHtml(c.url) + '" target="_blank">' + escapeHtml(c.title || '') + '</a> R' + (c.old_price || '?') + ' → R' + c.new_price + ' (' + (c.changed_at || '').slice(0,10) + ')</li>').join('') + '</ul>';
     }
+    const COMPANY_STORAGE_KEY = 'edit_products_company_slug';
     async function loadCompanies() {
       const r = await fetch('/api/companies');
       const d = await r.json();
       const companies = d.companies || [];
       const sel = document.getElementById('exportCompany');
       sel.innerHTML = '<option value="">Select company</option>' + companies.map(c => '<option value="' + escapeHtml(c) + '">' + escapeHtml(c) + '</option>').join('');
+      const saved = (localStorage.getItem(COMPANY_STORAGE_KEY) || '').trim();
+      if (saved && companies.includes(saved)) sel.value = saved;
+      else if (companies.length === 1) sel.value = companies[0];
+      if (saved && !companies.includes(saved)) localStorage.removeItem(COMPANY_STORAGE_KEY);
+      if (sel.value) localStorage.setItem(COMPANY_STORAGE_KEY, sel.value);
+      sel.onchange = () => {
+        const v = (sel.value || '').trim();
+        if (v) localStorage.setItem(COMPANY_STORAGE_KEY, v);
+        else localStorage.removeItem(COMPANY_STORAGE_KEY);
+      };
     }
     async function exportSelected() {
       const company = document.getElementById('exportCompany').value;
@@ -1382,6 +2020,900 @@ GUMTREE_CRAWLER_HTML = """
       loadListings();
       loadChanges();
     });
+    loadCompanies();
+    loadStatus();
+    loadIgnoreRules();
+    setInterval(loadStatus, 5000);
+  </script>
+</body>
+</html>
+"""
+
+
+JUNKMAIL_CRAWLER_HTML = """
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Junk Mail Crawler - Product Scrapers</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: system-ui, sans-serif; margin: 2rem; background: #1a1a1a; color: #e0e0e0; }
+    .top-nav { margin-bottom: 1.5rem; }
+    .top-nav a { color: #2a7; text-decoration: none; }
+    .top-nav a:hover { text-decoration: underline; }
+    h1 { font-size: 1.5rem; margin-bottom: 1rem; }
+    .panel { background: #252525; border-radius: 8px; border: 1px solid #333; padding: 1rem; margin-bottom: 1rem; }
+    .panel h3 { font-size: 1rem; margin: 0 0 0.75rem 0; color: #aaa; }
+    .controls { display: flex; gap: 0.75rem; flex-wrap: wrap; margin: 1rem 0; align-items: center; }
+    button { padding: 0.6rem 1rem; font-size: 0.9rem; border: none; border-radius: 6px; cursor: pointer; }
+    button.primary { background: #2a7; color: white; }
+    button.primary:hover { background: #3b8; }
+    button.secondary { background: #444; color: #e0e0e0; }
+    button.secondary:hover { background: #555; }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    select, input, textarea { padding: 0.5rem; background: #1a1a1a; border: 1px solid #444; border-radius: 4px; color: #e0e0e0; }
+    textarea { min-height: 70px; width: 100%; resize: vertical; }
+    .scenario-tabs { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+    .tab-btn { background: #333; color: #ccc; border: 1px solid #444; }
+    .tab-btn.active { background: #2a7; color: #fff; border-color: #2a7; }
+    .scenario-summary { color: #aaa; font-size: 0.92rem; margin-top: 0.75rem; }
+    .location-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 0.75rem; }
+    .filters { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1rem; align-items: center; }
+    .filters label { font-size: 0.85rem; color: #888; }
+    .status { font-size: 0.9rem; color: #888; }
+    .status.running { color: #2a7; }
+    .msg { margin-top: 0.5rem; font-size: 0.9rem; color: #888; }
+    .badge { display: inline-block; padding: 0.2rem 0.5rem; font-size: 0.75rem; border-radius: 4px; margin-right: 0.25rem; }
+    .badge.new { background: #2a7; color: white; }
+    .badge.changed { background: #c96; color: #111; }
+    .badge.green { background: #225a37; color: #d7ffe5; }
+    .badge.yellow { background: #7b5c13; color: #fff2bf; }
+    .badge.red { background: #6a2323; color: #ffd3d3; }
+    .badge.gold { background: #8e6d15; color: #fff4c2; }
+    .badge.black { background: #111; color: #f5f5f5; border: 1px solid #555; }
+    .group-province { margin-top: 1rem; }
+    .group-province:first-child { margin-top: 0; }
+    .group-province-header { background: #333; color: #2a7; font-weight: 600; padding: 0.5rem 0.75rem; border-radius: 6px 6px 0 0; cursor: pointer; display: flex; align-items: center; gap: 0.4rem; }
+    .group-city { margin-left: 0.5rem; border-left: 2px solid #444; }
+    .group-city-header { background: #2a2a2a; color: #aaa; font-size: 0.9rem; font-weight: 500; padding: 0.4rem 0.75rem; cursor: pointer; }
+    .group-suburb { margin-left: 1rem; border-left: 2px solid #555; }
+    .group-suburb-header { background: #252525; color: #888; font-size: 0.85rem; padding: 0.35rem 0.75rem; cursor: pointer; display: flex; align-items: center; gap: 0.35rem; }
+    .group-body.collapsed { display: none; }
+    .collapse-icon { display: inline-block; width: 1rem; color: #aaa; }
+    .rules-list { margin-top: 0.5rem; }
+    .rules-list li { margin-bottom: 0.5rem; display: flex; justify-content: space-between; align-items: center; }
+    .rules-list button { padding: 0.3rem 0.6rem; font-size: 0.8rem; }
+    .listing-card { background: #1a1a1a; border: 1px solid #333; border-left-width: 5px; border-radius: 8px; padding: 0.9rem; margin-bottom: 0.75rem; }
+    .listing-card.red { border-left-color: #b33; }
+    .listing-card.yellow { border-left-color: #d9a520; }
+    .listing-card.green { border-left-color: #2a7; }
+    .listing-card.gold { border-left-color: #d4af37; box-shadow: 0 0 0 1px rgba(212,175,55,0.25); }
+    .listing-card.black { border-left-color: #fff; background: #141414; }
+    .listing-header { display: flex; justify-content: space-between; gap: 1rem; align-items: flex-start; }
+    .listing-title { font-size: 1rem; font-weight: 600; }
+    .listing-title a { color: #2a7; text-decoration: none; }
+    .listing-title a:hover { text-decoration: underline; }
+    .listing-meta { color: #999; font-size: 0.85rem; margin-top: 0.35rem; display: flex; gap: 0.8rem; flex-wrap: wrap; }
+    .listing-badges { margin-top: 0.55rem; display: flex; gap: 0.35rem; flex-wrap: wrap; }
+    .listing-actions { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
+    .listing-checkbox { margin-right: 0.5rem; }
+    .listing-details { margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid #333; display: none; }
+    .listing-details.open { display: block; }
+    .detail-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0.6rem; margin-bottom: 0.75rem; }
+    .detail-card { background: #202020; border-radius: 6px; padding: 0.6rem; border: 1px solid #333; }
+    .detail-card strong { display: block; color: #aaa; margin-bottom: 0.2rem; font-size: 0.82rem; }
+    .thumbs { display: flex; gap: 0.35rem; flex-wrap: wrap; }
+    .thumbs img { width: 52px; height: 52px; object-fit: cover; border-radius: 6px; }
+    .inline-note { color: #aaa; font-size: 0.85rem; }
+    .scenario-editor-body.hidden { display: none; }
+    .scenario-editor-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 0.75rem; margin: 0.75rem 0 1rem; }
+    .scenario-editor-keywords { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 0.75rem; margin-top: 0.75rem; }
+    .scenario-searches-wrap { overflow-x: auto; margin: 0.75rem 0; }
+    .scenario-searches-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+    .scenario-searches-table th, .scenario-searches-table td { border: 1px solid #333; padding: 0.35rem; vertical-align: top; }
+    .scenario-searches-table input[type="text"], .scenario-searches-table input[type="number"] { width: 100%; min-width: 70px; }
+    .scenario-searches-table textarea { width: 100%; min-width: 90px; min-height: 2.4rem; font-size: 0.85rem; }
+    .scenario-searches-table .row-actions { white-space: nowrap; }
+    .msg.success { color: #2a7; }
+    .msg.error { color: #f66; }
+    .changes-list li { margin-bottom: 0.45rem; }
+    .changes-list a { color: #2a7; text-decoration: none; }
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 1rem; }
+    .modal-overlay.hidden { display: none; }
+    .modal-overlay .modal { background: #252525; border: 1px solid #444; border-radius: 8px; padding: 1.25rem; min-width: 320px; max-width: 420px; width: 100%; }
+    .modal-overlay .modal h3 { margin: 0 0 0.75rem 0; font-size: 1rem; }
+    .modal-overlay .modal p { margin: 0 0 1rem 0; color: #aaa; font-size: 0.9rem; line-height: 1.45; }
+    .modal-overlay .modal-actions { display: flex; justify-content: flex-end; gap: 0.5rem; flex-wrap: wrap; }
+    .modal-overlay .modal-actions button { padding: 0.5rem 1rem; border: none; border-radius: 4px; cursor: pointer; font-size: 0.9rem; }
+    .modal-overlay .modal-actions button.primary { background: #2a7; color: white; }
+    .modal-overlay .modal-actions button.primary:hover { background: #3b8; }
+    .modal-overlay .modal-actions button.secondary { background: #444; color: #e0e0e0; }
+    .modal-overlay .modal-actions button.secondary:hover { background: #555; }
+  </style>
+</head>
+<body>
+  <div class="top-nav"><a href="/">← Dashboard</a></div>
+  <h1>Junk Mail Crawler</h1>
+  <p class="status">Scenario-driven Junk Mail crawler. Each tab only shows listings that pass that scenario's rules. Images remain optional and are fetched on demand.</p>
+
+  <div class="panel">
+    <h3>Scheduler status</h3>
+    <div id="status" class="status">Loading...</div>
+    <div class="controls">
+      <button id="runBtn" class="primary" onclick="runNow(false)">Run now</button>
+      <button id="freshBtn" class="secondary" onclick="openFreshConfirmModal()">Start fresh</button>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h3>Crawl limits</h3>
+    <p class="inline-note">Junk Mail has no URL price filter (unlike Gumtree). These limits apply during crawl — price ranges come from each scenario search config.</p>
+    <div class="filters">
+      <label>Max pages per search</label>
+      <input type="number" id="limitMaxPages" min="1" max="50" style="width:80px">
+      <label>Max stored per search</label>
+      <input type="number" id="limitMaxStored" min="1" max="500" style="width:80px">
+      <label><input type="checkbox" id="limitStoreOnlyMatches" checked> Only store scenario matches</label>
+      <button class="secondary" onclick="saveCrawlLimits()">Save limits</button>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h3>Scenario Tabs</h3>
+    <div id="scenarioTabs" class="scenario-tabs"></div>
+    <div id="scenarioSummary" class="scenario-summary">Loading scenarios...</div>
+  </div>
+
+  <div class="panel">
+    <h3>Scenario editor</h3>
+    <p class="inline-note">Edit site searches and keyword rules. URLs are rebuilt from query and category path on save.</p>
+    <div class="controls">
+      <label>Scenario</label>
+      <select id="scenarioEditorSelect" onchange="loadScenarioEditorForm()"></select>
+    </div>
+    <div id="scenarioEditorBody" class="scenario-editor-body hidden">
+      <div class="scenario-editor-grid">
+        <label><input type="checkbox" id="scenarioEditorEnabled"> Enabled</label>
+        <div>
+          <label>Scenario min price</label>
+          <input type="number" id="scenarioEditorMinPrice" min="0" step="1">
+        </div>
+        <div>
+          <label>Scenario max price</label>
+          <input type="number" id="scenarioEditorMaxPrice" min="0" step="1">
+        </div>
+      </div>
+      <h4 style="margin:0 0 0.5rem;color:#aaa;font-size:0.92rem;">Site searches</h4>
+      <p class="inline-note">Per-search Required / Excluded / OR groups override the scenario defaults for that search line only. Leave blank to use scenario defaults.</p>
+      <div class="scenario-searches-wrap">
+        <table class="scenario-searches-table">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Query</th>
+              <th>Category path</th>
+              <th>Category</th>
+              <th>Min</th>
+              <th>Max</th>
+              <th>Private</th>
+              <th>Required</th>
+              <th>Excluded</th>
+              <th>OR groups</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="scenarioEditorSearches"></tbody>
+        </table>
+      </div>
+      <div class="controls">
+        <button type="button" class="secondary" onclick="addScenarioEditorSearchRow()">Add search</button>
+      </div>
+      <div class="scenario-editor-keywords">
+        <div>
+          <label>Default required keywords (all searches)</label>
+          <textarea id="scenarioEditorRequired" placeholder="Comma separated"></textarea>
+        </div>
+        <div>
+          <label>Default excluded keywords</label>
+          <textarea id="scenarioEditorExcluded" placeholder="Comma separated"></textarea>
+        </div>
+        <div>
+          <label>Default OR groups (one group per line)</label>
+          <textarea id="scenarioEditorOrGroups" placeholder="iphone, samsung"></textarea>
+        </div>
+      </div>
+      <div class="controls">
+        <button type="button" class="primary" onclick="saveScenarioEditor()">Save scenario</button>
+      </div>
+      <div id="scenarioEditorMsg" class="msg"></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h3>Filters</h3>
+    <div class="filters">
+      <label>Category</label>
+      <select id="filterCategory">
+        <option value="">All</option>
+        <option value="motorcycles">Motorcycles</option>
+        <option value="desktop-computers">Desktop computers</option>
+        <option value="bicycles">Bicycles</option>
+        <option value="skateboarding">Skateboarding</option>
+        <option value="cars-bakkies">Cars & bakkies</option>
+        <option value="laptops">Laptops</option>
+        <option value="cell-phones">Cell phones</option>
+        <option value="laser-cutting">Laser cutting</option>
+        <option value="screen-printing">Screen printing</option>
+        <option value="dtf-printing">DTF printing</option>
+        <option value="t-shirt-printing">T-shirt printing</option>
+        <option value="dev-jobs">Developer jobs</option>
+      </select>
+      <label>Price min</label>
+      <input type="number" id="filterMinPrice" placeholder="Min" style="width:80px">
+      <label>Price max</label>
+      <input type="number" id="filterMaxPrice" placeholder="Max" style="width:80px">
+      <label>Keyword</label>
+      <input type="text" id="filterKeyword" placeholder="Extra filter" style="width:160px">
+      <label><input type="checkbox" id="filterNewToday"> New today</label>
+      <label><input type="checkbox" id="filterPriceChanged"> Price changed</label>
+      <button class="secondary" onclick="loadListings()">Apply</button>
+    </div>
+    <div id="filterHint" class="inline-note"></div>
+  </div>
+
+  <div class="panel">
+    <h3>Location Preferences</h3>
+    <div class="location-grid">
+      <div>
+        <label>Preferred provinces</label>
+        <textarea id="prefProvinces" placeholder="Comma separated, highest priority first"></textarea>
+      </div>
+      <div>
+        <label>Preferred cities</label>
+        <textarea id="prefCities" placeholder="Comma separated, highest priority first"></textarea>
+      </div>
+      <div>
+        <label>Preferred suburbs</label>
+        <textarea id="prefSuburbs" placeholder="Comma separated, highest priority first"></textarea>
+      </div>
+    </div>
+    <div class="controls">
+      <button class="secondary" onclick="saveLocationPreferences()">Save location preferences</button>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h3>Listings</h3>
+    <div class="controls" style="margin-bottom:0.5rem;">
+      <label>Export to products:</label>
+      <select id="exportCompany"><option value="">Select company</option></select>
+      <button class="secondary" onclick="exportSelected()">Export selected to Junk Mail</button>
+    </div>
+    <div id="listings"></div>
+    <div id="listingsMsg" class="msg"></div>
+  </div>
+
+  <div class="panel">
+    <h3>Ignore rules</h3>
+    <div class="controls">
+      <select id="ruleType">
+        <option value="url">URL</option>
+        <option value="ad_id">Ad ID</option>
+        <option value="title_keyword">Title keyword</option>
+        <option value="seller">Seller</option>
+      </select>
+      <input type="text" id="ruleValue" placeholder="Value" style="width:200px">
+      <button class="secondary" onclick="addIgnoreRule()">Add rule</button>
+    </div>
+    <ul id="rulesList" class="rules-list"></ul>
+  </div>
+
+  <div class="panel">
+    <h3>Recent price changes</h3>
+    <div id="changes"></div>
+  </div>
+
+  <div id="freshConfirmModal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="freshConfirmTitle">
+    <div class="modal">
+      <h3 id="freshConfirmTitle">Start fresh crawl?</h3>
+      <p>This abandons any interrupted crawl and starts from the beginning. Stored listings stay in the database; only crawl progress resets.</p>
+      <div class="modal-actions">
+        <button type="button" class="secondary" onclick="closeFreshConfirmModal()">Cancel</button>
+        <button type="button" class="primary" onclick="confirmStartFresh()">Start fresh</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="crawlerErrorModal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="crawlerErrorTitle">
+    <div class="modal">
+      <h3 id="crawlerErrorTitle">Could not start crawl</h3>
+      <p id="crawlerErrorMessage"></p>
+      <div class="modal-actions">
+        <button type="button" class="primary" onclick="closeCrawlerErrorModal()">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const junkmailState = {
+      activeScenario: 'all',
+      scenarios: [],
+      counts: {},
+      matchSummary: null,
+      locationPreferences: null,
+    };
+
+    function csvFromArray(values) {
+      return (values || []).join(', ');
+    }
+
+    function arrayFromCsv(value) {
+      return String(value || '')
+        .split(',')
+        .map(v => v.trim())
+        .filter(Boolean);
+    }
+
+    function getActiveScenario() {
+      return junkmailState.scenarios.find(s => s.slug === junkmailState.activeScenario) || null;
+    }
+
+    function scoreBadge(text, cls) {
+      return '<span class="badge ' + cls + '">' + escapeHtml(text) + '</span>';
+    }
+
+    function renderScenarioTabs() {
+      const wrap = document.getElementById('scenarioTabs');
+      const summary = document.getElementById('scenarioSummary');
+      const allCount = junkmailState.counts.all || {};
+      const stored = allCount.total_count || 0;
+      let html = '<button class="tab-btn' + (junkmailState.activeScenario === 'all' ? ' active' : '') + '" onclick="setScenarioTab(\\'all\\')">All (' + stored + ' stored)</button>';
+      for (const scenario of junkmailState.scenarios) {
+        const counts = junkmailState.counts[scenario.slug] || {};
+        html += '<button class="tab-btn' + (junkmailState.activeScenario === scenario.slug ? ' active' : '') + '" onclick="setScenarioTab(\\'' + escapeHtml(scenario.slug) + '\\')">' + escapeHtml(scenario.name) + ' (' + (counts.visible_count || 0) + ' matches)</button>';
+      }
+      wrap.innerHTML = html;
+      const active = getActiveScenario();
+      const ms = junkmailState.matchSummary || {};
+      if (active) {
+        summary.textContent = active.description || '';
+        document.getElementById('filterHint').textContent =
+          'Scenario rules are strict here. Extra filters only narrow the already-matching results.';
+      } else {
+        const matched = ms.matched_unique || allCount.matched_unique || 0;
+        const unmatched = ms.unmatched || allCount.unmatched || Math.max(stored - matched, 0);
+        const overlap = Math.max((ms.matched_rows || allCount.matched_rows || 0) - matched, 0);
+        summary.textContent =
+          stored + ' listings stored. ' + matched + ' match at least one scenario tab'
+          + (unmatched ? ('; ' + unmatched + ' match none yet.') : '.')
+          + (overlap ? (' Tab counts overlap by ' + overlap + ' (same listing in multiple tabs).') : '')
+          + ' Scenario tabs will not add up to All — that is expected.';
+        document.getElementById('filterHint').textContent =
+          'All shows every stored listing. Scenario tabs show strict matches only.';
+      }
+    }
+
+    async function loadScenarioMeta() {
+      const r = await fetch('/api/junkmail-crawler/scenarios');
+      const d = await r.json();
+      junkmailState.scenarios = d.scenarios || [];
+      junkmailState.counts = d.counts || {};
+      junkmailState.matchSummary = d.match_summary || null;
+      junkmailState.locationPreferences = d.location_preferences || {};
+      document.getElementById('prefProvinces').value = csvFromArray(junkmailState.locationPreferences.preferred_provinces);
+      document.getElementById('prefCities').value = csvFromArray(junkmailState.locationPreferences.preferred_cities);
+      document.getElementById('prefSuburbs').value = csvFromArray(junkmailState.locationPreferences.preferred_suburbs);
+      renderScenarioTabs();
+      populateScenarioEditorSelect();
+    }
+
+    const scenarioEditorDraft = { searches: [] };
+
+    function orGroupsToText(groups) {
+      return (groups || []).map(g => csvFromArray(g)).join('\\n');
+    }
+
+    function parseOrGroupsFromText(text) {
+      return String(text || '').split('\\n').map(line => arrayFromCsv(line)).filter(g => g.length);
+    }
+
+    function searchKeywordsToForm(row) {
+      return {
+        required_keywords_all: csvFromArray(row.required_keywords_all),
+        excluded_keywords: csvFromArray(row.excluded_keywords),
+        required_any_groups: orGroupsToText(row.required_any_groups),
+      };
+    }
+
+    function applySearchKeywordPayload(entry, row) {
+      const required = String(row.required_keywords_all || '').trim();
+      if (required) entry.required_keywords_all = required;
+      const excluded = String(row.excluded_keywords || '').trim();
+      if (excluded) entry.excluded_keywords = excluded;
+      const groups = String(row.required_any_groups || '').trim();
+      if (groups) entry.required_any_groups = groups;
+    }
+
+    function getEditorScenario() {
+      const slug = document.getElementById('scenarioEditorSelect').value;
+      return junkmailState.scenarios.find(s => s.slug === slug) || null;
+    }
+
+    function populateScenarioEditorSelect() {
+      const sel = document.getElementById('scenarioEditorSelect');
+      if (!sel) return;
+      const prev = sel.value;
+      sel.innerHTML = '<option value="">Select scenario...</option>' +
+        junkmailState.scenarios.map(s => '<option value="' + escapeHtml(s.slug) + '">' + escapeHtml(s.name) + '</option>').join('');
+      if (prev && junkmailState.scenarios.some(s => s.slug === prev)) sel.value = prev;
+      else if (junkmailState.scenarios.length) sel.value = junkmailState.scenarios[0].slug;
+      loadScenarioEditorForm();
+    }
+
+    function loadScenarioEditorForm() {
+      const scenario = getEditorScenario();
+      const body = document.getElementById('scenarioEditorBody');
+      const msg = document.getElementById('scenarioEditorMsg');
+      if (msg) { msg.textContent = ''; msg.className = 'msg'; }
+      if (!scenario || !body) {
+        if (body) body.classList.add('hidden');
+        return;
+      }
+      body.classList.remove('hidden');
+      document.getElementById('scenarioEditorEnabled').checked = !!scenario.enabled;
+      document.getElementById('scenarioEditorMinPrice').value = scenario.min_price ?? '';
+      document.getElementById('scenarioEditorMaxPrice').value = scenario.max_price ?? '';
+      document.getElementById('scenarioEditorRequired').value = csvFromArray(scenario.required_keywords_all);
+      document.getElementById('scenarioEditorExcluded').value = csvFromArray(scenario.excluded_keywords);
+      document.getElementById('scenarioEditorOrGroups').value = orGroupsToText(scenario.required_any_groups);
+      scenarioEditorDraft.searches = (scenario.searches || []).map(s => ({
+        ...s,
+        ...searchKeywordsToForm(s),
+      }));
+      renderScenarioEditorSearches();
+    }
+
+    function renderScenarioEditorSearches() {
+      const tbody = document.getElementById('scenarioEditorSearches');
+      if (!tbody) return;
+      tbody.innerHTML = scenarioEditorDraft.searches.map((row, index) => {
+        return '<tr>' +
+          '<td><input type="text" value="' + escapeHtml(row.name || '') + '" onchange="updateScenarioEditorSearch(' + index + ', \\'name\\', this.value)"></td>' +
+          '<td><input type="text" value="' + escapeHtml(row.query || '') + '" onchange="updateScenarioEditorSearch(' + index + ', \\'query\\', this.value)"></td>' +
+          '<td><input type="text" value="' + escapeHtml(row.category_path || '') + '" onchange="updateScenarioEditorSearch(' + index + ', \\'category_path\\', this.value)"></td>' +
+          '<td><input type="text" value="' + escapeHtml(row.category || '') + '" onchange="updateScenarioEditorSearch(' + index + ', \\'category\\', this.value)"></td>' +
+          '<td><input type="number" value="' + escapeHtml(row.min_price ?? '') + '" onchange="updateScenarioEditorSearch(' + index + ', \\'min_price\\', this.value)"></td>' +
+          '<td><input type="number" value="' + escapeHtml(row.max_price ?? '') + '" onchange="updateScenarioEditorSearch(' + index + ', \\'max_price\\', this.value)"></td>' +
+          '<td><input type="checkbox"' + (row.private_only ? ' checked' : '') + ' onchange="updateScenarioEditorSearch(' + index + ', \\'private_only\\', this.checked)"></td>' +
+          '<td><input type="text" value="' + escapeHtml(row.required_keywords_all || '') + '" placeholder="comma separated" onchange="updateScenarioEditorSearch(' + index + ', \\'required_keywords_all\\', this.value)"></td>' +
+          '<td><input type="text" value="' + escapeHtml(row.excluded_keywords || '') + '" placeholder="comma separated" onchange="updateScenarioEditorSearch(' + index + ', \\'excluded_keywords\\', this.value)"></td>' +
+          '<td><textarea rows="2" placeholder="one group per line" onchange="updateScenarioEditorSearch(' + index + ', \\'required_any_groups\\', this.value)">' + escapeHtml(row.required_any_groups || '') + '</textarea></td>' +
+          '<td class="row-actions">' +
+            ' <button type="button" class="secondary" onclick="moveScenarioEditorSearch(' + index + ', -1)">Up</button>' +
+            ' <button type="button" class="secondary" onclick="moveScenarioEditorSearch(' + index + ', 1)">Down</button>' +
+            ' <button type="button" class="secondary" onclick="removeScenarioEditorSearchRow(' + index + ')">Remove</button>' +
+          '</td>' +
+        '</tr>';
+      }).join('');
+    }
+
+    function updateScenarioEditorSearch(index, field, value) {
+      const row = scenarioEditorDraft.searches[index];
+      if (!row) return;
+      if (field === 'min_price' || field === 'max_price') row[field] = parseInt(value, 10) || 0;
+      else if (field === 'private_only') row[field] = !!value;
+      else row[field] = value;
+    }
+
+    function addScenarioEditorSearchRow() {
+      scenarioEditorDraft.searches.push({
+        name: 'New search',
+        query: '',
+        category_path: '',
+        category: 'misc',
+        min_price: 0,
+        max_price: 999999,
+        private_only: false,
+        seller_type: 'owner',
+        path_slugs: [],
+      });
+      renderScenarioEditorSearches();
+    }
+
+    function removeScenarioEditorSearchRow(index) {
+      scenarioEditorDraft.searches.splice(index, 1);
+      renderScenarioEditorSearches();
+    }
+
+    function moveScenarioEditorSearch(index, delta) {
+      const next = index + delta;
+      if (next < 0 || next >= scenarioEditorDraft.searches.length) return;
+      const tmp = scenarioEditorDraft.searches[index];
+      scenarioEditorDraft.searches[index] = scenarioEditorDraft.searches[next];
+      scenarioEditorDraft.searches[next] = tmp;
+      renderScenarioEditorSearches();
+    }
+
+    function collectScenarioEditorPayload() {
+      return {
+        enabled: document.getElementById('scenarioEditorEnabled').checked,
+        min_price: parseInt(document.getElementById('scenarioEditorMinPrice').value, 10) || 0,
+        max_price: parseInt(document.getElementById('scenarioEditorMaxPrice').value, 10) || 0,
+        required_keywords_all: arrayFromCsv(document.getElementById('scenarioEditorRequired').value),
+        excluded_keywords: arrayFromCsv(document.getElementById('scenarioEditorExcluded').value),
+        required_any_groups: parseOrGroupsFromText(document.getElementById('scenarioEditorOrGroups').value),
+        searches: scenarioEditorDraft.searches.map(row => {
+          const entry = {
+            name: String(row.name || '').trim(),
+            query: String(row.query || '').trim(),
+            category_path: String(row.category_path || '').trim(),
+            category: String(row.category || '').trim(),
+            min_price: parseInt(row.min_price, 10) || 0,
+            max_price: parseInt(row.max_price, 10) || 0,
+            private_only: !!row.private_only,
+            seller_type: row.seller_type || 'owner',
+            path_slugs: row.path_slugs || [],
+          };
+          applySearchKeywordPayload(entry, row);
+          return entry;
+        }),
+      };
+    }
+
+    async function saveScenarioEditor() {
+      const scenario = getEditorScenario();
+      const msg = document.getElementById('scenarioEditorMsg');
+      if (!scenario) return;
+      msg.textContent = 'Saving...';
+      msg.className = 'msg';
+      const r = await fetch('/api/junkmail-crawler/scenarios/' + encodeURIComponent(scenario.slug), {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(collectScenarioEditorPayload()),
+      });
+      const d = await r.json();
+      if (!r.ok || !d.ok) {
+        msg.textContent = d.error || 'Save failed';
+        msg.className = 'msg error';
+        return;
+      }
+      msg.textContent = 'Saved. Listing matches recomputed.';
+      msg.className = 'msg success';
+      await loadScenarioMeta();
+      renderScenarioTabs();
+      loadListings();
+    }
+
+    function setScenarioTab(slug) {
+      junkmailState.activeScenario = slug;
+      renderScenarioTabs();
+      loadListings();
+      loadChanges();
+    }
+
+    function toggleGroup(el) {
+      const body = el && el.nextElementSibling;
+      if (!body) return;
+      body.classList.toggle('collapsed');
+      const icon = el.querySelector('.collapse-icon');
+      if (icon) icon.textContent = body.classList.contains('collapsed') ? '▶' : '▼';
+    }
+
+    async function loadStatus() {
+      const r = await fetch('/api/junkmail-crawler/status');
+      const d = await r.json();
+      const el = document.getElementById('status');
+      const btn = document.getElementById('runBtn');
+      const freshBtn = document.getElementById('freshBtn');
+      btn.disabled = d.running;
+      if (freshBtn) freshBtn.disabled = d.running;
+      let text = d.running ? 'Running...' : (d.last_run ? 'Last run: ' + (d.last_run.finished_at || d.last_run.started_at) + ' (' + (d.last_run.status || '') + ')' : 'Never run');
+      if (!d.running && d.resumable) {
+        text += ' | Interrupted crawl can resume (Run now continues where it left off)';
+      }
+      el.textContent = text;
+      el.className = 'status' + (d.running ? ' running' : '');
+      if (d.next_scheduled) el.textContent += ' | Next: ' + d.next_scheduled.slice(0,16);
+    }
+
+    function openFreshConfirmModal() {
+      document.getElementById('freshConfirmModal').classList.remove('hidden');
+    }
+
+    function closeFreshConfirmModal() {
+      document.getElementById('freshConfirmModal').classList.add('hidden');
+    }
+
+    async function confirmStartFresh() {
+      closeFreshConfirmModal();
+      await runNow(true);
+    }
+
+    function showCrawlerError(message) {
+      document.getElementById('crawlerErrorMessage').textContent = message || 'Something went wrong.';
+      document.getElementById('crawlerErrorModal').classList.remove('hidden');
+    }
+
+    function closeCrawlerErrorModal() {
+      document.getElementById('crawlerErrorModal').classList.add('hidden');
+    }
+
+    async function runNow(fresh) {
+      const r = await fetch('/api/junkmail-crawler/run-now', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fresh: !!fresh }),
+      });
+      const d = await r.json();
+      if (d.ok) loadStatus();
+      else showCrawlerError(d.error || 'Failed to start crawl');
+    }
+
+    async function saveLocationPreferences() {
+      const payload = {
+        preferred_provinces: arrayFromCsv(document.getElementById('prefProvinces').value),
+        preferred_cities: arrayFromCsv(document.getElementById('prefCities').value),
+        preferred_suburbs: arrayFromCsv(document.getElementById('prefSuburbs').value),
+      };
+      const r = await fetch('/api/junkmail-crawler/location-preferences', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const d = await r.json();
+      if (!d.ok) {
+        alert(d.error || 'Could not save location preferences');
+        return;
+      }
+      junkmailState.locationPreferences = d.location_preferences || payload;
+      loadListings();
+    }
+
+    function filterMap(filters) {
+      const map = {};
+      for (const row of filters || []) map[row.key] = row.value;
+      return map;
+    }
+
+    async function loadCrawlLimits() {
+      const r = await fetch('/api/junkmail-crawler/filters');
+      const d = await r.json();
+      const map = filterMap(d.filters);
+      document.getElementById('limitMaxPages').value = map.max_pages_per_search || '5';
+      document.getElementById('limitMaxStored').value = map.max_stored_per_search || '50';
+      document.getElementById('limitStoreOnlyMatches').checked =
+        String(map.store_only_scenario_matches || 'true').toLowerCase() !== 'false';
+    }
+
+    async function saveCrawlLimits() {
+      const keys = [
+        ['max_pages_per_search', document.getElementById('limitMaxPages').value || '5'],
+        ['max_stored_per_search', document.getElementById('limitMaxStored').value || '50'],
+        ['store_only_scenario_matches', document.getElementById('limitStoreOnlyMatches').checked ? 'true' : 'false'],
+      ];
+      for (const [key, value] of keys) {
+        const r = await fetch('/api/junkmail-crawler/filters', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ key, value }),
+        });
+        const d = await r.json();
+        if (!d.ok) {
+          alert('Could not save ' + key);
+          return;
+        }
+      }
+      alert('Crawl limits saved');
+    }
+
+    async function loadListings() {
+      const params = new URLSearchParams();
+      const cat = document.getElementById('filterCategory').value;
+      const minP = document.getElementById('filterMinPrice').value;
+      const maxP = document.getElementById('filterMaxPrice').value;
+      const kw = document.getElementById('filterKeyword').value;
+      const newToday = document.getElementById('filterNewToday').checked;
+      const priceChanged = document.getElementById('filterPriceChanged').checked;
+      if (junkmailState.activeScenario !== 'all') params.set('scenario', junkmailState.activeScenario);
+      if (cat) params.set('category', cat);
+      if (minP) params.set('min_price', minP);
+      if (maxP) params.set('max_price', maxP);
+      if (kw) params.set('keyword', kw);
+      if (newToday) params.set('new_today', '1');
+      if (priceChanged) params.set('price_changed', '1');
+      params.set('sort', junkmailState.activeScenario === 'all' ? 'last_seen' : 'match_score');
+      params.set('limit', '200');
+      const r = await fetch('/api/junkmail-crawler/listings?' + params);
+      const d = await r.json();
+      const listEl = document.getElementById('listings');
+      const msg = document.getElementById('listingsMsg');
+      if (!d.listings || !d.listings.length) {
+        listEl.innerHTML = '';
+        msg.textContent = 'No listings found. Total: ' + (d.total || 0);
+        return;
+      }
+      const imgBase = '/api/junkmail-crawler/serve-image/';
+      function rowHtml(l) {
+        const scoreColor = l.special_state || l.decision_color || 'red';
+        const priceInfo = 'R' + (l.price ?? '?') + (l.prev_price != null && l.prev_price !== l.price ? ' (was R' + l.prev_price + ')' : '');
+        const thumbs = (l.images || []).slice(0, 4).map(p => '<img src="' + imgBase + encodeURIComponent(p) + '" alt="" loading="lazy">').join('');
+        const detailId = 'detail-' + l.id;
+        const badges = [];
+        if (l.is_new) badges.push(scoreBadge('New', 'new'));
+        badges.push(scoreBadge((l.special_state || l.decision_color || 'red').toUpperCase(), scoreColor));
+        if (l.location_grade) badges.push(scoreBadge('Loc ' + l.location_grade + ' ' + Math.round(l.location_score || 0), l.location_grade));
+        if (l.match_score != null) badges.push(scoreBadge('Fit ' + Math.round(l.match_score) + '%', l.match_score >= 80 ? 'green' : (l.match_score >= 60 ? 'yellow' : 'red')));
+        if (l.urgency_hits && l.urgency_hits.length) badges.push(scoreBadge('Urgent', l.strong_urgency_hits && l.strong_urgency_hits.length ? 'black' : 'yellow'));
+        if (l.attributes && l.attributes.year) badges.push(scoreBadge('Year ' + l.attributes.year, 'yellow'));
+        if (l.attributes && l.attributes.gpu_model) badges.push(scoreBadge(l.attributes.gpu_model, 'green'));
+        if (l.attributes && l.attributes.system_ram_gb) badges.push(scoreBadge(l.attributes.system_ram_gb + 'GB RAM', 'green'));
+        if (l.attributes && l.attributes.phone_model) badges.push(scoreBadge(l.attributes.phone_model, 'green'));
+        const visibleScenarioText = l.visible_scenarios && l.visible_scenarios.length ? ('Scenarios: ' + l.visible_scenarios.join(', ')) : 'No strict scenario match yet';
+        const detailCards = [
+          ['Price', priceInfo],
+          ['Posted', l.posted_at || '-'],
+          ['First seen', l.first_seen || '-'],
+          ['Last seen', l.last_seen || '-'],
+          ['Location', l.location || '-'],
+          ['Seller', l.seller || '-'],
+          ['Condition', l.condition || '-'],
+          ['Category', l.category || '-'],
+          ['Location score', String(Math.round(l.location_score || 0))],
+          ['Scenario fit', l.match_score != null ? (Math.round(l.match_score) + '%') : '-'],
+          ['Urgency score', l.urgency_score != null ? (Math.round(l.urgency_score) + '%') : '-'],
+          ['Notes', l.notes || '-'],
+        ];
+        const detailHtml = detailCards.map(([label, value]) => '<div class="detail-card"><strong>' + escapeHtml(label) + '</strong>' + escapeHtml(value) + '</div>').join('');
+        const signals = (l.reasons || []).length ? ('<div class="detail-card"><strong>Rejected reasons</strong>' + escapeHtml(l.reasons.join(', ')) + '</div>') : '';
+        const desc = l.description ? '<div class="detail-card" style="grid-column:1/-1;"><strong>Description</strong>' + escapeHtml(l.description) + '</div>' : '';
+        const attrs = l.attributes && Object.keys(l.attributes).length
+          ? '<div class="detail-card" style="grid-column:1/-1;"><strong>Extracted attributes</strong>' + escapeHtml(JSON.stringify(l.attributes, null, 2)) + '</div>'
+          : '';
+        return ''
+          + '<div class="listing-card ' + scoreColor + '">'
+          + '  <div class="listing-header">'
+          + '    <div>'
+          + '      <div class="listing-title"><label class="listing-checkbox"><input type="checkbox" class="listing-cb" value="' + l.id + '"></label><a href="' + escapeHtml(l.url) + '" target="_blank">' + escapeHtml(l.title || 'Untitled') + '</a></div>'
+          + '      <div class="listing-meta"><span>' + escapeHtml(l.location || '-') + '</span><span>' + escapeHtml(priceInfo) + '</span><span>Posted: ' + escapeHtml(l.posted_at || '-') + '</span><span>Seen: ' + escapeHtml((l.day_on != null ? l.day_on + 'd' : '-')) + '</span></div>'
+          + '      <div class="listing-badges">' + badges.join('') + '</div>'
+          + '      <div class="inline-note" style="margin-top:0.45rem;">' + escapeHtml(visibleScenarioText) + '</div>'
+          + '    </div>'
+          + '    <div class="listing-actions">'
+          + '      <button class="secondary" onclick="toggleListingDetail(\\'' + detailId + '\\')">Details</button>'
+          + '      <button class="secondary" onclick="fetchImages(' + l.id + ')" id="fetchBtn' + l.id + '">Get images</button>'
+          + '      <button class="secondary" onclick="ignoreListing(' + l.id + ')">Ignore</button>'
+          + '    </div>'
+          + '  </div>'
+          + '  <div class="listing-details" id="' + detailId + '">'
+          + '    <div class="detail-grid">' + detailHtml + signals + desc + attrs + '</div>'
+          + '    <div class="thumbs">' + thumbs + '</div>'
+          + '  </div>'
+          + '</div>';
+      }
+      const groups = {};
+      for (const l of d.listings) {
+        const prov = (l.province || 'Other').trim() || 'Other';
+        const city = (l.city || 'Other').trim() || 'Other';
+        const sub = (l.suburb || 'Other').trim() || 'Other';
+        if (!groups[prov]) groups[prov] = {};
+        if (!groups[prov][city]) groups[prov][city] = {};
+        if (!groups[prov][city][sub]) groups[prov][city][sub] = [];
+        groups[prov][city][sub].push(l);
+      }
+      const provOrder = Object.keys(groups).sort((a,b) => (a === 'Other' ? 1 : 0) - (b === 'Other' ? 1 : 0) || a.localeCompare(b));
+      let html = '';
+      for (const prov of provOrder) {
+        const cities = groups[prov];
+        const cityOrder = Object.keys(cities).sort((a,b) => (a === 'Other' ? 1 : 0) - (b === 'Other' ? 1 : 0) || a.localeCompare(b));
+        html += '<div class="group-province"><div class="group-province-header" onclick="toggleGroup(this)"><span class="collapse-icon">▼</span>' + escapeHtml(prov) + '</div><div class="group-body">';
+        for (const city of cityOrder) {
+          const suburbs = cities[city];
+          const subOrder = Object.keys(suburbs).sort((a,b) => (a === 'Other' ? 1 : 0) - (b === 'Other' ? 1 : 0) || a.localeCompare(b));
+          html += '<div class="group-city"><div class="group-city-header">' + escapeHtml(city) + '</div>';
+          for (const sub of subOrder) {
+            const items = suburbs[sub];
+            html += '<div class="group-suburb"><div class="group-suburb-header" onclick="toggleGroup(this)"><span class="collapse-icon">▼</span>' + escapeHtml(sub) + ' (' + items.length + ')</div><div class="group-body">';
+            html += items.map(rowHtml).join('');
+            html += '</div></div>';
+          }
+          html += '</div>';
+        }
+        html += '</div></div>';
+      }
+      listEl.innerHTML = html;
+      msg.textContent = junkmailState.activeScenario !== 'all'
+        ? ('Total: ' + d.total + ' strict matches in this scenario.')
+        : ('Total: ' + d.total + ' stored listings (' + (junkmailState.matchSummary?.matched_unique || junkmailState.counts.all?.matched_unique || 0) + ' match a scenario tab).');
+    }
+    function toggleListingDetail(id) {
+      const el = document.getElementById(id);
+      if (el) el.classList.toggle('open');
+    }
+    async function fetchImages(id) {
+      const btn = document.getElementById('fetchBtn' + id);
+      if (btn) btn.disabled = true;
+      try {
+        const r = await fetch('/api/junkmail-crawler/listings/' + id + '/fetch-images', { method: 'POST' });
+        const d = await r.json();
+        if (d.ok) loadListings();
+        else alert(d.error || 'Failed to fetch images');
+      } finally {
+        if (btn) btn.disabled = false;
+      }
+    }
+    function escapeHtml(s) {
+      if (s == null) return '';
+      const d = document.createElement('div');
+      d.textContent = String(s);
+      return d.innerHTML;
+    }
+    async function ignoreListing(id) {
+      const r = await fetch('/api/junkmail-crawler/listings/' + id, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ignored: 1 }) });
+      if (r.ok) loadListings();
+    }
+    async function loadIgnoreRules() {
+      const r = await fetch('/api/junkmail-crawler/ignore-rules');
+      const d = await r.json();
+      const ul = document.getElementById('rulesList');
+      ul.innerHTML = (d.rules || []).map(r => '<li>' + escapeHtml(r.rule_type) + ': ' + escapeHtml(r.value) + ' <button class="secondary" onclick="deleteRule(' + r.id + ')">Delete</button></li>').join('');
+    }
+    async function addIgnoreRule() {
+      const type = document.getElementById('ruleType').value;
+      const val = document.getElementById('ruleValue').value.trim();
+      if (!val) return;
+      const r = await fetch('/api/junkmail-crawler/ignore-rules', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ rule_type: type, value: val }) });
+      const d = await r.json();
+      if (d.ok) { document.getElementById('ruleValue').value = ''; loadIgnoreRules(); }
+      else alert(d.error || 'Failed');
+    }
+    async function deleteRule(id) {
+      await fetch('/api/junkmail-crawler/ignore-rules/' + id, { method: 'DELETE' });
+      loadIgnoreRules();
+    }
+    async function loadChanges() {
+      const params = new URLSearchParams({ limit: '20' });
+      if (junkmailState.activeScenario !== 'all') params.set('scenario', junkmailState.activeScenario);
+      const r = await fetch('/api/junkmail-crawler/changes?' + params);
+      const d = await r.json();
+      const el = document.getElementById('changes');
+      if (!d.changes || !d.changes.length) { el.innerHTML = '<p class="msg">No price changes yet.</p>'; return; }
+      el.innerHTML = '<ul class="changes-list">' + d.changes.map(c => '<li><a href="' + escapeHtml(c.url) + '" target="_blank">' + escapeHtml(c.title || '') + '</a> R' + (c.old_price || '?') + ' → R' + c.new_price + ' (' + (c.changed_at || '').slice(0,10) + ')</li>').join('') + '</ul>';
+    }
+    const COMPANY_STORAGE_KEY = 'edit_products_company_slug';
+    async function loadCompanies() {
+      const r = await fetch('/api/companies');
+      const d = await r.json();
+      const companies = d.companies || [];
+      const sel = document.getElementById('exportCompany');
+      sel.innerHTML = '<option value="">Select company</option>' + companies.map(c => '<option value="' + escapeHtml(c) + '">' + escapeHtml(c) + '</option>').join('');
+      const saved = (localStorage.getItem(COMPANY_STORAGE_KEY) || '').trim();
+      if (saved && companies.includes(saved)) sel.value = saved;
+      else if (companies.length === 1) sel.value = companies[0];
+      if (saved && !companies.includes(saved)) localStorage.removeItem(COMPANY_STORAGE_KEY);
+      if (sel.value) localStorage.setItem(COMPANY_STORAGE_KEY, sel.value);
+      sel.onchange = () => {
+        const v = (sel.value || '').trim();
+        if (v) localStorage.setItem(COMPANY_STORAGE_KEY, v);
+        else localStorage.removeItem(COMPANY_STORAGE_KEY);
+      };
+    }
+    async function exportSelected() {
+      const company = document.getElementById('exportCompany').value;
+      if (!company) { alert('Select company first'); return; }
+      const ids = Array.from(document.querySelectorAll('.listing-cb:checked')).map(cb => parseInt(cb.value, 10)).filter(n => !isNaN(n));
+      if (!ids.length) { alert('Select at least one listing'); return; }
+      const r = await fetch('/api/junkmail-crawler/export-to-products', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ listing_ids: ids, company_slug: company }) });
+      const d = await r.json();
+      if (d.ok) alert(d.message || 'Exported ' + d.added + ' listing(s)');
+      else alert(d.error || 'Export failed');
+    }
+    loadScenarioMeta().then(() => {
+      loadListings();
+      loadChanges();
+    });
+    loadCrawlLimits();
     loadCompanies();
     loadStatus();
     loadIgnoreRules();
@@ -1636,12 +3168,23 @@ MAKRO_CRAWLER_HTML = """
         return '<li><a href="' + escapeHtml(c.url) + '" target="_blank">' + escapeHtml(c.title || '') + '</a> ' + oldP + ' → ' + newP + ' (' + (c.changed_at || '').slice(0,10) + ')</li>';
       }).join('') + '</ul>';
     }
+    const COMPANY_STORAGE_KEY = 'edit_products_company_slug';
     async function loadCompanies() {
       const r = await fetch('/api/companies');
       const d = await r.json();
       const companies = d.companies || [];
       const sel = document.getElementById('exportCompany');
       sel.innerHTML = '<option value="">Select company</option>' + companies.map(c => '<option value="' + escapeHtml(c) + '">' + escapeHtml(c) + '</option>').join('');
+      const saved = (localStorage.getItem(COMPANY_STORAGE_KEY) || '').trim();
+      if (saved && companies.includes(saved)) sel.value = saved;
+      else if (companies.length === 1) sel.value = companies[0];
+      if (saved && !companies.includes(saved)) localStorage.removeItem(COMPANY_STORAGE_KEY);
+      if (sel.value) localStorage.setItem(COMPANY_STORAGE_KEY, sel.value);
+      sel.onchange = () => {
+        const v = (sel.value || '').trim();
+        if (v) localStorage.setItem(COMPANY_STORAGE_KEY, v);
+        else localStorage.removeItem(COMPANY_STORAGE_KEY);
+      };
     }
     async function exportSelected() {
       const company = document.getElementById('exportCompany').value;
@@ -1664,6 +3207,181 @@ MAKRO_CRAWLER_HTML = """
 </html>
 """
 
+MANUAL_HTML = """
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Manual product - Product Scrapers</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: system-ui, sans-serif; margin: 2rem; background: #1a1a1a; color: #e0e0e0; max-width: 720px; }
+    .top-nav { margin-bottom: 1.5rem; }
+    .top-nav a { color: #2a7; text-decoration: none; }
+    .top-nav a:hover { text-decoration: underline; }
+    h1 { font-size: 1.5rem; margin-bottom: 0.5rem; }
+    .field { margin-bottom: 1rem; }
+    .field label { display: block; font-size: 0.85rem; color: #888; margin-bottom: 0.35rem; }
+    input, select, textarea { width: 100%; padding: 0.55rem 0.65rem; background: #252525; border: 1px solid #444; border-radius: 6px; color: #e0e0e0; font-size: 1rem; }
+    textarea { min-height: 88px; resize: vertical; }
+    .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+    @media (max-width: 560px) { .row2 { grid-template-columns: 1fr; } }
+    button.primary { margin-top: 0.5rem; padding: 0.75rem 1.25rem; font-size: 1rem; border: none; border-radius: 6px; cursor: pointer; background: #2a7; color: #fff; }
+    button.primary:hover { background: #3b8; }
+    button.primary:disabled { opacity: 0.5; cursor: not-allowed; }
+    #msg { margin-top: 1rem; padding: 0.75rem; border-radius: 6px; background: #252525; border: 1px solid #333; white-space: pre-wrap; font-size: 0.9rem; }
+    #msg.ok { border-color: #2a7; }
+    #msg.err { border-color: #c44; }
+    #previews { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.5rem; }
+    #previews img { width: 72px; height: 72px; object-fit: cover; border-radius: 6px; border: 1px solid #444; }
+    .hint { font-size: 0.8rem; color: #666; margin-top: 0.25rem; }
+  </style>
+</head>
+<body>
+  <div class="top-nav"><a href="/">← Dashboard</a> · <a href="/scrape">Scrape</a> · <a href="/edit/">Edit</a></div>
+  <h1>Manual product</h1>
+  <p class="hint">Saves to <code>manual/scraped/</code> (or <code>companies/&lt;slug&gt;/</code> when a company is selected). Sync to django-crm from <strong>Edit products</strong>.</p>
+
+  <form id="manualForm">
+    <div class="field">
+      <label for="company_slug">Company (optional — uses company folder when set)</label>
+      <select id="company_slug" name="company_slug"><option value="">No company folder</option></select>
+    </div>
+    <div class="field">
+      <label for="name">Name *</label>
+      <input id="name" name="name" required autocomplete="off">
+    </div>
+    <div class="field">
+      <label for="short_description">Short description</label>
+      <input id="short_description" name="short_description" autocomplete="off">
+    </div>
+    <div class="field">
+      <label for="description">Description</label>
+      <textarea id="description" name="description"></textarea>
+    </div>
+    <div class="row2">
+      <div class="field">
+        <label for="price">Price (ZAR) *</label>
+        <input id="price" name="price" type="number" step="0.01" min="0.01" required>
+      </div>
+      <div class="field">
+        <label for="compare_at_price">Compare-at price (optional)</label>
+        <input id="compare_at_price" name="compare_at_price" type="number" step="0.01" min="0">
+      </div>
+    </div>
+    <div class="row2">
+      <div class="field">
+        <label for="stock_quantity">Stock quantity</label>
+        <input id="stock_quantity" name="stock_quantity" type="number" min="0" value="0">
+      </div>
+      <div class="field">
+        <label for="status">Status</label>
+        <select id="status" name="status">
+          <option value="active">active</option>
+          <option value="draft">draft</option>
+          <option value="inactive">inactive</option>
+        </select>
+      </div>
+    </div>
+    <div class="field">
+      <label for="tags">Tags (comma-separated)</label>
+      <input id="tags" name="tags" placeholder="e.g. featured, hardware">
+    </div>
+    <div class="field">
+      <label for="source_url">Source URL (optional)</label>
+      <input id="source_url" name="source_url" type="url" placeholder="https://example.com">
+    </div>
+    <div class="field">
+      <label for="goods_id">Goods ID (optional — leave blank to auto-generate)</label>
+      <input id="goods_id" name="goods_id" autocomplete="off">
+    </div>
+    <div class="field">
+      <label for="images">Images (files)</label>
+      <input id="images" name="images" type="file" accept="image/*" multiple>
+      <div id="previews"></div>
+    </div>
+    <div class="field">
+      <label for="image_urls_text">Image URLs (one per line, https)</label>
+      <textarea id="image_urls_text" name="image_urls_text" placeholder="https://example.com/a.jpg"></textarea>
+    </div>
+    <button type="submit" class="primary" id="saveBtn">Save product</button>
+  </form>
+  <div id="msg" style="display:none;"></div>
+
+  <script>
+    const COMPANY_STORAGE_KEY = 'edit_products_company_slug';
+    async function loadCompanies() {
+      try {
+        const r = await fetch('/api/companies');
+        const d = await r.json();
+        const companies = d.companies || [];
+        const sel = document.getElementById('company_slug');
+        const opts = '<option value="">No company folder</option>' + companies.map(function (c) {
+          return '<option value="' + String(c).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;') + '">' + String(c).replace(/&/g,'&amp;').replace(/</g,'&lt;') + '</option>';
+        }).join('');
+        sel.innerHTML = opts;
+        const saved = (localStorage.getItem(COMPANY_STORAGE_KEY) || '').trim();
+        if (saved && companies.indexOf(saved) >= 0) sel.value = saved;
+        sel.onchange = function () {
+          var v = (sel.value || '').trim();
+          if (v) localStorage.setItem(COMPANY_STORAGE_KEY, v);
+        };
+      } catch (e) {
+        document.getElementById('company_slug').innerHTML = '<option value="">Error loading companies</option>';
+      }
+    }
+    function showMsg(text, ok) {
+      var el = document.getElementById('msg');
+      el.style.display = 'block';
+      el.textContent = text;
+      el.className = ok ? 'ok' : 'err';
+    }
+    document.getElementById('images').addEventListener('change', function () {
+      var prev = document.getElementById('previews');
+      prev.innerHTML = '';
+      var files = this.files || [];
+      for (var i = 0; i < files.length; i++) {
+        var u = URL.createObjectURL(files[i]);
+        var img = document.createElement('img');
+        img.src = u;
+        img.alt = '';
+        prev.appendChild(img);
+      }
+    });
+    document.getElementById('manualForm').addEventListener('submit', async function (e) {
+      e.preventDefault();
+      var btn = document.getElementById('saveBtn');
+      btn.disabled = true;
+      showMsg('Saving…', true);
+      try {
+        var fd = new FormData(this);
+        var urlsText = (document.getElementById('image_urls_text').value || '').trim();
+        var nl = String.fromCharCode(10);
+        urlsText.split(nl).forEach(function (line) {
+          var t = line.replace(String.fromCharCode(13), '').trim();
+          if (t.indexOf('http') === 0) fd.append('image_urls', t);
+        });
+        var res = await fetch('/api/manual/save', { method: 'POST', body: fd });
+        var data = await res.json();
+        if (!data.ok) {
+          showMsg(data.error || 'Save failed', false);
+        } else {
+          showMsg(['Saved. goods_id: ', data.goods_id, data.path, '', 'Open Edit to review and sync:', window.location.origin + '/edit/'].join(String.fromCharCode(10)), true);
+          document.getElementById('manualForm').reset();
+          document.getElementById('previews').innerHTML = '';
+        }
+      } catch (err) {
+        showMsg(String(err), false);
+      }
+      btn.disabled = false;
+    });
+    loadCompanies();
+  </script>
+</body>
+</html>
+"""
+
 
 @app.route("/")
 def index():
@@ -1680,6 +3398,66 @@ def scrape_page():
     return render_template_string(SCRAPE_HTML)
 
 
+@app.route("/company-suppliers")
+def company_suppliers_page():
+    return render_template_string(COMPANY_SUPPLIERS_HTML)
+
+
+@app.route("/manual")
+def manual_page():
+    return render_template_string(MANUAL_HTML)
+
+
+@app.route("/api/manual/save", methods=["POST"])
+def api_manual_save():
+    from manual.save_manual import save_manual_product
+
+    company_raw = (request.form.get("company_slug") or "").strip()
+    company_slug = company_raw or None
+
+    cmp_raw = (request.form.get("compare_at_price") or "").strip()
+    compare_at = None
+    if cmp_raw:
+        try:
+            compare_at = float(cmp_raw)
+        except ValueError:
+            compare_at = None
+
+    try:
+        price_val = float(request.form.get("price") or 0)
+    except ValueError:
+        return jsonify({"ok": False, "error": "Invalid price"}), 400
+
+    try:
+        stock_val = int(request.form.get("stock_quantity") or 0)
+    except ValueError:
+        stock_val = 0
+
+    payload = {
+        "name": (request.form.get("name") or "").strip(),
+        "description": (request.form.get("description") or "").strip(),
+        "short_description": (request.form.get("short_description") or "").strip(),
+        "price": price_val,
+        "compare_at_price": compare_at,
+        "stock_quantity": stock_val,
+        "status": (request.form.get("status") or "active").strip(),
+        "tags": [t.strip() for t in (request.form.get("tags") or "").split(",") if t.strip()],
+        "url": (request.form.get("source_url") or "").strip() or None,
+        "goods_id": (request.form.get("goods_id") or "").strip() or None,
+    }
+    files = list(request.files.getlist("images"))
+    image_urls = [u.strip() for u in request.form.getlist("image_urls") if (u or "").strip()]
+
+    try:
+        result = save_manual_product(payload, files, image_urls, company_slug)
+    except ValueError as exc:
+        return jsonify({"ok": False, "error": str(exc)}), 400
+    except Exception as exc:
+        LOG.exception("manual save failed: %s", exc)
+        return jsonify({"ok": False, "error": str(exc)}), 500
+    return jsonify(result)
+
+
 @app.route("/api/suppliers")
 def api_suppliers():
     return jsonify(get_suppliers())
@@ -1690,6 +3468,74 @@ def api_companies():
     """Return company slugs for Orders and Edit pages."""
     from shared.config import get_target_slugs
     return jsonify({"companies": get_target_slugs()})
+
+
+@app.route("/api/company-suppliers", methods=["GET"])
+def api_company_suppliers_get():
+    """Return configured scrapeable supplier slugs for a company (empty list = no restriction)."""
+    company = (request.args.get("company") or "").strip()
+    if not company:
+        return jsonify({"suppliers": []})
+    return jsonify({"suppliers": get_company_suppliers(company)})
+
+
+@app.route("/api/company-suppliers", methods=["POST"])
+def api_company_suppliers_post():
+    """Replace allowed scraper suppliers for a company. Empty list clears (show all on Scrape page)."""
+    data = request.get_json(silent=True) or {}
+    company = (data.get("company") or "").strip()
+    raw = data.get("suppliers")
+    if not company:
+        return jsonify({"ok": False, "error": "company required"}), 400
+    if raw is None:
+        slugs: list = []
+    elif isinstance(raw, list):
+        slugs = raw
+    else:
+        return jsonify({"ok": False, "error": "suppliers must be a list"}), 400
+    canonical: list[str] = []
+    for item in slugs:
+        t = str(item or "").strip()
+        if not t:
+            continue
+        info = get_supplier(t)
+        if not info or not (info.module_name or "").strip():
+            return jsonify({"ok": False, "error": f"Unknown or non-scrapeable supplier: {t}"}), 400
+        canonical.append(info.slug)
+    try:
+        save_company_suppliers(company, canonical if canonical else None)
+    except ValueError as e:
+        return jsonify({"ok": False, "error": str(e)}), 400
+    return jsonify({"ok": True})
+
+
+@app.route("/api/company-supplier", methods=["GET"])
+def api_company_supplier_get():
+    """Legacy: first configured supplier for a company (prefer /api/company-suppliers)."""
+    company = (request.args.get("company") or "").strip()
+    if not company:
+        return jsonify({"supplier": ""})
+    slugs = get_company_suppliers(company)
+    return jsonify({"supplier": slugs[0] if slugs else ""})
+
+
+@app.route("/api/company-supplier", methods=["POST"])
+def api_company_supplier_post():
+    """Legacy: set a single supplier (replaces list with one entry). Prefer /api/company-suppliers."""
+    data = request.get_json(silent=True) or {}
+    company = (data.get("company") or "").strip()
+    supplier = (data.get("supplier") or "").strip()
+    if not company:
+        return jsonify({"ok": False, "error": "company required"})
+    if supplier:
+        info = get_supplier(supplier)
+        if not info or not (info.module_name or "").strip():
+            return jsonify({"ok": False, "error": "Unknown or non-scrapeable supplier"})
+    try:
+        save_company_suppliers(company, [supplier] if supplier else None)
+    except ValueError as e:
+        return jsonify({"ok": False, "error": str(e)})
+    return jsonify({"ok": True})
 
 
 @app.route("/api/orders")
@@ -2078,6 +3924,9 @@ def _supplier_has_session(supplier_slug: str) -> bool:
         "ubuy": "ubuy/ubuy_session.json",
         "myrunway": "myrunway/myrunway_session.json",
         "onedayonly": "onedayonly/onedayonly_session.json",
+        "soundselect": "soundselect/soundselect_session.json",
+        "gimmeonline": "gimmeonline/gimmeonline_session.json",
+        "ahm": "ahm/ahm_session.json",
     }
     # Persistent Chrome profiles
     chrome_profiles = {
@@ -2229,12 +4078,7 @@ def api_scrape_status():
     info = get_supplier(scrape_supplier) if scrape_supplier else None
     has_session = False
     if info and info.supports_interactive:
-        session_files = {
-            "temu": PRODUCTS_ROOT / "temu/temu_session.json",
-            "gumtree": PRODUCTS_ROOT / "gumtree/gumtree_session.json",
-            "ubuy": PRODUCTS_ROOT / "ubuy/ubuy_session.json",
-        }
-        has_session = session_files.get(scrape_supplier, Path()).exists()
+        has_session = _supplier_has_session(scrape_supplier or "")
     return jsonify({"running": scrape_running, "supplier": scrape_supplier, "has_session": has_session})
 
 
@@ -2254,6 +4098,10 @@ def api_scrape_start():
     if not info:
         LOG.warning("Scrape start rejected: unknown supplier %s", slug)
         return jsonify({"ok": False, "error": f"Unknown supplier: {slug}"})
+    if not (info.module_name or "").strip():
+        return jsonify(
+            {"ok": False, "error": "This supplier has no scraper. Add products via Manual instead."}
+        )
 
     # Suppliers that use tiered markup must have tiers configured (no fallback)
     if slug in SUPPLIERS_USING_TIERED_MARKUP:
@@ -2328,14 +4176,17 @@ def api_scrape_save_session():
 
 
 # --- Gumtree Crawler ---
-def _run_gumtree_crawler():
+def _run_gumtree_crawler(*, fresh: bool = False):
     """Run gumtree crawler in background thread."""
     global _gumtree_crawler_running
     try:
         from gumtree_crawler.crawler import run_crawl
         from gumtree_crawler.db import init_schema
         init_schema()
-        run_crawl(progress_cb=lambda m: LOG.info("[gumtree-crawler] %s", m))
+        run_crawl(
+            resume=not fresh,
+            progress_cb=lambda m: LOG.info("[gumtree-crawler] %s", m),
+        )
     except Exception as e:
         LOG.exception("Gumtree crawler error: %s", e)
     finally:
@@ -2344,6 +4195,7 @@ def _run_gumtree_crawler():
 
 def _gumtree_scheduler_loop():
     """Daily scheduler: run crawler once per day at 06:00 local."""
+    global _gumtree_crawler_running
     import time
     from datetime import datetime, timedelta
     while True:
@@ -2364,7 +4216,7 @@ def _gumtree_scheduler_loop():
             _gumtree_crawler_running = True
         _t = threading.Thread(target=_run_gumtree_crawler, daemon=True)
         _t.start()
-        _t.join(timeout=7200)  # wait up to 2h for crawler to finish
+        _t.join(timeout=7200)  # wait up to 2h for crawler segment to finish
         time.sleep(3600)  # cooldown before next cycle
 
 
@@ -2372,6 +4224,57 @@ if GUMTREE_CRAWLER_SCHEDULER_ENABLED:
     _gumtree_scheduler_thread = threading.Thread(target=_gumtree_scheduler_loop, daemon=True)
     _gumtree_scheduler_thread.start()
     LOG.info("Gumtree crawler daily scheduler enabled")
+
+
+# --- Junk Mail Crawler ---
+def _run_junkmail_crawler(*, fresh: bool = False):
+    """Run Junk Mail crawler in background thread."""
+    global _junkmail_crawler_running
+    try:
+        from junkmail_crawler.crawler import run_crawl
+        from junkmail_crawler.db import init_schema
+        init_schema()
+        run_crawl(
+            resume=not fresh,
+            progress_cb=lambda m: LOG.info("[junkmail-crawler] %s", m),
+        )
+    except Exception as e:
+        LOG.exception("Junk Mail crawler error: %s", e)
+    finally:
+        _junkmail_crawler_running = False
+
+
+def _junkmail_scheduler_loop():
+    """Daily scheduler: run Junk Mail crawler once per day at 06:00 local."""
+    global _junkmail_crawler_running
+    import time
+    from datetime import datetime, timedelta
+    while True:
+        if not JUNKMAIL_CRAWLER_SCHEDULER_ENABLED:
+            time.sleep(3600)
+            continue
+        now = datetime.now()
+        next_run = now.replace(hour=6, minute=0, second=0, microsecond=0)
+        if now >= next_run:
+            next_run = next_run + timedelta(days=1)
+        wait_secs = (next_run - datetime.now()).total_seconds()
+        if wait_secs > 0:
+            time.sleep(min(wait_secs, 3600))
+        with _junkmail_crawler_lock:
+            if _junkmail_crawler_running:
+                time.sleep(3600)
+                continue
+            _junkmail_crawler_running = True
+        _t = threading.Thread(target=_run_junkmail_crawler, daemon=True)
+        _t.start()
+        _t.join(timeout=7200)
+        time.sleep(3600)
+
+
+if JUNKMAIL_CRAWLER_SCHEDULER_ENABLED:
+    _junkmail_scheduler_thread = threading.Thread(target=_junkmail_scheduler_loop, daemon=True)
+    _junkmail_scheduler_thread.start()
+    LOG.info("Junk Mail crawler daily scheduler enabled")
 
 
 # --- Makro Crawler ---
@@ -2397,6 +4300,7 @@ def _run_makro_crawler():
 
 def _makro_scheduler_loop():
     """Daily scheduler: run Makro crawler once per day at 06:30 local."""
+    global _makro_crawler_running
     import time
     from datetime import datetime, timedelta
     while True:
@@ -2534,6 +4438,86 @@ def _gumtree_row_to_dict(row, location_preferences=None, scenario_cfg=None):
     return d
 
 
+
+
+def _junkmail_safe_json(value, default):
+    return _gumtree_safe_json(value, default)
+
+
+def _junkmail_parse_location(loc, url=None):
+    from junkmail_crawler.parsers import parse_junkmail_location
+
+    return parse_junkmail_location(loc, url)
+
+
+def _junkmail_row_to_dict(row, location_preferences=None, scenario_cfg=None):
+    from datetime import datetime, timezone
+
+    from junkmail_crawler.scoring import score_location
+
+    d = dict(row)
+    for key, value in list(d.items()):
+        if hasattr(value, "isoformat"):
+            d[key] = value.isoformat() if value else None
+    d["images"] = _junkmail_safe_json(d.get("images_json"), [])
+    d["attributes"] = _junkmail_safe_json(d.get("attributes_json"), {})
+    d["signals"] = _junkmail_safe_json(d.get("signals_json"), {})
+    d["reasons"] = _junkmail_safe_json(d.get("reasons_json"), [])
+    d["visible_scenarios"] = [s for s in str(d.get("scenario_slugs") or "").split(",") if s]
+    if not d["visible_scenarios"] and d.get("scenario_slug"):
+        d["visible_scenarios"] = [d["scenario_slug"]]
+    d["urgency_hits"] = list(d["signals"].get("urgency_hits") or [])
+    d["strong_urgency_hits"] = [hit for hit in d["urgency_hits"] if hit in ("moving", "relocating", "immigrating", "desperate", "must go")]
+    price = d.get("price")
+    prev = d.get("prev_price")
+    if prev is not None and price is not None and prev != price:
+        d["trend"] = "up" if price > prev else "down"
+    else:
+        d["trend"] = None
+    first_seen = d.get("first_seen")
+    if first_seen:
+        try:
+            dt = datetime.fromisoformat(str(first_seen).replace("Z", "+00:00"))
+            d["day_on"] = max(0, (datetime.now(timezone.utc) - dt).days)
+        except Exception:
+            d["day_on"] = None
+    else:
+        d["day_on"] = None
+    d["is_new"] = bool(first_seen and str(first_seen)[:10] == datetime.now().strftime("%Y-%m-%d"))
+    province, city, suburb = _junkmail_parse_location(d.get("location"), d.get("url"))
+    d["province"] = province
+    d["city"] = city
+    d["suburb"] = suburb
+    location_eval = score_location(province, city, suburb, location_preferences or {})
+    d["location_score"] = location_eval["score"]
+    d["location_grade"] = location_eval["grade"]
+    d["location_matches"] = location_eval["matched_levels"]
+    d["posted_at"] = d.get("posted_at") or "-"
+    weights = (scenario_cfg or {}).get("sort_weights") or {}
+    match_w = float(weights.get("match", 0.5))
+    location_w = float(weights.get("location", 0.2))
+    price_w = float(weights.get("price", 0.15))
+    urgency_w = float(weights.get("urgency", max(0.0, 1.0 - (match_w + location_w + price_w))))
+    total_weight = max(match_w + location_w + price_w + urgency_w, 0.01)
+    overall_score = (
+        (float(d.get("match_score") or 0.0) * match_w)
+        + (float(d.get("location_score") or 0.0) * location_w)
+        + (float(d.get("price_score") or 0.0) * price_w)
+        + (float(d.get("urgency_score") or 0.0) * urgency_w)
+    ) / total_weight
+    d["overall_score"] = round(overall_score, 2)
+    if d.get("special_state") == "black":
+        d["decision_color"] = "black"
+    elif d.get("special_state") == "gold":
+        d["decision_color"] = "gold"
+    elif overall_score >= 78:
+        d["decision_color"] = "green"
+    elif overall_score >= 58:
+        d["decision_color"] = "yellow"
+    else:
+        d["decision_color"] = "red"
+    return d
+
 @app.route("/gumtree-crawler")
 def gumtree_crawler_page():
     """Gumtree crawler UI page."""
@@ -2549,16 +4533,23 @@ def makro_crawler_page():
 @app.route("/api/gumtree-crawler/scenarios")
 def api_gumtree_crawler_scenarios():
     """Return scenario config, counts, and location preferences."""
-    from gumtree_crawler.db import get_location_preferences, get_scenario_counts, list_listings, list_scenario_configs
+    from gumtree_crawler.db import get_location_preferences, get_listing_match_summary, get_scenario_counts, list_listings, list_scenario_configs
 
     scenarios = list_scenario_configs(enabled_only=False)
     counts = get_scenario_counts()
-    _, all_total = list_listings(limit=1, offset=0, include_ignored=False)
-    counts["all"] = {"visible_count": all_total, "total_count": all_total}
+    summary = get_listing_match_summary()
+    counts["all"] = {
+        "visible_count": summary["stored"],
+        "total_count": summary["stored"],
+        "matched_unique": summary["matched_unique"],
+        "matched_rows": summary["matched_rows"],
+        "unmatched": summary["unmatched"],
+    }
     return jsonify(
         {
             "scenarios": scenarios,
             "counts": counts,
+            "match_summary": summary,
             "location_preferences": get_location_preferences() or {},
         }
     )
@@ -2567,12 +4558,18 @@ def api_gumtree_crawler_scenarios():
 @app.route("/api/gumtree-crawler/scenarios/<slug>", methods=["PATCH"])
 def api_gumtree_crawler_scenario_patch(slug):
     """Update a saved Gumtree scenario config."""
-    from gumtree_crawler.db import save_scenario_config
+    from gumtree_crawler.db import recompute_all_scenario_matches, save_scenario_config
+    from gumtree_crawler.scenario_edit import normalize_gumtree_scenario_patch
 
     data = request.get_json(silent=True) or {}
-    scenario = save_scenario_config(slug, data)
+    try:
+        normalized = normalize_gumtree_scenario_patch(data)
+    except ValueError as exc:
+        return jsonify({"ok": False, "error": str(exc)}), 400
+    scenario = save_scenario_config(slug, normalized)
     if not scenario:
         return jsonify({"ok": False, "error": "Scenario not found"}), 404
+    recompute_all_scenario_matches()
     return jsonify({"ok": True, "scenario": scenario})
 
 
@@ -2660,22 +4657,30 @@ def api_gumtree_crawler_changes():
 
 @app.route("/api/gumtree-crawler/run-now", methods=["POST"])
 def api_gumtree_crawler_run_now():
-    """Trigger crawler run immediately."""
+    """Trigger crawler run immediately. Resumes interrupted job unless fresh=true."""
     global _gumtree_crawler_running, _gumtree_crawler_thread
+    data = request.get_json(silent=True) or {}
+    fresh = bool(data.get("fresh"))
     with _gumtree_crawler_lock:
         if _gumtree_crawler_running:
             return jsonify({"ok": False, "error": "Crawl already running"})
         _gumtree_crawler_running = True
-    _gumtree_crawler_thread = threading.Thread(target=_run_gumtree_crawler, daemon=True)
+    _gumtree_crawler_thread = threading.Thread(
+        target=_run_gumtree_crawler,
+        kwargs={"fresh": fresh},
+        daemon=True,
+    )
     _gumtree_crawler_thread.start()
-    return jsonify({"ok": True, "message": "Crawl started"})
+    message = "Fresh crawl started" if fresh else "Crawl started (will resume if interrupted job exists)"
+    return jsonify({"ok": True, "message": message, "fresh": fresh})
 
 
 @app.route("/api/gumtree-crawler/status")
 def api_gumtree_crawler_status():
-    """Crawler run status: last run, next run, running."""
-    from gumtree_crawler.db import get_last_search_job
+    """Crawler run status: last run, next run, running, resumable."""
+    from gumtree_crawler.db import get_last_search_job, get_resumable_job
     job = get_last_search_job()
+    resumable = get_resumable_job()
     last_run = None
     if job:
         last_run = {
@@ -2688,6 +4693,15 @@ def api_gumtree_crawler_status():
             "listings_updated": job.get("listings_updated"),
             "error": job.get("error"),
         }
+    resumable_info = None
+    if resumable and not _gumtree_crawler_running:
+        cp = resumable.get("checkpoint") or {}
+        resumable_info = {
+            "job_id": resumable.get("id"),
+            "search_index": cp.get("search_index"),
+            "card_index": cp.get("card_index"),
+            "processed_count": len(cp.get("processed_ad_ids") or []),
+        }
     from datetime import datetime
     now = datetime.now()
     next_run = now.replace(hour=6, minute=0, second=0, microsecond=0)
@@ -2697,6 +4711,8 @@ def api_gumtree_crawler_status():
     return jsonify({
         "running": _gumtree_crawler_running,
         "last_run": last_run,
+        "resumable": resumable_info is not None,
+        "resumable_job": resumable_info,
         "next_scheduled": next_run.isoformat() if GUMTREE_CRAWLER_SCHEDULER_ENABLED else None,
         "scheduler_enabled": GUMTREE_CRAWLER_SCHEDULER_ENABLED,
     })
@@ -3022,6 +5038,526 @@ def api_gumtree_crawler_serve_image(subpath):
     if not gumtree_dir:
         return jsonify({"error": "Not found"}), 404
     base = Path(gumtree_dir)
+    if ".." in subpath or subpath.startswith("/"):
+        return jsonify({"error": "Invalid path"}), 400
+    path = base / subpath
+    if not path.exists() or not path.is_file():
+        return jsonify({"error": "Not found"}), 404
+    return send_from_directory(base, subpath, mimetype=None)
+
+
+@app.route("/junkmail-crawler")
+def junkmail_crawler_page():
+    """Junk Mail crawler UI page."""
+    return render_template_string(JUNKMAIL_CRAWLER_HTML)
+
+
+@app.route("/api/junkmail-crawler/scenarios")
+def api_junkmail_crawler_scenarios():
+    """Return scenario config, counts, and location preferences."""
+    from junkmail_crawler.db import get_location_preferences, get_listing_match_summary, get_scenario_counts, list_listings, list_scenario_configs
+
+    scenarios = list_scenario_configs(enabled_only=False)
+    counts = get_scenario_counts()
+    summary = get_listing_match_summary()
+    counts["all"] = {
+        "visible_count": summary["stored"],
+        "total_count": summary["stored"],
+        "matched_unique": summary["matched_unique"],
+        "matched_rows": summary["matched_rows"],
+        "unmatched": summary["unmatched"],
+    }
+    return jsonify(
+        {
+            "scenarios": scenarios,
+            "counts": counts,
+            "match_summary": summary,
+            "location_preferences": get_location_preferences() or {},
+        }
+    )
+
+
+@app.route("/api/junkmail-crawler/scenarios/<slug>", methods=["PATCH"])
+def api_junkmail_crawler_scenario_patch(slug):
+    """Update a saved Junk Mail scenario config."""
+    from junkmail_crawler.db import recompute_all_scenario_matches, save_scenario_config
+    from junkmail_crawler.scenario_edit import normalize_junkmail_scenario_patch
+
+    data = request.get_json(silent=True) or {}
+    try:
+        normalized = normalize_junkmail_scenario_patch(data)
+    except ValueError as exc:
+        return jsonify({"ok": False, "error": str(exc)}), 400
+    scenario = save_scenario_config(slug, normalized)
+    if not scenario:
+        return jsonify({"ok": False, "error": "Scenario not found"}), 404
+    recompute_all_scenario_matches()
+    return jsonify({"ok": True, "scenario": scenario})
+
+
+@app.route("/api/junkmail-crawler/location-preferences", methods=["GET", "POST"])
+def api_junkmail_crawler_location_preferences():
+    """Get or update Junk Mail location preferences."""
+    from junkmail_crawler.db import get_location_preferences, save_location_preferences
+
+    if request.method == "GET":
+        return jsonify({"location_preferences": get_location_preferences() or {}})
+    data = request.get_json(silent=True) or {}
+    prefs = {
+        "preferred_provinces": [str(v).strip() for v in data.get("preferred_provinces") or [] if str(v).strip()],
+        "preferred_cities": [str(v).strip() for v in data.get("preferred_cities") or [] if str(v).strip()],
+        "preferred_suburbs": [str(v).strip() for v in data.get("preferred_suburbs") or [] if str(v).strip()],
+    }
+    saved = save_location_preferences(prefs)
+    return jsonify({"ok": True, "location_preferences": saved})
+
+
+@app.route("/api/junkmail-crawler/listings")
+def api_junkmail_crawler_listings():
+    """List crawler listings with strict scenario filtering when requested."""
+    from junkmail_crawler.db import get_location_preferences, get_scenario_config, list_listings
+
+    scenario_slug = request.args.get("scenario", "").strip() or None
+    scenario_cfg = get_scenario_config(scenario_slug) if scenario_slug else None
+    category = request.args.get("category", "").strip() or None
+    min_price = request.args.get("min_price", type=int)
+    max_price = request.args.get("max_price", type=int)
+    keyword = request.args.get("keyword", "").strip() or None
+    location = request.args.get("location", "").strip() or None
+    seller = request.args.get("seller", "").strip() or None
+    new_today = request.args.get("new_today", "").lower() in ("1", "true", "yes")
+    price_changed = request.args.get("price_changed", "").lower() in ("1", "true", "yes")
+    include_ignored = request.args.get("include_ignored", "").lower() in ("1", "true", "yes")
+    sort = request.args.get("sort", "match_score" if scenario_cfg else "last_seen")
+    order = request.args.get("order", "desc")
+    limit = min(request.args.get("limit", 50, type=int), 200)
+    offset = request.args.get("offset", 0, type=int)
+    rows, total = list_listings(
+        category=category,
+        min_price=min_price,
+        max_price=max_price,
+        keyword=keyword,
+        location=location,
+        seller=seller,
+        new_today=new_today,
+        price_changed=price_changed,
+        include_ignored=include_ignored,
+        sort=sort,
+        order=order,
+        limit=limit,
+        offset=offset,
+        scenario_slug=scenario_cfg.get("slug") if scenario_cfg else None,
+    )
+    prefs = get_location_preferences() or {}
+    return jsonify(
+        {
+            "listings": [_junkmail_row_to_dict(r, prefs, scenario_cfg) for r in rows],
+            "total": total,
+            "scenario": scenario_cfg,
+        }
+    )
+
+
+@app.route("/api/junkmail-crawler/changes")
+def api_junkmail_crawler_changes():
+    """Recent price changes, optionally scoped to one scenario."""
+    from junkmail_crawler.db import get_price_changes
+
+    scenario_slug = request.args.get("scenario", "").strip() or None
+    limit = min(request.args.get("limit", 50, type=int), 100)
+    changes = get_price_changes(limit=limit, scenario_slug=scenario_slug)
+
+    def _row_to_dict(row):
+        d = dict(row)
+        for k, v in d.items():
+            if hasattr(v, "isoformat"):
+                d[k] = v.isoformat() if v else None
+        return d
+
+    return jsonify({"changes": [_row_to_dict(c) for c in changes]})
+
+
+@app.route("/api/junkmail-crawler/run-now", methods=["POST"])
+def api_junkmail_crawler_run_now():
+    """Trigger Junk Mail crawler run immediately. Resumes interrupted job unless fresh=true."""
+    global _junkmail_crawler_running, _junkmail_crawler_thread
+    data = request.get_json(silent=True) or {}
+    fresh = bool(data.get("fresh"))
+    with _junkmail_crawler_lock:
+        if _junkmail_crawler_running:
+            return jsonify({"ok": False, "error": "Crawl already running"})
+        _junkmail_crawler_running = True
+    _junkmail_crawler_thread = threading.Thread(
+        target=_run_junkmail_crawler,
+        kwargs={"fresh": fresh},
+        daemon=True,
+    )
+    _junkmail_crawler_thread.start()
+    message = "Fresh crawl started" if fresh else "Crawl started (will resume if interrupted job exists)"
+    return jsonify({"ok": True, "message": message, "fresh": fresh})
+
+
+@app.route("/api/junkmail-crawler/status")
+def api_junkmail_crawler_status():
+    """Crawler run status: last run, next run, running, resumable."""
+    from junkmail_crawler.db import get_last_search_job, get_resumable_job
+    job = get_last_search_job()
+    resumable = get_resumable_job()
+    last_run = None
+    if job:
+        last_run = {
+            "id": job.get("id"),
+            "started_at": job.get("started_at"),
+            "finished_at": job.get("finished_at"),
+            "status": job.get("status"),
+            "listings_found": job.get("listings_found"),
+            "listings_new": job.get("listings_new"),
+            "listings_updated": job.get("listings_updated"),
+            "error": job.get("error"),
+        }
+    resumable_info = None
+    if resumable and not _junkmail_crawler_running:
+        cp = resumable.get("checkpoint") or {}
+        resumable_info = {
+            "job_id": resumable.get("id"),
+            "search_index": cp.get("search_index"),
+            "card_index": cp.get("card_index"),
+            "processed_count": len(cp.get("processed_ad_ids") or []),
+        }
+    from datetime import datetime
+    now = datetime.now()
+    next_run = now.replace(hour=6, minute=0, second=0, microsecond=0)
+    if now >= next_run:
+        from datetime import timedelta
+        next_run = next_run + timedelta(days=1)
+    return jsonify({
+        "running": _junkmail_crawler_running,
+        "last_run": last_run,
+        "resumable": resumable_info is not None,
+        "resumable_job": resumable_info,
+        "next_scheduled": next_run.isoformat() if JUNKMAIL_CRAWLER_SCHEDULER_ENABLED else None,
+        "scheduler_enabled": JUNKMAIL_CRAWLER_SCHEDULER_ENABLED,
+    })
+
+
+@app.route("/api/junkmail-crawler/ignore-rules", methods=["GET"])
+def api_junkmail_crawler_ignore_rules_get():
+    """List ignore rules."""
+    from junkmail_crawler.db import list_ignore_rules
+    active_only = request.args.get("active_only", "").lower() in ("1", "true", "yes")
+    rules = list_ignore_rules(active_only=active_only)
+    def _row_to_dict(r):
+        d = dict(r)
+        for k, v in d.items():
+            if hasattr(v, "isoformat"):
+                d[k] = v.isoformat() if v else None
+        return d
+    return jsonify({"rules": [_row_to_dict(r) for r in rules]})
+
+
+@app.route("/api/junkmail-crawler/ignore-rules", methods=["POST"])
+def api_junkmail_crawler_ignore_rules_post():
+    """Create ignore rule."""
+    from junkmail_crawler.db import create_ignore_rule, get_ignore_rule
+    data = request.get_json(silent=True) or {}
+    rule_type = (data.get("rule_type") or "").strip()
+    value = (data.get("value") or "").strip()
+    if not rule_type or not value:
+        return jsonify({"ok": False, "error": "rule_type and value required"})
+    if rule_type not in ("url", "ad_id", "title_keyword", "seller"):
+        return jsonify({"ok": False, "error": "rule_type must be url, ad_id, title_keyword, or seller"})
+    rid = create_ignore_rule(rule_type, value)
+    rule = get_ignore_rule(rid)
+    return jsonify({"ok": True, "rule": dict(rule) if rule else {"id": rid}})
+
+
+@app.route("/api/junkmail-crawler/ignore-rules/<int:rule_id>", methods=["GET"])
+def api_junkmail_crawler_ignore_rule_get(rule_id):
+    """Get ignore rule."""
+    from junkmail_crawler.db import get_ignore_rule
+    rule = get_ignore_rule(rule_id)
+    if not rule:
+        return jsonify({"error": "Not found"}), 404
+    return jsonify(dict(rule))
+
+
+@app.route("/api/junkmail-crawler/ignore-rules/<int:rule_id>", methods=["PATCH"])
+def api_junkmail_crawler_ignore_rule_patch(rule_id):
+    """Update ignore rule."""
+    from junkmail_crawler.db import update_ignore_rule, get_ignore_rule
+    data = request.get_json(silent=True) or {}
+    rule = update_ignore_rule(
+        rule_id,
+        rule_type=data.get("rule_type"),
+        value=data.get("value"),
+        active=data.get("active"),
+    )
+    if not rule:
+        return jsonify({"error": "Not found"}), 404
+    return jsonify({"ok": True, "rule": dict(rule)})
+
+
+@app.route("/api/junkmail-crawler/ignore-rules/<int:rule_id>", methods=["DELETE"])
+def api_junkmail_crawler_ignore_rule_delete(rule_id):
+    """Delete ignore rule."""
+    from junkmail_crawler.db import delete_ignore_rule
+    if not delete_ignore_rule(rule_id):
+        return jsonify({"error": "Not found"}), 404
+    return jsonify({"ok": True})
+
+
+@app.route("/api/junkmail-crawler/filters", methods=["GET"])
+def api_junkmail_crawler_filters_get():
+    """List crawler filters."""
+    from junkmail_crawler.db import list_crawler_filters
+    filters = list_crawler_filters()
+    def _row_to_dict(r):
+        d = dict(r)
+        for k, v in d.items():
+            if hasattr(v, "isoformat"):
+                d[k] = v.isoformat() if v else None
+        return d
+    return jsonify({"filters": [_row_to_dict(f) for f in filters]})
+
+
+@app.route("/api/junkmail-crawler/filters", methods=["POST"])
+def api_junkmail_crawler_filters_post():
+    """Create or update crawler filter."""
+    from junkmail_crawler.db import set_crawler_filter
+    data = request.get_json(silent=True) or {}
+    key = (data.get("key") or "").strip()
+    value = (data.get("value") or "").strip() or None
+    if not key:
+        return jsonify({"ok": False, "error": "key required"})
+    set_crawler_filter(key, value)
+    return jsonify({"ok": True})
+
+
+@app.route("/api/junkmail-crawler/filters/<key>", methods=["DELETE"])
+def api_junkmail_crawler_filter_delete(key):
+    """Delete crawler filter."""
+    from junkmail_crawler.db import delete_crawler_filter
+    if not delete_crawler_filter(key):
+        return jsonify({"error": "Not found"}), 404
+    return jsonify({"ok": True})
+
+
+@app.route("/api/junkmail-crawler/export-to-products", methods=["POST"])
+def api_junkmail_crawler_export_to_products():
+    """Export selected crawler listings to Junk Mail products.json for a company. Includes fetched images."""
+    import json
+    import shutil
+    from junkmail_crawler.db import get_listing_by_id
+    from shared.suppliers import get_sources_for_edit, get_company_scoped_dir
+    from edit_products import load_products, save_products
+
+    data = request.get_json(silent=True) or {}
+    listing_ids = data.get("listing_ids") or []
+    company_slug = (data.get("company_slug") or "").strip()
+    if not company_slug:
+        return jsonify({"ok": False, "error": "company_slug required"})
+    if not listing_ids:
+        return jsonify({"ok": False, "error": "listing_ids required (non-empty list)"})
+
+    sources = get_sources_for_edit()
+    if "junkmail" not in sources:
+        return jsonify({"ok": False, "error": "Junk Mail source not configured"})
+
+    junkmail_dir = Path(sources["junkmail"])
+    company_dir = get_company_scoped_dir(junkmail_dir, company_slug)
+    company_images_dir = company_dir / "images"
+    company_images_dir.mkdir(parents=True, exist_ok=True)
+
+    products = load_products("junkmail", sources, company_slug)
+    existing_urls = {str(p.get("url") or "").strip() for p in products if p.get("url")}
+
+    try:
+        from shared.utils import clean_description, first_n_words, remove_special_chars, truncate_name, get_compare_at_price
+        from junkmail.scrape_junkmail import apply_junkmail_markup
+        from junkmail_crawler.parsers import normalize_junkmail_listing_url
+    except ImportError as e:
+        return jsonify({"ok": False, "error": f"Import error: {e}"})
+
+    added = 0
+    skipped = 0
+    for lid in listing_ids:
+        if not isinstance(lid, int):
+            try:
+                lid = int(lid)
+            except (TypeError, ValueError):
+                continue
+        listing = get_listing_by_id(lid)
+        if not listing or listing.get("ignored"):
+            skipped += 1
+            continue
+        url = normalize_junkmail_listing_url((listing.get("url") or "").strip())
+        if not url or url in existing_urls:
+            skipped += 1
+            continue
+        title = listing.get("title") or "Unknown Listing"
+        price = listing.get("price") or 0
+        ad_id = listing.get("ad_id") or "unknown"
+        name = first_n_words(remove_special_chars(title), 5)
+        short_desc = truncate_name(title, 150)
+        sell_price = apply_junkmail_markup(price) if price else 0
+        compare_at_price = get_compare_at_price(sell_price) if sell_price else None
+
+        # Include fetched images: copy from shared to company dir
+        image_paths = []
+        ij = listing.get("images_json")
+        if ij and isinstance(ij, str):
+            try:
+                image_paths = json.loads(ij)
+            except Exception:
+                pass
+        product_images = []
+        for rel_path in image_paths:
+            if ".." in rel_path or rel_path.startswith("/"):
+                continue
+            src = junkmail_dir / rel_path
+            if src.exists() and src.is_file():
+                dst = company_images_dir / Path(rel_path).name
+                try:
+                    shutil.copy2(src, dst)
+                    product_images.append(f"images/{dst.name}")
+                except Exception as e:
+                    LOG.warning("Could not copy image %s: %s", rel_path, e)
+
+        product = {
+            "url": url,
+            "name": name,
+            "description": clean_description(listing.get("description") or title)[:2000],
+            "short_description": short_desc,
+            "price": sell_price,
+            "compare_at_price": compare_at_price,
+            "cost": float(price),
+            "junkmail_price": price,
+            "images": product_images,
+            "variants": [],
+            "in_stock": True,
+            "stock_quantity": 1,
+            "status": "active",
+            "tags": ["vintage"],
+            "ad_id": ad_id,
+            "location": listing.get("location"),
+        }
+        products.append(product)
+        existing_urls.add(url)
+        added += 1
+
+    if added > 0:
+        save_products("junkmail", products, sources, company_slug)
+
+    return jsonify({
+        "ok": True,
+        "added": added,
+        "skipped": skipped,
+        "message": f"Exported {added} listing(s) to Junk Mail products. Open Edit Products → Junk Mail to sync to API.",
+    })
+
+
+@app.route("/api/junkmail-crawler/listings/<int:listing_id>", methods=["PATCH"])
+def api_junkmail_crawler_listing_patch(listing_id):
+    """Update listing (notes, ignored)."""
+    from junkmail_crawler.db import patch_listing, get_listing_by_id
+    data = request.get_json(silent=True) or {}
+    notes = data.get("notes")
+    ignored = data.get("ignored")
+    if notes is None and ignored is None:
+        return jsonify({"error": "notes or ignored required"}), 400
+    listing = patch_listing(listing_id, notes=notes, ignored=ignored)
+    if not listing:
+        return jsonify({"error": "Not found"}), 404
+    def _row_to_dict(r):
+        d = dict(r)
+        for k, v in d.items():
+            if hasattr(v, "isoformat"):
+                d[k] = v.isoformat() if v else None
+        return d
+    return jsonify({"ok": True, "listing": _row_to_dict(listing)})
+
+
+@app.route("/api/junkmail-crawler/listings/<int:listing_id>/fetch-images", methods=["POST"])
+def api_junkmail_crawler_fetch_images(listing_id):
+    """Fetch images from listing detail page, download to junkmail/scraped/images/, persist paths."""
+    from junkmail.cdp_fetch import fetch_html, open_junkmail_browser
+    from junkmail_crawler.db import get_listing_by_id, set_listing_images, patch_listing
+    from junkmail_crawler.parsers import extract_detail_images, resolve_listing_url, normalize_junkmail_listing_url
+    from shared.suppliers import get_sources_for_edit
+    import requests
+
+    listing = get_listing_by_id(listing_id)
+    if not listing:
+        return jsonify({"ok": False, "error": "Listing not found"}), 404
+    url = normalize_junkmail_listing_url((listing.get("url") or "").strip())
+    if not url:
+        return jsonify({"ok": False, "error": "Invalid listing URL"}), 400
+
+    sources = get_sources_for_edit()
+    junkmail_dir = sources.get("junkmail")
+    if not junkmail_dir:
+        return jsonify({"ok": False, "error": "Junk Mail source not configured"}), 500
+    images_dir = Path(junkmail_dir) / "images"
+    images_dir.mkdir(parents=True, exist_ok=True)
+
+    jm = None
+    try:
+        jm = open_junkmail_browser(log=lambda m: LOG.info("[junkmail-fetch-images] %s", m))
+        html = fetch_html(jm, url, log=lambda m: LOG.info("[junkmail-fetch-images] %s", m))
+        canonical = resolve_listing_url(html, request_url=url, page_url=jm.last_fetched_url)
+        if canonical and canonical != url:
+            patch_listing(listing_id, url=canonical)
+            url = canonical
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
+    finally:
+        if jm is not None:
+            jm.close()
+
+    image_urls = extract_detail_images(html)
+    if not image_urls:
+        return jsonify({"ok": False, "error": "No images found on page"}), 404
+
+    ad_id = listing.get("ad_id") or "unknown"
+    session = requests.Session()
+    session.headers.update({
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
+        "Accept": "image/avif,image/webp,*/*",
+    })
+    saved_paths = []
+    for i, img_url in enumerate(image_urls[:10], 1):
+        try:
+            resp = session.get(img_url, timeout=15)
+            resp.raise_for_status()
+            ext = ".jpg"
+            ct = resp.headers.get("content-type", "")
+            if "png" in ct:
+                ext = ".png"
+            elif "webp" in ct:
+                ext = ".webp"
+            fname = f"{ad_id}_{i:02d}{ext}"
+            out_path = images_dir / fname
+            out_path.write_bytes(resp.content)
+            saved_paths.append(f"images/{fname}")
+        except Exception as e:
+            LOG.warning("Could not download image %s: %s", img_url[:50], e)
+
+    if not saved_paths:
+        return jsonify({"ok": False, "error": "Could not download any images"}), 500
+
+    set_listing_images(listing_id, saved_paths)
+    return jsonify({"ok": True, "count": len(saved_paths), "images": saved_paths})
+
+
+@app.route("/api/junkmail-crawler/serve-image/<path:subpath>")
+def api_junkmail_crawler_serve_image(subpath):
+    """Serve fetched images from junkmail/scraped for preview."""
+    from shared.suppliers import get_sources_for_edit
+    sources = get_sources_for_edit()
+    junkmail_dir = sources.get("junkmail")
+    if not junkmail_dir:
+        return jsonify({"error": "Not found"}), 404
+    base = Path(junkmail_dir)
     if ".." in subpath or subpath.startswith("/"):
         return jsonify({"error": "Invalid path"}), 400
     path = base / subpath

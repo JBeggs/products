@@ -1,0 +1,17 @@
+# Brenda's Preserves — product URLs (one per line), or browse and Save in the UI.
+# Store: https://www.brendas.co.za/
+
+https://www.brendas.co.za/products/sweet-red-pepper-chutney
+https://www.brendas.co.za/products/apple-chutney
+https://www.brendas.co.za/products/dhania-chutney
+https://www.brendas.co.za/products/green-fig-preserve
+https://www.brendas.co.za/products/guava-preserve
+https://www.brendas.co.za/products/orange-preserve-2
+https://www.brendas.co.za/products/peach-jam
+https://www.brendas.co.za/products/tomato-jam
+https://www.brendas.co.za/products/citrus_marmalade
+https://www.brendas.co.za/products/ripe-fig-preserve
+https://www.brendas.co.za/products/strawberry-jam
+https://www.brendas.co.za/products/nastergal-jam
+https://www.brendas.co.za/products/peach-granadilla-jam
+https://www.brendas.co.za/products/apricot-jam

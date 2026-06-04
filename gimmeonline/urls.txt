@@ -1,0 +1,4 @@
+# Gimme Online — product URLs (one per line)
+# Example: https://gimmeonline.co.za/product/...
+
+https://gimmeonline.co.za/

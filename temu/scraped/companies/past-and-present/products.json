@@ -1,245 +1,703 @@
 {
   "products": [
     {
-      "category_id": "bda00297-2044-4f17-8a99-10260153db5a",
-      "category_name": "Appliances",
-      "category_slug": "appliances",
-      "compare_at_price": 655.73,
-      "cost": 354,
-      "description": "Power Mode\nPower Supply\nOperating Voltage\n220V\nBattery Properties\nWithout Battery",
-      "dimension_height": 30,
-      "dimension_length": 20,
-      "dimension_width": 25,
-      "goods_id": "601105181379083",
+      "category_id": "73e6e9b0-0222-455d-a01d-419336713bbf",
+      "category_name": "Welding & Soldering",
+      "category_slug": "welding-soldering",
+      "compare_at_price": 459.93,
+      "cost": 249.6,
+      "description": "Heating Element\nCeramic\nStyle\nGun\nPower Supply\nUSB Powered",
+      "dimension_height": 20,
+      "dimension_length": 10,
+      "dimension_width": 15,
+      "goods_id": "601105315766855",
       "images": [
-        "images/jumperkits_food_proc_601105181379083_01.jpg",
-        "images/jumperkits_food_proc_601105181379083_02.jpg",
-        "images/jumperkits_food_proc_601105181379083_03.jpg",
-        "images/jumperkits_food_proc_601105181379083_04.jpg",
-        "images/jumperkits_food_proc_601105181379083_05.jpg",
-        "images/jumperkits_food_proc_601105181379083_06.jpg",
-        "images/jumperkits_food_proc_601105181379083_07.jpg",
-        "images/jumperkits_food_proc_601105181379083_08.jpg"
+        "images/smart_led_display_so_601105315766855_01.jpg",
+        "images/smart_led_display_so_601105315766855_04.jpg",
+        "images/smart_led_display_so_601105315766855_05.jpg",
+        "images/smart_led_display_so_601105315766855_06.jpg",
+        "images/smart_led_display_so_601105315766855_10.jpg"
       ],
-      "in_stock": false,
-      "name": "JUMPERKITS Food Processor, Electric Meat",
-      "price": 531,
+      "in_stock": true,
+      "name": "Smart LED Display Soldering Iron black",
+      "price": 374.4,
       "production_ids": {
-        "javamellow": "e7853dd0-cc5d-44e0-9dad-436afe564994",
-        "past-and-present": "57d799d1-c939-424b-9ec1-911e68fe1b0c"
+        "past-and-present": "675e6cd2-cde9-4cb3-82b4-b445daca3efd"
       },
-      "short_description": "JUMPERKITS Food Processor, Electric Meat Grinder with 4 Stainless Steel Blades, 2L Food Chopper Small Grinder Meat Processor with 2 Speeds for Vegetable, Fruits, Baby Food, Meat, Garlic, 5 Cups",
+      "short_description": "Smart LED Display Soldering Iron Kit with 3 Tips, Compact Portable USB-C Rechargeable Soldering Iron, 7-Second Fast Heating, Temperature Calibration, Auto Sleep, Easy to Carry and Operate, Suitable for Various Soldering Tasks, Ideal for Home DIY Use",
       "status": "active",
       "stock_quantity": 0,
       "tags": [
         "imports"
       ],
-      "temu_price": 295,
-      "url": "https://www.temu.com/za/-food-processor-electric-meat-grinder-with-4-stainless-steel--2-chopper-small-grinder-meat-processor-with-2--for-vegetable-fruits-baby-food-meat-garlic--g-601105181379083.html?_oak_mp_inf=EIuUvKa71ogBGhZmbGFzaF9zYWxlX2xpc3RfMGZ4ZzZ1IOvKiYvOMw%3D%3D&top_gallery_url=https%3A%2F%2Fimg.kwcdn.com%2Fproduct%2Ffancy%2F25c37f6e-d752-4445-a447-a443556b12f2.jpg&spec_gallery_id=601105181379083&refer_page_sn=10132&freesia_scene=116&_oak_freesia_scene=116&_oak_rec_ext_1=NTc4MDA&refer_page_el_sn=201401&_x_channel_src=1&_x_channel_scene=spike&_x_sessn_id=wy92o9b66e&refer_page_name=lightning-deals&refer_page_id=10132_1773307849839_b6jqg7fea8",
+      "temu_price": 208,
+      "timed_duration_minutes": 600,
+      "url": "https://www.temu.com/za/smart-led-display-soldering-iron-kit-with-3-tips-compact-portable-usb-c-rechargeable-soldering-iron-7-second-fast-heating-temperature-calibration-auto--to-carry-and--suitable-for--soldering-tasks-ideal-for--use-g-601105315766855.html?_oak_mp_inf=EMfExua71ogBGiBmOGZmODBkZDFmOTE0MjQxYWFmMzAxZTdmMDk2MDU4MCD%2FgduS5zM%3D&top_gallery_url=https%3A%2F%2Fimg.kwcdn.com%2Fproduct%2Ffancy%2F1d864f9c-622c-4688-9560-1469dc80ce64.jpg&spec_gallery_id=28609879942&refer_page_sn=10005&freesia_scene=1&_oak_freesia_scene=1&_oak_rec_ext_1=MzA0MDA&_oak_gallery_order=700519574%2C1161360867%2C1858575790%2C1474364193%2C1933621340&refer_page_el_sn=200024&operate_cart_extend_map=%7B%22add_cart_use_layer%22%3A1%7D&refer_page_name=home&refer_page_id=10005_1780034747829_0om0ispb92&_x_sessn_id=yy7y3c3zau",
       "variants": [],
-      "weight": 1000
+      "weight": 200
     },
     {
-      "category_id": "bda00297-2044-4f17-8a99-10260153db5a",
+      "category_id": "73e6e9b0-0222-455d-a01d-419336713bbf",
       "category_name": "Home & Kitchen",
       "category_slug": "home-kitchen",
-      "compare_at_price": 403.25,
-      "cost": 165.6,
-      "description": "Operation Mode\nSemi-automatic\nPower Supply\nUSB Charging (built-in Battery)\nMaterial\nPlastic",
-      "dimension_height": 15,
-      "dimension_length": 5,
-      "dimension_width": 10,
-      "goods_id": "601103357352888",
+      "compare_at_price": 323.58,
+      "cost": 171.6,
+      "description": "Heating Element\nCeramic\nStyle\nPencil\nPower Supply\nUSB Powered",
+      "dimension_height": 20,
+      "dimension_length": 10,
+      "dimension_width": 15,
+      "goods_id": "606021024067804",
       "images": [
-        "images/a_multifunctional_au_601103357352888_01.jpg",
-        "images/a_multifunctional_au_601103357352888_02.jpg",
-        "images/a_multifunctional_au_601103357352888_03.jpg",
-        "images/a_multifunctional_au_601103357352888_04.jpg",
-        "images/a_multifunctional_au_601103357352888_05.jpg",
-        "images/a_multifunctional_au_601103357352888_06.jpg",
-        "images/a_multifunctional_au_601103357352888_07.jpg",
-        "images/a_multifunctional_au_601103357352888_08.jpg",
-        "images/a_multifunctional_au_601103357352888_09.jpg",
-        "images/a_multifunctional_au_601103357352888_10.jpg"
+        "images/constant_temperature_606021024067804_01.jpg",
+        "images/constant_temperature_606021024067804_02.jpg",
+        "images/constant_temperature_606021024067804_03.jpg",
+        "images/constant_temperature_606021024067804_04.jpg",
+        "images/constant_temperature_606021024067804_05.jpg",
+        "images/constant_temperature_606021024067804_06.jpg",
+        "images/constant_temperature_606021024067804_07.jpg",
+        "images/constant_temperature_606021024067804_08.jpg",
+        "images/constant_temperature_606021024067804_09.jpg",
+        "images/constant_temperature_606021024067804_10.jpg"
       ],
-      "in_stock": false,
-      "name": "A Multifunctional Automatic Sealing Machine,",
-      "price": 372.6,
+      "in_stock": true,
+      "name": "Constant Temperature Digital Display Adjustable",
+      "price": 274.56,
       "production_ids": {
-        "javamellow": "d94227b4-e63e-441e-9c95-7e77f21fcad3",
-        "past-and-present": "1f26ab4d-88d4-4e15-a0e0-92074194a78b"
+        "past-and-present": "a3f33743-c9cf-4115-a14c-26b30e275421"
       },
-      "short_description": "A Multifunctional Automatic Sealing Machine, Portable Wireless Vacuum Device, Equipped with Snack Sealing Capabilities, Can Connect to External Suction And Inflation for Long-Term Food Preservation, Compact And Easy to Use",
+      "short_description": "Constant Temperature Digital Display Adjustable Soldering Iron, Type-C Power Supply, Plug-in Heating Core for Easy Replacement. Battery-free Lightweight Design, Compact and Portable, with Precise and Stable Temperature Control. Professional Soldering",
       "status": "active",
       "stock_quantity": 0,
       "tags": [
         "imports"
       ],
-      "temu_price": 138,
-      "url": "https://www.temu.com/za/a-multifunctional-automatic-sealing-machine-portable-wireless-vacuum-device--with-snack-sealing-capabilities-can-connect-to-external-suction-and-inflation-for-long--food-preservation-compact-and--g-601103357352888.html?_oak_mp_inf=ELi32sC01ogBGhZnb29kc19pbmh0OGlfcmVjb21tZW5kIL7Wi4vOMw%3D%3D&top_gallery_url=https%3A%2F%2Fimg.kwcdn.com%2Fproduct%2Ffancy%2Fe3097690-6563-4a31-a4fb-cf85391e567f.jpg&spec_gallery_id=20080489593&refer_page_sn=10032&freesia_scene=11&_oak_freesia_scene=11&_oak_rec_ext_1=MjEyMDA&_oak_gallery_order=942554624%2C1068064332%2C2058962248%2C433803474%2C2040610077&refer_page_el_sn=200444&refer_page_name=goods&refer_page_id=10032_1773307879963_9ickqxlx1i&_x_sessn_id=wy92o9b66e&_x_channel_src=1&_x_channel_scene=spike",
-      "variants": [
-        "Green",
-        "Beige"
-      ],
-      "weight": 300
-    },
-    {
-      "category_id": "bda00297-2044-4f17-8a99-10260153db5a",
-      "category_name": "Home & Kitchen",
-      "category_slug": "home-kitchen",
-      "compare_at_price": 332.24,
-      "cost": 124.8,
-      "description": "Cookware Features\nInduction stovetop compatible\nMaterial\nStainless Steel\nCookware Finish\nStainless Steel",
-      "dimension_height": 30,
-      "dimension_length": 20,
-      "dimension_width": 25,
-      "goods_id": "601100127576428",
-      "images": [
-        "images/12l_stainless_steel_601100127576428_01.jpg",
-        "images/12l_stainless_steel_601100127576428_02.jpg",
-        "images/12l_stainless_steel_601100127576428_03.jpg",
-        "images/12l_stainless_steel_601100127576428_04.jpg",
-        "images/12l_stainless_steel_601100127576428_05.jpg",
-        "images/12l_stainless_steel_601100127576428_06.jpg",
-        "images/12l_stainless_steel_601100127576428_07.jpg",
-        "images/12l_stainless_steel_601100127576428_08.jpg",
-        "images/12l_stainless_steel_601100127576428_09.jpg",
-        "images/12l_stainless_steel_601100127576428_10.jpg"
-      ],
-      "in_stock": false,
-      "name": "1.2L Stainless Steel Deep Fryer,",
-      "price": 280.8,
-      "production_ids": {
-        "javamellow": "d20a509d-bc97-4bdc-ba44-68447371adfd",
-        "past-and-present": "a851137c-756a-4249-9e1a-c87baf79d3c6"
-      },
-      "short_description": "1.2L Stainless Steel Deep Fryer, a Multifunctional Oil-Saving Mini Fryer for Home Use, Ideal for Heating Milk And Preparing Food, Suitable for Crispy Fries, Fried Potatoes, Fish, And Chicken - an Essential Kitchen Tool for Family Cooking",
-      "status": "active",
-      "stock_quantity": 0,
-      "tags": [
-        "imports"
-      ],
-      "temu_price": 104,
-      "url": "https://www.temu.com/za/1-2l-stainless-steel-deep-fryer-a-multifunctional-oil-saving-mini-fryer-for-home-use-ideal-for-heating-milk-and-preparing-food-suitable-for-crispy-fries--fish-and-chicken-an-essential-kitchen-tool-for-family-cooking-g-601100127576428.html?_oak_mp_inf=EOzC0Lyo1ogBGhZnb29kc19pbmh0OGlfcmVjb21tZW5kIL%2FWi4vOMw%3D%3D&top_gallery_url=https%3A%2F%2Fimg.kwcdn.com%2Fproduct%2Ffancy%2F9440b447-7182-4258-9b4c-b08b7b122b00.jpg&spec_gallery_id=70921&refer_page_sn=10032&freesia_scene=11&_oak_freesia_scene=11&_oak_rec_ext_1=MjA3MDA&_oak_gallery_order=1820041613%2C1971592241%2C1991438408%2C130091262%2C1367545902&refer_page_el_sn=200444&refer_page_name=goods&refer_page_id=10032_1773307879963_9ickqxlx1i&_x_sessn_id=wy92o9b66e&_x_channel_src=1&_x_channel_scene=spike",
+      "temu_price": 143,
+      "timed_duration_minutes": 600,
+      "url": "https://www.temu.com/za/-temperature--adjustable-soldering-iron-type-c-power-supply-plug-in-heating-core-for-easy-replacement-battery-free-lightweight-design-compact-and-portable-with-precise-and-stable-temperature-control-professional-soldering-g-606021024067804.html?_oak_mp_inf=ENzh9p7E5YkBGiBmOGZmODBkZDFmOTE0MjQxYWFmMzAxZTdmMDk2MDU4MCCAgtuS5zM%3D&top_gallery_url=https%3A%2F%2Fimg.kwcdn.com%2Fproduct%2Ffancy%2F81119c4c-a1f2-4582-aed5-f52f516119dc.jpg&spec_gallery_id=39776137277&refer_page_sn=10005&freesia_scene=1&_oak_freesia_scene=1&_oak_rec_ext_1=MjU4MDA&_oak_gallery_order=2103218595%2C1787919713%2C1188628410%2C668031282%2C1498777327&refer_page_el_sn=200024&operate_cart_extend_map=%7B%22add_cart_use_layer%22%3A1%7D&refer_page_name=home&refer_page_id=10005_1780034747829_0om0ispb92&_x_sessn_id=yy7y3c3zau",
       "variants": [],
-      "weight": 1500
+      "weight": 200
     },
     {
-      "category_id": "bda00297-2044-4f17-8a99-10260153db5a",
+      "category_id": "73e6e9b0-0222-455d-a01d-419336713bbf",
+      "category_name": "Welding & Soldering",
+      "category_slug": "welding-soldering",
+      "compare_at_price": 312.5,
+      "cost": 194.4,
+      "description": "Heating Element\nNichrome\nStyle\nPencil\nPower Supply\nUSB Powered",
+      "dimension_height": 20,
+      "dimension_length": 10,
+      "dimension_width": 15,
+      "goods_id": "606046793860117",
+      "images": [
+        "images/portable_soldering_i_606046793860117_01.jpg",
+        "images/portable_soldering_i_606046793860117_02.jpg",
+        "images/portable_soldering_i_606046793860117_03.jpg",
+        "images/portable_soldering_i_606046793860117_04.jpg",
+        "images/portable_soldering_i_606046793860117_05.jpg",
+        "images/portable_soldering_i_606046793860117_06.jpg",
+        "images/portable_soldering_i_606046793860117_07.jpg",
+        "images/portable_soldering_i_606046793860117_08.jpg",
+        "images/portable_soldering_i_606046793860117_09.jpg"
+      ],
+      "in_stock": true,
+      "name": "Portable Soldering Iron, Rechargeable Welding",
+      "price": 311.04,
+      "production_ids": {
+        "past-and-present": "3a9ee91f-0f0b-4aed-b5c1-b5bd7d6ef540"
+      },
+      "short_description": "Portable Soldering Iron, Rechargeable Welding Tool Kit with 3 Replacement Soldering Tips",
+      "status": "active",
+      "stock_quantity": 0,
+      "tags": [
+        "imports"
+      ],
+      "temu_price": 162,
+      "timed_duration_minutes": 600,
+      "url": "https://www.temu.com/za/portable-soldering-iron-rechargeable-welding-tool-kit-with-3-replacement-soldering-tips-g-606046793860117.html?_oak_mp_inf=EJWI9p6k5okBGiBmOGZmODBkZDFmOTE0MjQxYWFmMzAxZTdmMDk2MDU4MCCBgtuS5zM%3D&top_gallery_url=https%3A%2F%2Fimg.kwcdn.com%2Fproduct%2Ffancy%2Fee3d7738-385f-42d2-9b0c-b6cbbda03b85.jpg&spec_gallery_id=39071190581&refer_page_sn=10005&freesia_scene=1&_oak_freesia_scene=1&_oak_rec_ext_1=MjEzMDA&_oak_gallery_order=711825177%2C342869543%2C1331469646%2C868588847%2C333946404&refer_page_el_sn=200024&operate_cart_extend_map=%7B%22add_cart_use_layer%22%3A1%7D&refer_page_name=home&refer_page_id=10005_1780034747829_0om0ispb92&_x_sessn_id=yy7y3c3zau",
+      "variants": [],
+      "weight": 200
+    },
+    {
+      "category_id": "73e6e9b0-0222-455d-a01d-419336713bbf",
       "category_name": "Home & Kitchen",
       "category_slug": "home-kitchen",
-      "compare_at_price": 378.3,
-      "cost": 231.6,
-      "description": "Material\nStainless Steel\nHolidays\nChristmas, Halloween, Easter, Mother's Day\nCan Be Used For Food Contact\nYes",
+      "compare_at_price": 355.94,
+      "cost": 210.0,
+      "description": "Color\nBlack\nPower Supply\nUSB Powered\nBattery Properties\nWithout Battery",
+      "dimension_height": 20,
+      "dimension_length": 10,
+      "dimension_width": 15,
+      "goods_id": "601101616624336",
+      "images": [
+        "images/1_mini_portable_hand_601101616624336_01.jpg",
+        "images/1_mini_portable_hand_601101616624336_02.jpg",
+        "images/1_mini_portable_hand_601101616624336_03.jpg",
+        "images/1_mini_portable_hand_601101616624336_04.jpg",
+        "images/1_mini_portable_hand_601101616624336_05.jpg",
+        "images/1_mini_portable_hand_601101616624336_06.jpg",
+        "images/1_mini_portable_hand_601101616624336_07.jpg",
+        "images/1_mini_portable_hand_601101616624336_08.jpg",
+        "images/1_mini_portable_hand_601101616624336_09.jpg",
+        "images/1_mini_portable_hand_601101616624336_10.jpg"
+      ],
+      "in_stock": true,
+      "name": "1 Mini Portable Handheld Sewing",
+      "price": 315.0,
+      "production_ids": {
+        "past-and-present": "ebe898b2-bfef-4e35-a6ef-232181c2aa54"
+      },
+      "short_description": "1 Mini Portable Handheld Sewing Machine, USB Powered, Wireless Operation, Safe And Durable, Includes And Travel Additions",
+      "status": "active",
+      "stock_quantity": 0,
+      "tags": [
+        "imports"
+      ],
+      "temu_price": 175,
+      "timed_duration_minutes": 600,
+      "url": "https://www.temu.com/za/1-mini-portable-handheld-sewing-machine-usb-powered-wireless--and-durable--and--g-601101616624336.html?_oak_mp_inf=ENDl1IKu1ogBGiBmYWJmYjBkODBjNzQ0ZDg5YTYwNzAyYzZiM2I2NjUyMyCz2IWU5zM%3D&top_gallery_url=https%3A%2F%2Fimg.kwcdn.com%2Fproduct%2Ffancy%2Fb0086523-9cd1-43f1-bd36-0705cc9efe91.jpg&spec_gallery_id=601101616624336&refer_page_sn=10005&freesia_scene=1&_oak_freesia_scene=1&_oak_rec_ext_1=MTc4MDA&_oak_gallery_order=1378161740%2C1682346608%2C568593486%2C931661677%2C1210037875&refer_page_el_sn=200024&operate_cart_extend_map=%7B%22add_cart_use_layer%22%3A1%7D&refer_page_name=home&refer_page_id=10005_1780037543739_uvr2ypltbb&_x_sessn_id=k8e9a1w1er",
+      "variants": [],
+      "weight": 500
+    },
+    {
+      "category_id": "e7442b6a-7734-48db-b8a4-286073a3fd78",
+      "category_name": "Test, Measure & Inspect",
+      "category_slug": "test-measure",
+      "compare_at_price": 136.48,
+      "cost": 63.6,
+      "description": "Material\nPlastic\nMeasurement Accuracy\n0.1\nPower Mode\nBattery Powered",
       "dimension_height": 30,
       "dimension_length": 2,
       "dimension_width": 20,
-      "goods_id": "601102187285283",
+      "goods_id": "601101328087423",
       "images": [
-        "images/3pcs_premium_stainle_601102187285283_01.jpg",
-        "images/3pcs_premium_stainle_601102187285283_02.jpg",
-        "images/3pcs_premium_stainle_601102187285283_03.jpg",
-        "images/3pcs_premium_stainle_601102187285283_04.jpg",
-        "images/3pcs_premium_stainle_601102187285283_05.jpg",
-        "images/3pcs_premium_stainle_601102187285283_06.jpg"
+        "images/goxawee_electronic_d_601101328087423_01.jpg",
+        "images/goxawee_electronic_d_601101328087423_02.jpg",
+        "images/goxawee_electronic_d_601101328087423_03.jpg",
+        "images/goxawee_electronic_d_601101328087423_04.jpg",
+        "images/goxawee_electronic_d_601101328087423_05.jpg",
+        "images/goxawee_electronic_d_601101328087423_06.jpg",
+        "images/goxawee_electronic_d_601101328087423_07.jpg",
+        "images/goxawee_electronic_d_601101328087423_08.jpg",
+        "images/goxawee_electronic_d_601101328087423_09.jpg",
+        "images/goxawee_electronic_d_601101328087423_10.jpg"
       ],
-      "in_stock": false,
-      "name": "3pcs Premium Stainless Steel Cutting",
+      "in_stock": true,
+      "name": "GOXAWEE Electronic Digital Display Vernier",
+      "price": 108.12,
+      "production_ids": {
+        "past-and-present": "5801c2c3-3b2c-44d7-9c21-c3245d2c0764"
+      },
+      "short_description": "GOXAWEE Electronic Digital Display Vernier Caliper 0-150Mm High-Strength Plastic Caliper Measuring Tool Inner And Outer Diameter",
+      "status": "active",
+      "stock_quantity": 0,
+      "tags": [
+        "imports"
+      ],
+      "temu_price": 53,
+      "timed_duration_minutes": 600,
+      "url": "https://www.temu.com/za/-electronic--vernier-caliper-0-150mm-high-strength-plastic-caliper-measuring-tool-inner-and-outer-diameter-g-601101328087423.html?_oak_mp_inf=EP%2Fyifms1ogBGiBmYWJmYjBkODBjNzQ0ZDg5YTYwNzAyYzZiM2I2NjUyMyC02IWU5zM%3D&top_gallery_url=https%3A%2F%2Fimg.kwcdn.com%2Fproduct%2Ffancy%2Fd772e282-ac69-4495-ab29-4bf3f784b77d.jpg&spec_gallery_id=601101328087423&refer_page_sn=10005&freesia_scene=1&_oak_freesia_scene=1&_oak_rec_ext_1=NzYwMA&_oak_gallery_order=427582022%2C941653944%2C1350728802%2C831436144%2C1075843506&refer_page_el_sn=200024&operate_cart_extend_map=%7B%22add_cart_use_layer%22%3A1%7D&refer_page_name=home&refer_page_id=10005_1780037543739_uvr2ypltbb&_x_sessn_id=k8e9a1w1er",
+      "variants": [],
+      "weight": 400
+    },
+    {
+      "category_id": "8e1e243a-677c-4543-a983-faf2f18b8321",
+      "category_name": "Kitchen Appliances",
+      "category_slug": "kitchen-appliances",
+      "compare_at_price": 829.17,
+      "cost": 423.6,
+      "description": "Power Mode\nPower Supply\nOperating Voltage\n110V (inclusive)-220V (inclusive)\nPlug Type\nSouth African Plug",
+      "dimension_height": 60,
+      "dimension_length": 40,
+      "dimension_width": 45,
+      "goods_id": "605877679551705",
+      "images": [
+        "images/air_fryer_6l_large_c_605877679551705_01.jpg",
+        "images/air_fryer_6l_large_c_605877679551705_02.jpg",
+        "images/air_fryer_6l_large_c_605877679551705_03.jpg",
+        "images/air_fryer_6l_large_c_605877679551705_04.jpg",
+        "images/air_fryer_6l_large_c_605877679551705_05.jpg"
+      ],
+      "in_stock": true,
+      "name": "Air Fryer 6L Large Capacity",
+      "price": 635.4,
+      "production_ids": {
+        "past-and-present": "6339c988-9ae1-4736-9574-3355630ac01e"
+      },
+      "short_description": "Air Fryer 6L Large Capacity with LED Digital Display, Household Multifunctional Electric Fryer, Sturdy And Even Heating, Compatible with Cooktops, Wide Voltage 110-220V, South African Standard Plug (Adapter Not Included)",
+      "status": "active",
+      "stock_quantity": 0,
+      "tags": [
+        "imports"
+      ],
+      "temu_price": 353,
+      "timed_duration_minutes": 600,
+      "url": "https://www.temu.com/za/air-fryer-6l-large-capacity-with-led--household-multifunctional--sturdy-and--heating-compatible-with-cooktops-wide-voltage-110-220v-south-african-standard-plug-adapter-not-included-g-605877679551705.html?_oak_mp_inf=ENnp956u4YkBGiBmYWJmYjBkODBjNzQ0ZDg5YTYwNzAyYzZiM2I2NjUyMyC12IWU5zM%3D&top_gallery_url=https%3A%2F%2Fimg.kwcdn.com%2Fproduct%2Falgo_framework%2FImageCm2InAlgo%2F3c1186e4-37cc-11f1-93df-0a580ab03093.jpg&spec_gallery_id=38125196988&refer_page_sn=10005&freesia_scene=1&_oak_freesia_scene=1&_oak_rec_ext_1=NDE3MDA&_oak_gallery_order=1525526616%2C741796373%2C140084232%2C2135730320%2C1134276365&refer_page_el_sn=200024&operate_cart_extend_map=%7B%22add_cart_use_layer%22%3A1%7D&refer_page_name=home&refer_page_id=10005_1780037543739_uvr2ypltbb&_x_sessn_id=k8e9a1w1er",
+      "variants": [],
+      "weight": 3000
+    },
+    {
+      "category_id": "c8df47b1-2c31-48c3-9c98-a293c5a5ef33",
+      "category_name": "Fans, Air Conditioners & Heating",
+      "category_slug": "fans-air-conditioners-heating",
+      "compare_at_price": 385.08,
+      "cost": 234,
+      "description": "Fan Features\nHigh-velocity-feature\nControl Method\nButton\nRecommended Scenario\nExhausting",
+      "dimension_height": 30,
+      "dimension_length": 20,
+      "dimension_width": 25,
+      "goods_id": "605994935486151",
+      "images": [
+        "images/home_mini_exhaust_fa_605994935486151_01.jpg",
+        "images/home_mini_exhaust_fa_605994935486151_02.jpg",
+        "images/home_mini_exhaust_fa_605994935486151_03.jpg",
+        "images/home_mini_exhaust_fa_605994935486151_04.jpg",
+        "images/home_mini_exhaust_fa_605994935486151_05.jpg",
+        "images/home_mini_exhaust_fa_605994935486151_06.jpg",
+        "images/home_mini_exhaust_fa_605994935486151_07.jpg"
+      ],
+      "in_stock": true,
+      "name": "Home Mini Exhaust Fan Set,",
+      "price": 351,
+      "production_ids": {
+        "past-and-present": "7c4e1ed0-6cf4-43ae-b227-461b570566a6"
+      },
+      "short_description": "Home Mini Exhaust Fan Set, Portable Blower with 59-Inch Flexible Hose, Adjustable 5-Speed with On/Off Switch, And Fixed Collar, Suitable for Home Kitchen Use, Bedroom Ventilation, And Wall-Mounted Exhaust System",
+      "status": "active",
+      "stock_quantity": 0,
+      "tags": [
+        "imports"
+      ],
+      "temu_price": 195,
+      "timed_duration_minutes": 600,
+      "url": "https://www.temu.com/za/home-mini-exhaust-fan-set-portable-blower-with-59-inch-flexible-hose-adjustable-5-speed-with-on-off-switch-and-fixed-collar-suitable-for-home-kitchen-use-bedroom-ventilation-and-wall-mounted-exhaust-system-g-605994935486151.html?_oak_mp_inf=EMeN9obj5IkBGiBmYWJmYjBkODBjNzQ0ZDg5YTYwNzAyYzZiM2I2NjUyMyCHv4iU5zM%3D&top_gallery_url=https%3A%2F%2Fimg.kwcdn.com%2Fproduct%2Ffancy%2F6ab3c0cb-d5ad-4ab5-8693-cdabda9b1d20.jpg&spec_gallery_id=37354854858&refer_page_sn=10005&freesia_scene=1&_oak_freesia_scene=1&_oak_rec_ext_1=MjgzMDA&_oak_gallery_order=319321460%2C1622335674%2C1110280449%2C2103701056%2C174703519&refer_page_el_sn=200024&operate_cart_extend_map=%7B%22add_cart_use_layer%22%3A1%7D&refer_page_name=home&refer_page_id=10005_1780037543739_uvr2ypltbb&_x_sessn_id=k8e9a1w1er",
+      "variants": [],
+      "weight": 2000
+    },
+    {
+      "category_id": "974aa9cc-9313-4547-ad72-73a99becf84e",
+      "category_name": "Climbing & Survival Tools",
+      "category_slug": "climbing-survival-tools",
+      "compare_at_price": 169.58,
+      "cost": 81.6,
+      "description": "Contain Magnesium Rod/flint Or Not\nNo\nMaterial\nStainless Steel\nColor\nSilvery",
+      "dimension_height": 5,
+      "dimension_length": 1,
+      "dimension_width": 10,
+      "goods_id": "601099531716263",
+      "images": [
+        "images/1pc4pcs_emergency_ca_601099531716263_01.jpg",
+        "images/1pc4pcs_emergency_ca_601099531716263_02.jpg",
+        "images/1pc4pcs_emergency_ca_601099531716263_03.jpg",
+        "images/1pc4pcs_emergency_ca_601099531716263_04.jpg",
+        "images/1pc4pcs_emergency_ca_601099531716263_05.jpg"
+      ],
+      "in_stock": true,
+      "name": "1pc/4pcs, Emergency Camping Multitool Card",
+      "price": 138.72,
+      "production_ids": {
+        "past-and-present": "667b4771-013c-4e27-83ad-3663cd085fa7"
+      },
+      "short_description": "1pc/4pcs, Emergency Camping Multitool Card for Survival, EDC Kit, Versatile Fishing Tool Card Featuring Fish Hook, Arrow, Trap Buckle, Saw Blade, Sewing Needle, And Taper Needle",
+      "status": "active",
+      "stock_quantity": 0,
+      "tags": [
+        "imports"
+      ],
+      "temu_price": 68,
+      "timed_duration_minutes": 600,
+      "url": "https://www.temu.com/za/1pc-4pcs-emergency-camping-multitool-card-for-survival-edc-kit-versatile-fishing-tool-card-featuring-fish-hook-arrow-trap--saw-blade-sewing-needle-and-taper-needle-g-601099531716263.html?_oak_mp_inf=EKeNwKCm1ogBGiA4NTM4NDc5MmJhNTM0YzgwYmQxNTA4ZTk2OGI0OTY4ZiDMqpqU5zM%3D&top_gallery_url=https%3A%2F%2Fimg.kwcdn.com%2Fproduct%2FFancyalgo%2FVirtualModelMatting%2F2729b9a369e90c2f9d2cd29107859ea9.jpg&spec_gallery_id=18892&refer_page_sn=10009&freesia_scene=2&_oak_freesia_scene=2&_oak_rec_ext_1=MTI0MDA&_oak_gallery_order=1452771676%2C1964286680%2C1326358924%2C1923350108%2C1658588362&search_key=card%20tools&refer_page_el_sn=200049&operate_cart_extend_map=%7B%22add_cart_use_layer%22%3A1%7D&refer_page_name=search_result&refer_page_id=10009_1780037873343_ptn2axdg0q&_x_sessn_id=4dzzj66n9l",
+      "variants": [],
+      "weight": 50
+    },
+    {
+      "category_id": "974aa9cc-9313-4547-ad72-73a99becf84e",
+      "category_name": "Women's Clothing",
+      "category_slug": "womens-clothing",
+      "compare_at_price": 394.1,
+      "cost": 231.6,
+      "description": "Tool Cord Style\nCordless-feature\nPower Supply\nUSB Powered\nBattery Properties\nRechargeable Battery\nApplicable Age Group:9+",
+      "dimension_height": 30,
+      "dimension_length": 20,
+      "dimension_width": 25,
+      "goods_id": "601102747937994",
+      "images": [
+        "images/rapid_charge_cordles_601102747937994_01.jpg",
+        "images/rapid_charge_cordles_601102747937994_02.jpg",
+        "images/rapid_charge_cordles_601102747937994_03.jpg",
+        "images/rapid_charge_cordles_601102747937994_04.jpg",
+        "images/rapid_charge_cordles_601102747937994_06.jpg",
+        "images/rapid_charge_cordles_601102747937994_08.jpg",
+        "images/rapid_charge_cordles_601102747937994_09.jpg",
+        "images/rapid_charge_cordles_601102747937994_10.jpg"
+      ],
+      "in_stock": true,
+      "name": "Rapid-Charge Cordless Fabric Shears:Ergonomic Leather-Cutting",
       "price": 347.4,
       "production_ids": {
-        "javamellow": "41aa2bb2-77fa-40f3-ad25-54718d9c42f3",
-        "past-and-present": "255bf3c2-1c6a-41fc-a83d-affe99364324"
+        "past-and-present": "71897778-4bdc-4f7c-b3cc-936f828b4d95"
       },
-      "short_description": "3pcs Premium Stainless Steel Cutting Board Set - Durable, Easy to Clean, Kitchen Prep, Space-Saving, Rust-Resistant, Ensures Food-Safe Preparation",
+      "short_description": "Rapid-Charge Cordless Fabric Shears:Ergonomic Leather-Cutting Tool for Carpet - Professional Tailors & Crafters' Portable Essential\"Durable ABS Sewing Shears | Heavy-Duty Craft Tool for Leather & Fabric USB Charging 2.5-Hour Heavy-Duty Operation",
       "status": "active",
       "stock_quantity": 0,
       "tags": [
         "imports"
       ],
       "temu_price": 193,
-      "url": "https://www.temu.com/za/3-stainless-steel-cutting-board-set-durable-easy-to-clean-kitchen-prep-space-saving-rust-resistant-ensures--preparation-g-601102187285283.html?_oak_mp_inf=EKOW45Kw1ogBGiBmZDEwNjZmNmI4ZWE0M2QwODFjMzhhOTRjNTMxMTBmZCCxwbmLzjM%3D&top_gallery_url=https%3A%2F%2Fimg.kwcdn.com%2Fproduct%2Ffancy%2F78692d35-367c-4a23-850b-f71ca587bdd7.jpg&spec_gallery_id=307059&refer_page_sn=10005&freesia_scene=1&_oak_freesia_scene=1&_oak_rec_ext_1=MjIzMDA&_oak_gallery_order=464738982%2C202962353%2C1275385117%2C1167793863&refer_page_el_sn=200024&refer_page_name=home&refer_page_id=10005_1773308632126_zqooxt72p8&_x_sessn_id=cwxmx8bddv",
+      "timed_duration_minutes": 600,
+      "url": "https://www.temu.com/za/-cordless-fabric-shears-ergonomic-leather-cutting-tool-for-carpet-professional-tailors-crafters-portable-essential-durable-abs-sewing-shears-heavy-duty-craft-tool-for-leather-fabric-usb-charging-2-5-hour-heavy-duty-operation-g-601102747937994.html?_oak_mp_inf=EMrZjp6y1ogBGiA1MGU2YzVhNmU1MDE0ZDUzYTBjMTU5NWJhMjkxZTJkNiDhiZSU5zM%3D&top_gallery_url=https%3A%2F%2Fimg.kwcdn.com%2Fproduct%2Ffancy%2Fbc66e761-ca2a-449c-a23f-0bda4b464e72.jpg&spec_gallery_id=393402&refer_page_sn=10005&freesia_scene=1&_oak_freesia_scene=1&_oak_rec_ext_1=MjgxMDA&_oak_gallery_order=1621575183%2C1014889355%2C1815383342%2C1738470050%2C727918127&refer_page_el_sn=200024&operate_cart_extend_map=%7B%22add_cart_use_layer%22%3A1%7D&refer_page_name=home&refer_page_id=10005_1780037779907_4r1ce5v04p&_x_sessn_id=4dzzj66n9l",
       "variants": [],
       "weight": 1000
     },
     {
-      "category_id": "bda00297-2044-4f17-8a99-10260153db5a",
-      "category_name": "Home & Kitchen",
-      "category_slug": "home-kitchen",
-      "compare_at_price": 340.3,
-      "cost": 199.2,
-      "description": "Material\nBamboo\nPower Supply\nUse Without Electricity\nRated Power(W)\n0",
-      "dimension_height": 30,
-      "dimension_length": 20,
-      "dimension_width": 25,
-      "goods_id": "601099801569015",
+      "category_id": "974aa9cc-9313-4547-ad72-73a99becf84e",
+      "category_name": "Women's Clothing",
+      "category_slug": "womens-clothing",
+      "compare_at_price": 69.79,
+      "cost": 33.6,
+      "description": "Material\nMetal\nPower Supply\nUse Without Electricity\nItem ID\nNV11424742\nCopy",
+      "dimension_height": 5,
+      "dimension_length": 1,
+      "dimension_width": 10,
+      "goods_id": "601105409855816",
       "images": [
-        "images/20cm_handmade_bamboo_601099801569015_01.jpg",
-        "images/20cm_handmade_bamboo_601099801569015_02.jpg",
-        "images/20cm_handmade_bamboo_601099801569015_03.jpg",
-        "images/20cm_handmade_bamboo_601099801569015_04.jpg",
-        "images/20cm_handmade_bamboo_601099801569015_05.jpg",
-        "images/20cm_handmade_bamboo_601099801569015_06.jpg",
-        "images/20cm_handmade_bamboo_601099801569015_07.jpg"
+        "images/mumutan_11_in_1_stai_601105409855816_01.jpg",
+        "images/mumutan_11_in_1_stai_601105409855816_02.jpg",
+        "images/mumutan_11_in_1_stai_601105409855816_03.jpg",
+        "images/mumutan_11_in_1_stai_601105409855816_04.jpg",
+        "images/mumutan_11_in_1_stai_601105409855816_05.jpg",
+        "images/mumutan_11_in_1_stai_601105409855816_06.jpg",
+        "images/mumutan_11_in_1_stai_601105409855816_07.jpg",
+        "images/mumutan_11_in_1_stai_601105409855816_08.jpg"
       ],
-      "in_stock": false,
-      "name": "20cm Handmade Bamboo Steamer with",
-      "price": 298.8,
+      "in_stock": true,
+      "name": "Mumutan 11-in-1 Stainless Steel Pocket",
+      "price": 57.12,
       "production_ids": {
-        "javamellow": "afd18b31-97e7-42b8-a65d-ac68b933c2d1",
-        "past-and-present": "d72c3029-eecc-4baa-ade9-36b7dfd64d5f"
+        "past-and-present": "3163dd2f-6f61-4e8e-8bdf-526fdf32f65d"
       },
-      "short_description": "20cm Handmade Bamboo Steamer with Lid, Multi-purpose - Suitable for Vegetables, Dumplings, Fish - Durable Kitchen Gadget. Can Be Used for Outdoor RV Camping Dinners",
+      "short_description": "Mumutan 11-in-1 Stainless Steel Pocket Tool - Credit Card Size, Bottle Opener with Dual-Serrated Blades, Suitable for Outdoor Survival",
       "status": "active",
       "stock_quantity": 0,
       "tags": [
         "imports"
       ],
-      "temu_price": 166,
-      "url": "https://www.temu.com/za/20cm-handmade-bamboo-steamer-with-lid-multi-purpose-suitable-for-vegetables-dumplings-fish-durable-kitchen-gadget--used-for-outdoor-rv-camping-dinners-g-601099801569015.html?_oak_mp_inf=EPfNlqGn1ogBGi5jYXRlZ29yeV9saXN0Xzg3MzA0NTZlYmY5MjRhNDk5YjZiMDllOTI0NmY2OWZlIKv8hI%2FOMw%3D%3D&top_gallery_url=https%3A%2F%2Fimg.kwcdn.com%2Fproduct%2Ffancy%2Fa7d4ccf3-1ac5-4682-b4e0-990591cbaff5.jpg&spec_gallery_id=45850&refer_page_sn=10012&freesia_scene=3&_oak_freesia_scene=3&_oak_rec_ext_1=Mjc3MDA&_oak_gallery_order=1525424062%2C1912806174%2C301818603%2C1751104559%2C1934575103&refer_page_el_sn=200064&ab_scene=1&_x_enter_scene_type=cate_tab&_x_sessn_id=uu3w7yit3d&refer_page_name=category&refer_page_id=10012_1773316163619_agubhyzx32",
+      "temu_price": 28,
+      "timed_duration_minutes": 600,
+      "url": "https://www.temu.com/za/-11-in-1-stainless-steel-pocket-tool-credit-card-size-bottle-opener-with-dual-serrated--suitable-for-outdoor-survival-g-601105409855816.html?_oak_mp_inf=EMiitZO81ogBGiA4NTM4NDc5MmJhNTM0YzgwYmQxNTA4ZTk2OGI0OTY4ZiDMqpqU5zM%3D&top_gallery_url=https%3A%2F%2Fimg.kwcdn.com%2Fproduct%2Ffancy%2Fc047472e-e56d-4e63-90c6-6db457aca86a.jpg&spec_gallery_id=28792117312&refer_page_sn=10009&freesia_scene=2&_oak_freesia_scene=2&_oak_rec_ext_1=NTIwMA&_oak_gallery_order=1863306781%2C1693217212%2C1067276605%2C1695228244%2C659238098&search_key=card%20tools&refer_page_el_sn=200049&operate_cart_extend_map=%7B%22add_cart_use_layer%22%3A1%7D&refer_page_name=search_result&refer_page_id=10009_1780037873343_ptn2axdg0q&_x_sessn_id=4dzzj66n9l",
       "variants": [],
-      "weight": 2000
+      "weight": 50
     },
     {
-      "category_id": "bda00297-2044-4f17-8a99-10260153db5a",
-      "category_name": "Home & Kitchen",
-      "category_slug": "home-kitchen",
-      "compare_at_price": 586.33,
-      "cost": 361.2,
-      "description": "Material\nStainless Steel\nStainless Steel Grade\n201 Stainless Steel\nItem ID\nMN4079469\nCopy",
-      "dimension_height": 30,
-      "dimension_length": 20,
-      "dimension_width": 25,
-      "goods_id": "601101844425936",
+      "category_id": "73e6e9b0-0222-455d-a01d-419336713bbf",
+      "category_name": "Men's Keyrings, Keychains & Charms",
+      "category_slug": "mens-keyrings-keychains-charms",
+      "compare_at_price": 88.87,
+      "cost": 48,
+      "description": "Material\nCopper\nStyle\nSimple\nChain Material\nNone",
+      "dimension_height": 15,
+      "dimension_length": 5,
+      "dimension_width": 10,
+      "goods_id": "601105570043707",
       "images": [
-        "images/28cm_multi_layer_non_601101844425936_01.jpg",
-        "images/28cm_multi_layer_non_601101844425936_02.jpg",
-        "images/28cm_multi_layer_non_601101844425936_03.jpg",
-        "images/28cm_multi_layer_non_601101844425936_04.jpg",
-        "images/28cm_multi_layer_non_601101844425936_05.png",
-        "images/28cm_multi_layer_non_601101844425936_06.jpg",
-        "images/28cm_multi_layer_non_601101844425936_07.jpg",
-        "images/28cm_multi_layer_non_601101844425936_08.jpg",
-        "images/28cm_multi_layer_non_601101844425936_09.jpg",
-        "images/28cm_multi_layer_non_601101844425936_10.jpg"
+        "images/stainless_steel_mini_601105570043707_01.jpg",
+        "images/stainless_steel_mini_601105570043707_02.jpg",
+        "images/stainless_steel_mini_601105570043707_03.jpg",
+        "images/stainless_steel_mini_601105570043707_04.jpg",
+        "images/stainless_steel_mini_601105570043707_05.jpg",
+        "images/stainless_steel_mini_601105570043707_06.jpg"
       ],
-      "in_stock": false,
-      "name": "28Cm Multi-Layer Non-Stick Steamer Pot",
-      "price": 541.8,
+      "in_stock": true,
+      "name": "Stainless Steel Mini Keychain -",
+      "price": 81.6,
       "production_ids": {
-        "javamellow": "41556825-398e-4fe7-8ea4-14e28201bab9",
-        "past-and-present": "be0bcd55-8a50-4a4a-84e3-1f076d7f5369"
+        "past-and-present": "1a17c0e9-c167-4d6e-9c4b-17ddd70bedd0"
       },
-      "short_description": "28Cm Multi-Layer Non-Stick Steamer Pot Set - 3-Tier Stainless Steel Cooker for Gas/Induction, Professional-Grade with Lid, Safe for Dishwasher",
+      "short_description": "Stainless Steel Mini Keychain - Creative Card Holder Design, Easy-To-Carry Trap Style. Durable Stainless Steel Material, Unique Creativity, Is The Perfect Gift for Boyfriends And Girlfriends",
       "status": "active",
       "stock_quantity": 0,
       "tags": [
         "imports"
       ],
-      "temu_price": 301,
-      "url": "https://www.temu.com/za/28cm-multi-layer-non-stick-steamer-pot-set-3-tier-stainless-steel-cooker-for-gas-induction--with-lid-safe-for-dishwasher-g-601101844425936.html?_oak_mp_inf=ENDZpO%2Bu1ogBGhZnb29kc19pZXUwdWlfcmVjb21tZW5kIPb%2BhY%2FOMw%3D%3D&top_gallery_url=https%3A%2F%2Fimg.kwcdn.com%2Fproduct%2Ffancy%2Ff6e37021-7ef0-46a7-992f-71de8e4f5e08.jpg&spec_gallery_id=292432&refer_page_sn=10032&freesia_scene=11&_oak_freesia_scene=11&_oak_rec_ext_1=NDQwMDA&_oak_gallery_order=1890054251%2C338219754%2C1715773796%2C1325853026%2C85578059&refer_page_el_sn=200444&ab_scene=1&_x_enter_scene_type=cate_tab&_x_sessn_id=uu3w7yit3d&refer_page_name=goods&refer_page_id=10032_1773316176868_cyzqtxlaeg",
+      "temu_price": 40,
+      "timed_duration_minutes": 600,
+      "url": "https://www.temu.com/za/stainless-steel-mini-keychain-creative-card-holder-design-easy-to-carry-trap-style-durable-stainless-steel-material-unique--is--for--and--g-601105570043707.html?_oak_mp_inf=ELuu5t%2B81ogBGiA4NTM4NDc5MmJhNTM0YzgwYmQxNTA4ZTk2OGI0OTY4ZiDMqpqU5zM%3D&top_gallery_url=https%3A%2F%2Fimg.kwcdn.com%2Fproduct%2Ffmket%2F497bca4b9b49d73e5661d8d74c8d278f.jpg&spec_gallery_id=29418807310&refer_page_sn=10009&freesia_scene=2&_oak_freesia_scene=2&_oak_rec_ext_1=ODkwMA&_oak_gallery_order=1818738307%2C256368925%2C1770670064%2C374370644%2C1249500708&search_key=card%20tools&refer_page_el_sn=200049&operate_cart_extend_map=%7B%22add_cart_use_layer%22%3A1%7D&refer_page_name=search_result&refer_page_id=10009_1780037873343_ptn2axdg0q&_x_sessn_id=4dzzj66n9l",
       "variants": [],
-      "weight": 800
+      "weight": 50
+    },
+    {
+      "category_id": "73e6e9b0-0222-455d-a01d-419336713bbf",
+      "category_name": "Hand Tools",
+      "category_slug": "hand-tools",
+      "compare_at_price": 107.45,
+      "cost": 54,
+      "description": "Material\nMetal\nPower Supply\nUse Without Electricity\nItem ID\nRF3770418\nCopy\nProduct Description",
+      "dimension_height": 5,
+      "dimension_length": 1,
+      "dimension_width": 10,
+      "goods_id": "601101690027787",
+      "images": [
+        "images/1pc_ultra_thin_multi_601101690027787_01.jpg",
+        "images/1pc_ultra_thin_multi_601101690027787_02.jpg",
+        "images/1pc_ultra_thin_multi_601101690027787_03.jpg",
+        "images/1pc_ultra_thin_multi_601101690027787_04.jpg",
+        "images/1pc_ultra_thin_multi_601101690027787_05.jpg",
+        "images/1pc_ultra_thin_multi_601101690027787_06.jpg",
+        "images/1pc_ultra_thin_multi_601101690027787_07.jpg",
+        "images/1pc_ultra_thin_multi_601101690027787_08.jpg",
+        "images/1pc_ultra_thin_multi_601101690027787_09.jpg"
+      ],
+      "in_stock": true,
+      "name": "1pc Ultra-Thin Multi-Function Tool Card,",
+      "price": 91.8,
+      "production_ids": {
+        "past-and-present": "51e04ad8-4c78-47a8-ba8f-045cf2804e6f"
+      },
+      "short_description": "1pc Ultra-Thin Multi-Function Tool Card, Portable Multitool with Bottle Opener and Screwdriver, Phone Holder, Versatile Outdoor Survival Gear for Camping and Adventures",
+      "status": "active",
+      "stock_quantity": 0,
+      "tags": [
+        "imports"
+      ],
+      "temu_price": 45,
+      "timed_duration_minutes": 600,
+      "url": "https://www.temu.com/za/1pc-ultra-thin-multi-function-tool-card-portable-multitool-with-bottle-opener-and-screwdriver-phone-holder-versatile-outdoor-survival-gear-for-camping-and--g-601101690027787.html?_oak_mp_inf=EIv%2B1KWu1ogBGiA4NTM4NDc5MmJhNTM0YzgwYmQxNTA4ZTk2OGI0OTY4ZiDNqpqU5zM%3D&top_gallery_url=https%3A%2F%2Fimg.kwcdn.com%2Fproduct%2Fopen%2F3d4af8178ccf406f8817faf247fcbefd-goods.jpeg&spec_gallery_id=244623&refer_page_sn=10009&freesia_scene=2&_oak_freesia_scene=2&_oak_rec_ext_1=ODkwMA&_oak_gallery_order=214138575%2C1144977173%2C388531312%2C1812274937%2C647941702&search_key=card%20tools&refer_page_el_sn=200049&operate_cart_extend_map=%7B%22add_cart_use_layer%22%3A1%7D&refer_page_name=search_result&refer_page_id=10009_1780037873343_ptn2axdg0q&_x_sessn_id=4dzzj66n9l",
+      "variants": [],
+      "weight": 50
+    },
+    {
+      "category_id": "73e6e9b0-0222-455d-a01d-419336713bbf",
+      "category_name": "Climbing & Survival Tools",
+      "category_slug": "climbing-survival-tools",
+      "compare_at_price": 276.09,
+      "cost": 144,
+      "description": "Category\nBottle Opener\nBrand\nSWISS+TECH\nContain Magnesium Rod/flint Or Not\nNo",
+      "dimension_height": 5,
+      "dimension_length": 1,
+      "dimension_width": 10,
+      "goods_id": "601099621764133",
+      "images": [
+        "images/swiss_tech_13_in_1_m_601099621764133_01.jpg",
+        "images/swiss_tech_13_in_1_m_601099621764133_02.jpg",
+        "images/swiss_tech_13_in_1_m_601099621764133_03.jpg",
+        "images/swiss_tech_13_in_1_m_601099621764133_04.jpg",
+        "images/swiss_tech_13_in_1_m_601099621764133_05.jpg",
+        "images/swiss_tech_13_in_1_m_601099621764133_06.jpg",
+        "images/swiss_tech_13_in_1_m_601099621764133_07.jpg",
+        "images/swiss_tech_13_in_1_m_601099621764133_08.jpg",
+        "images/swiss_tech_13_in_1_m_601099621764133_09.jpg",
+        "images/swiss_tech_13_in_1_m_601099621764133_10.jpg"
+      ],
+      "in_stock": true,
+      "name": "SWISS TECH 13 In 1",
+      "price": 230.4,
+      "production_ids": {
+        "past-and-present": "3d3b77b0-56d8-4647-8f80-141c6c732edc"
+      },
+      "short_description": "SWISS TECH 13 In 1 Mini Multifunctional Tools Protable Small Pocket Multitool Kit, Compact Card Tool, Bottle Opener, Rope Cutter, Screwdriver, Wrench, Scale, Carabiner Clip Hiking Camping EDC Gadgets",
+      "status": "active",
+      "stock_quantity": 0,
+      "tags": [
+        "imports"
+      ],
+      "temu_price": 120,
+      "timed_duration_minutes": 600,
+      "url": "https://www.temu.com/za/-tech-13-in-1-mini-multifunctional-tools-protable-small-pocket-multitool-kit-compact-card-tool-bottle-opener-rope-cutter-screwdriver-wrench-scale-carabiner-clip-hiking-camping-edc-gadgets-g-601099621764133.html?_oak_mp_inf=EKWYuMum1ogBGiA4NTM4NDc5MmJhNTM0YzgwYmQxNTA4ZTk2OGI0OTY4ZiDOqpqU5zM%3D&top_gallery_url=https%3A%2F%2Fimg.kwcdn.com%2Fproduct%2Ffancy%2F2c102054-f3a2-4c2f-be03-22b24f2cd9d0.jpg&spec_gallery_id=7785&refer_page_sn=10009&freesia_scene=2&_oak_freesia_scene=2&_oak_rec_ext_1=MjIxMDA&_oak_gallery_order=2102652946%2C525452059%2C362030221%2C2040326526%2C332040302&search_key=card%20tools&refer_page_el_sn=200049&operate_cart_extend_map=%7B%22add_cart_use_layer%22%3A1%7D&refer_page_name=search_result&refer_page_id=10009_1780037873343_ptn2axdg0q&_x_sessn_id=4dzzj66n9l",
+      "variants": [],
+      "weight": 50
+    },
+    {
+      "category_id": "974aa9cc-9313-4547-ad72-73a99becf84e",
+      "category_name": "Test, Measure & Inspect",
+      "category_slug": "test-measure",
+      "compare_at_price": 86.95,
+      "cost": 46.8,
+      "description": "Material\nMetal\nPower Mode\nUncharged\nBattery Properties\nWithout Battery",
+      "dimension_height": 5,
+      "dimension_length": 1,
+      "dimension_width": 10,
+      "goods_id": "601105052800489",
+      "images": [
+        "images/1pc_29_hole_card_gau_601105052800489_01.jpg",
+        "images/1pc_29_hole_card_gau_601105052800489_02.jpg",
+        "images/1pc_29_hole_card_gau_601105052800489_03.jpg",
+        "images/1pc_29_hole_card_gau_601105052800489_04.jpg",
+        "images/1pc_29_hole_card_gau_601105052800489_05.jpg",
+        "images/1pc_29_hole_card_gau_601105052800489_06.jpg",
+        "images/1pc_29_hole_card_gau_601105052800489_07.jpg"
+      ],
+      "in_stock": true,
+      "name": "1pc 29-Hole Card Gauge Drill",
+      "price": 79.56,
+      "production_ids": {
+        "past-and-present": "fa757323-6123-4a1d-8c6c-24351e0b862e"
+      },
+      "short_description": "1pc 29-Hole Card Gauge Drill Bit Aperture Measuring Ruler Double-Sided Card Gauge Multi-Size Hole",
+      "status": "active",
+      "stock_quantity": 0,
+      "tags": [
+        "imports"
+      ],
+      "temu_price": 39,
+      "timed_duration_minutes": 600,
+      "url": "https://www.temu.com/za/1pc-29-hole-card-gauge-drill-bit-aperture-measuring-ruler-double-sided-card-gauge-multi-size-hole-g-601105052800489.html?_oak_mp_inf=EOmrlOm61ogBGiA4NTM4NDc5MmJhNTM0YzgwYmQxNTA4ZTk2OGI0OTY4ZiDPqpqU5zM%3D&top_gallery_url=https%3A%2F%2Fimg.kwcdn.com%2Fproduct%2Ffancy%2Fd4d73866-d1fc-416d-b066-4235d4ccd61e.jpg&spec_gallery_id=27204315100&refer_page_sn=10009&freesia_scene=2&_oak_freesia_scene=2&_oak_rec_ext_1=NzcwMA&_oak_gallery_order=968142981%2C1915087826%2C773891146%2C887168430%2C1008581126&search_key=card%20tools&refer_page_el_sn=200049&operate_cart_extend_map=%7B%22add_cart_use_layer%22%3A1%7D&refer_page_name=search_result&refer_page_id=10009_1780037873343_ptn2axdg0q&_x_sessn_id=4dzzj66n9l",
+      "variants": [],
+      "weight": 50
+    },
+    {
+      "category_id": "73e6e9b0-0222-455d-a01d-419336713bbf",
+      "category_name": "Women's Clothing",
+      "category_slug": "womens-clothing",
+      "compare_at_price": 86.93,
+      "cost": 42,
+      "description": "Blade Material\nStainless Steel\nBlade Shape\nStraight Back\nHand Orientation\nAmbidextrous",
+      "dimension_height": 5,
+      "dimension_length": 1,
+      "dimension_width": 10,
+      "goods_id": "601103840527564",
+      "images": [
+        "images/mini_folding_pocket_601103840527564_01.jpg",
+        "images/mini_folding_pocket_601103840527564_02.jpg",
+        "images/mini_folding_pocket_601103840527564_03.jpg",
+        "images/mini_folding_pocket_601103840527564_04.jpg",
+        "images/mini_folding_pocket_601103840527564_05.jpg",
+        "images/mini_folding_pocket_601103840527564_06.jpg",
+        "images/mini_folding_pocket_601103840527564_07.jpg"
+      ],
+      "in_stock": true,
+      "name": "Mini Folding Pocket Knife- Lightweight&",
+      "price": 71.4,
+      "production_ids": {
+        "past-and-present": "fbd324f9-ce4f-43fa-8f3d-0e1a51c339d1"
+      },
+      "short_description": "Mini Folding Pocket Knife- Lightweight& Portable with Sharp Straight Back Blade, Ergonomic Non-Slip Grip, Compact Folding Design for Outdoor Camping, Everyday Carry, Delivery Tool& Gift- Durable Pocket Knife for Men& Women",
+      "status": "active",
+      "stock_quantity": 0,
+      "tags": [
+        "imports"
+      ],
+      "temu_price": 35,
+      "timed_duration_minutes": 600,
+      "url": "https://www.temu.com/za/mini--knife-lightweight-portable-with-sharp--blade-ergonomic-non--compact-folding-design-for-outdoor-camping--delivery-tool-gift-durable-pocket-knife-for-men-women-g-601103840527564.html?_oak_mp_inf=EMyJjae21ogBGiA0ZTRkOTk2YTFhM2I0YWUxODkxOGMwMTgwMDExNzlhYSC8xqSU5zM%3D&top_gallery_url=https%3A%2F%2Fimg.kwcdn.com%2Fproduct%2Fopen%2F7a33c5ddc23b46cf8af3ec2920e931a2-goods.jpeg&spec_gallery_id=33273872335&refer_page_sn=10009&freesia_scene=2&_oak_freesia_scene=2&_oak_rec_ext_1=NjYwMA&_oak_gallery_order=1971985622%2C125457292%2C1477833408%2C1135618850%2C1529898222&search_key=pocket%20knife&refer_page_el_sn=200049&operate_cart_extend_map=%7B%22add_cart_use_layer%22%3A1%7D&refer_page_name=search_result&refer_page_id=10009_1780038051467_nnin6btp74&_x_sessn_id=4dzzj66n9l",
+      "variants": [],
+      "weight": 50
+    },
+    {
+      "category_id": "73e6e9b0-0222-455d-a01d-419336713bbf",
+      "category_name": "Hand Tools",
+      "category_slug": "hand-tools",
+      "compare_at_price": 195.14,
+      "cost": 106.8,
+      "description": "Blade Material\nStainless Steel\nBlade Shape\nStraight Back\nHand Orientation\nAmbidextrous",
+      "dimension_height": 5,
+      "dimension_length": 1,
+      "dimension_width": 10,
+      "goods_id": "601102014745665",
+      "images": [
+        "images/6pcs_mini_vegetable_601102014745665_01.jpg",
+        "images/6pcs_mini_vegetable_601102014745665_02.jpg",
+        "images/6pcs_mini_vegetable_601102014745665_03.jpg",
+        "images/6pcs_mini_vegetable_601102014745665_04.jpg",
+        "images/6pcs_mini_vegetable_601102014745665_05.jpg",
+        "images/6pcs_mini_vegetable_601102014745665_06.jpg",
+        "images/6pcs_mini_vegetable_601102014745665_07.jpg"
+      ],
+      "in_stock": true,
+      "name": "6pcs Mini Vegetable Knife Keychain",
+      "price": 170.88,
+      "production_ids": {
+        "past-and-present": "6a61b56b-1fbb-436f-bdae-de9170a9fffc"
+      },
+      "short_description": "6pcs Mini Vegetable Knife Keychain Set, Portable Pocket Knife for Easy Package Opening And Box Cutting",
+      "status": "active",
+      "stock_quantity": 0,
+      "tags": [
+        "imports"
+      ],
+      "temu_price": 89,
+      "timed_duration_minutes": 600,
+      "url": "https://www.temu.com/za/6pcs-mini-vegetable-knife-keychain-set-portable-pocket-knife-for--opening-and-box-cutting-g-601102014745665.html?_oak_mp_inf=EMGYwMCv1ogBGiA0ZTRkOTk2YTFhM2I0YWUxODkxOGMwMTgwMDExNzlhYSC8xqSU5zM%3D&top_gallery_url=https%3A%2F%2Fimg.kwcdn.com%2Fproduct%2Ffancy%2F0544e075-bb50-4da0-8e64-e160cd8f2736.jpg&spec_gallery_id=278476&refer_page_sn=10009&freesia_scene=2&_oak_freesia_scene=2&_oak_rec_ext_1=MTc1MDA&_oak_gallery_order=34818605%2C2526380%2C1430021365%2C1375431230%2C505028668&search_key=pocket%20knife&refer_page_el_sn=200049&operate_cart_extend_map=%7B%22add_cart_use_layer%22%3A1%7D&refer_page_name=search_result&refer_page_id=10009_1780038051467_nnin6btp74&_x_sessn_id=4dzzj66n9l",
+      "variants": [],
+      "weight": 1000
+    },
+    {
+      "category_id": "974aa9cc-9313-4547-ad72-73a99becf84e",
+      "category_name": "Mowers & Outdoor Power Tools",
+      "category_slug": "mowers-outdoor-power-tools",
+      "compare_at_price": 278.54,
+      "cost": 153.6,
+      "description": "Power Supply\nBattery Powered (no Plug)\nBatteries Included\nYes\nApplicable Age Group\n14 Years+\n\"One-click control, easy to use\" To turn on the detector, please hold down the power button and keep the detector away from metal objects. The white LED will light up and make a short beep sound, indicating that the detector is ready for use.\n\u3010Sound and Vibration Indicator\u3011The detector is equipped with both sound and vibration alerts for indicating the presence of metallic objects. When the detector is close to a metallic target, the intensity of the alerts will increase.\n\u3010Automatic Sensitivity\u3011The microprocessor circuit enables the detector to operate at maximum sensitivity without any adjustment required.\n\u3010Widely Applied\u3011The highly sensitive needle-type metal detector can detect in indoor, outdoor, sandy ground, grassland or soil. It can accurately locate coins, silverware, jewelry and gold with great speed. It is recommended for coin and jewelry search, artifact search, gold mine exploration and practical applications.\n\u3010Sound and Vibration Indicator\u3011The detector is equipped with both sound and vibration alerts for indicating the presence of metallic objects. When the detector is close to a metallic target, the intensity of the alerts will increase.\n1 x Handheld Metal Detector 1 x 9V battery 1 x Elastic Roll Band 1 x Manual Booklet\nNote: 1. When the device is powered on, the LED light is on. The detector needs to be kept away from the metal surface. After 2 seconds, a beeping sound from the device can be heard. Afterwards After the self-test is completed, the device can be used. ||2. If the detector keeps sounding the alarm, it might be due to insufficient battery power. ||When the low battery alert function is enabled, it will keep alarming. Replace the battery and test again.",
+      "dimension_height": 20,
+      "dimension_length": 10,
+      "dimension_width": 15,
+      "goods_id": "601100592970510",
+      "images": [
+        "images/includes_9v_battery_601100592970510_01.jpg",
+        "images/includes_9v_battery_601100592970510_02.jpg",
+        "images/includes_9v_battery_601100592970510_03.jpg",
+        "images/includes_9v_battery_601100592970510_04.jpg",
+        "images/includes_9v_battery_601100592970510_05.jpg",
+        "images/includes_9v_battery_601100592970510_06.jpg",
+        "images/includes_9v_battery_601100592970510_07.jpg",
+        "images/includes_9v_battery_601100592970510_08.jpg",
+        "images/includes_9v_battery_601100592970510_09.jpg",
+        "images/includes_9v_battery_601100592970510_10.jpg"
+      ],
+      "in_stock": true,
+      "name": "Includes 9V Battery, Capable of Precise Positioning",
+      "price": 245.76,
+      "production_ids": {
+        "past-and-present": "13eafd53-6b1e-4b46-bdf4-55f3378b5d5e"
+      },
+      "short_description": "Includes 9V Battery, Capable of Precise Positioning, High Accuracy, Super Easy Operation, Lightweight, Fast Detection of Golden, Silver, Copper And Iron. It Can Be Used for Outdoor Treasure Hunting And Family Lost-Item Search",
+      "status": "active",
+      "stock_quantity": 0,
+      "tags": [
+        "imports"
+      ],
+      "temu_price": 128,
+      "timed_duration_minutes": 600,
+      "url": "https://www.temu.com/za/-9v-battery--of--high---operation-lightweight-fast-detection-of--copper-and-iron--used-for-outdoor---lost-item-search-g-601100592970510.html?_oak_mp_inf=EI72xZqq1ogBGiBkYmNmMDc3OTM4MjU0YzFmODM4ZDk4MzY1NGQyNTYyMiCGkqqU5zM%3D&top_gallery_url=https%3A%2F%2Fimg.kwcdn.com%2Fproduct%2Ffancy%2Fe8d6a3da-e78a-4a80-8ed9-58f044054850.jpg&spec_gallery_id=118936&refer_page_sn=10009&freesia_scene=2&_oak_freesia_scene=2&_oak_rec_ext_1=MTkyMDA&_oak_gallery_order=492073326%2C470835355%2C1316894887%2C999854770%2C1626179045&search_key=survival%20tools&refer_page_el_sn=200049&operate_cart_extend_map=%7B%22add_cart_use_layer%22%3A1%7D&refer_page_name=search_result&refer_page_id=10009_1780038142764_nm7wccohjw&_x_sessn_id=4dzzj66n9l",
+      "variants": [],
+      "weight": 100
+    },
+    {
+      "category_id": "974aa9cc-9313-4547-ad72-73a99becf84e",
+      "category_name": "Grills & Outdoor Cooking",
+      "category_slug": "grills-outdoor-cooking",
+      "compare_at_price": 71.66,
+      "cost": 36,
+      "description": "Material\nPlastic, Stainless Steel\nLighter Type\nTools And Accessories\nPower Supply\nUse Without Electricity",
+      "dimension_height": 5,
+      "dimension_length": 1,
+      "dimension_width": 10,
+      "goods_id": "601101434904646",
+      "images": [
+        "images/2pcs_new_practical_o_601101434904646_01.jpg",
+        "images/2pcs_new_practical_o_601101434904646_02.jpg",
+        "images/2pcs_new_practical_o_601101434904646_03.jpg",
+        "images/2pcs_new_practical_o_601101434904646_04.jpg",
+        "images/2pcs_new_practical_o_601101434904646_05.jpg",
+        "images/2pcs_new_practical_o_601101434904646_06.jpg",
+        "images/2pcs_new_practical_o_601101434904646_07.jpg"
+      ],
+      "in_stock": true,
+      "name": "2pcs New Practical Outdoor Camping",
+      "price": 61.2,
+      "short_description": "2pcs New Practical Outdoor Camping Portable Mini Igniter Head Kitchen Home.",
+      "status": "active",
+      "stock_quantity": 0,
+      "tags": [
+        "imports"
+      ],
+      "temu_price": 30,
+      "timed_duration_minutes": 600,
+      "url": "https://www.temu.com/za/2pcs-new-practical-outdoor-camping-portable-mini-igniter-head-kitchen-home-g-601101434904646.html?_oak_mp_inf=EMbAgayt1ogBGiA2MmY0M2Y1OWNlNTY0ZDEyYjg3MWM5NjBiYTkwNzMyNCDEu62U5zM%3D&top_gallery_url=https%3A%2F%2Fimg.kwcdn.com%2Fproduct%2Ffancy%2Fe0570d04-38f7-478a-8dab-415dc039edd1.jpg&spec_gallery_id=203255&refer_page_sn=10009&freesia_scene=2&_oak_freesia_scene=2&_oak_rec_ext_1=NjMwMA&_oak_gallery_order=1414685999%2C1601033331%2C737934422%2C548398062%2C695561306&search_key=fire%20starter&refer_page_el_sn=200049&operate_cart_extend_map=%7B%22add_cart_use_layer%22%3A1%7D&refer_page_name=search_result&refer_page_id=10009_1780038197246_aawxp83qfw&_x_sessn_id=4dzzj66n9l",
+      "variants": [],
+      "weight": 200,
+      "production_ids": {
+        "past-and-present": "e164e7bb-5bcf-49dd-be6e-b6316f756d9d"
+      }
     }
   ],
-  "updated": "2026-03-15T21:42:45.343967"
+  "updated": "2026-06-04T11:51:51.721233"
 }

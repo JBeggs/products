@@ -1,0 +1,4 @@
+# Northern Bolt — add product page URLs here (one per line), or browse and Save in the UI.
+# Store: https://www.northernbolt.co.za/
+
+https://www.northernbolt.co.za/products/ingco-cordless-angle-grinder-20v-115mm-brushless-kit-with-carry-case-copy

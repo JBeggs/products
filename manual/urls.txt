@@ -1,0 +1,1 @@
+# Manual entries are added via /manual in the UI

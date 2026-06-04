@@ -162,6 +162,13 @@ def _ensure_schema() -> None:
                 "images_json": "TEXT",
             },
         )
+        _ensure_columns(
+            conn,
+            "search_jobs",
+            {
+                "checkpoint_json": "TEXT",
+            },
+        )
         conn.commit()
     finally:
         conn.close()
@@ -202,17 +209,130 @@ def finish_search_job(
     listings_new: int = 0,
     listings_updated: int = 0,
     error: str | None = None,
+    *,
+    checkpoint: dict[str, Any] | None = None,
 ) -> None:
     """Mark search job as finished."""
 
     now = _utcnow()
+    checkpoint_json = None if status == "completed" else _json_dumps(checkpoint)
     with get_db() as conn:
         conn.execute(
             """UPDATE search_jobs SET
                 finished_at = ?, status = ?, listings_found = ?, listings_new = ?,
-                listings_updated = ?, error = ?
+                listings_updated = ?, error = ?, checkpoint_json = ?
             WHERE id = ?""",
-            (now, status, listings_found, listings_new, listings_updated, error, job_id),
+            (
+                now,
+                status,
+                listings_found,
+                listings_new,
+                listings_updated,
+                error,
+                checkpoint_json,
+                job_id,
+            ),
+        )
+
+
+def get_search_job(job_id: int) -> dict | None:
+    """Get one search job by id."""
+
+    with get_db() as conn:
+        cur = conn.execute("SELECT * FROM search_jobs WHERE id = ?", (job_id,))
+        row = cur.fetchone()
+        return dict(row) if row else None
+
+
+def get_resumable_job() -> dict | None:
+    """Return the most recent job that can be resumed, with parsed checkpoint."""
+
+    with get_db() as conn:
+        cur = conn.execute(
+            """
+            SELECT * FROM search_jobs
+            WHERE status IN ('running', 'interrupted')
+              AND checkpoint_json IS NOT NULL
+              AND TRIM(checkpoint_json) != ''
+              AND TRIM(checkpoint_json) != 'null'
+            ORDER BY id DESC
+            LIMIT 1
+            """
+        )
+        row = cur.fetchone()
+        if not row:
+            return None
+        job = dict(row)
+        checkpoint = _safe_json(job.get("checkpoint_json"), {})
+        if not checkpoint:
+            return None
+        job["checkpoint"] = checkpoint
+        return job
+
+
+def save_job_checkpoint(
+    job_id: int,
+    checkpoint: dict[str, Any],
+    *,
+    listings_found: int,
+    listings_new: int,
+    listings_updated: int,
+) -> None:
+    """Persist crawl checkpoint and running counters without finishing the job."""
+
+    with get_db() as conn:
+        conn.execute(
+            """
+            UPDATE search_jobs SET
+                status = 'running',
+                listings_found = ?,
+                listings_new = ?,
+                listings_updated = ?,
+                checkpoint_json = ?,
+                error = NULL
+            WHERE id = ?
+            """,
+            (
+                listings_found,
+                listings_new,
+                listings_updated,
+                _json_dumps(checkpoint),
+                job_id,
+            ),
+        )
+
+
+def abandon_search_job(job_id: int) -> None:
+    """Mark a partial job as abandoned when starting a fresh crawl."""
+
+    now = _utcnow()
+    with get_db() as conn:
+        conn.execute(
+            """
+            UPDATE search_jobs SET
+                finished_at = COALESCE(finished_at, ?),
+                status = 'abandoned',
+                checkpoint_json = NULL
+            WHERE id = ?
+            """,
+            (now, job_id),
+        )
+
+
+def abandon_stale_running_jobs() -> None:
+    """Mark orphaned in-progress jobs without checkpoints as abandoned."""
+
+    now = _utcnow()
+    with get_db() as conn:
+        conn.execute(
+            """
+            UPDATE search_jobs SET
+                finished_at = COALESCE(finished_at, ?),
+                status = 'abandoned'
+            WHERE status = 'running'
+              AND (checkpoint_json IS NULL OR TRIM(checkpoint_json) = '' OR TRIM(checkpoint_json) = 'null')
+            """,
+            (now,),
         )
 
 
@@ -229,6 +349,13 @@ def _json_dumps(value: Any) -> str | None:
     if value is None:
         return None
     return json.dumps(value, ensure_ascii=True, sort_keys=True)
+
+
+def _safe_json(value: Any, default: Any) -> Any:
+    try:
+        return json.loads(value) if value else default
+    except json.JSONDecodeError:
+        return default
 
 
 def upsert_listing(
@@ -371,6 +498,38 @@ def upsert_scenario_match(
         )
 
 
+def recompute_all_scenario_matches() -> int:
+    """Re-evaluate every stored listing against all scenario configs."""
+
+    from .scoring import evaluate_listing_for_scenario
+
+    scenarios = list_scenario_configs(enabled_only=False)
+    with get_db() as conn:
+        cur = conn.execute("SELECT * FROM listings")
+        rows = [dict(r) for r in cur.fetchall()]
+
+    updated = 0
+    for row in rows:
+        listing = dict(row)
+        listing["attributes"] = _safe_json(listing.get("attributes_json"), {})
+        listing["signals"] = _safe_json(listing.get("signals_json"), {})
+        for scenario in scenarios:
+            evaluation = evaluate_listing_for_scenario(listing, scenario)
+            upsert_scenario_match(
+                listing_id=int(listing["id"]),
+                scenario_slug=scenario["slug"],
+                search_job_id=listing.get("search_job_id"),
+                visible=evaluation["visible"],
+                match_score=evaluation["match_score"],
+                price_score=evaluation["price_score"],
+                urgency_score=evaluation["urgency_score"],
+                special_state=evaluation["special_state"],
+                reasons=evaluation["reasons"],
+            )
+            updated += 1
+    return updated
+
+
 def upsert_scenario_config(scenario: dict[str, Any], update_existing: bool = False) -> None:
     """Insert a scenario config. Existing rows are preserved unless requested."""
 
@@ -470,6 +629,36 @@ def get_scenario_counts() -> dict[str, dict[str, int]]:
                 "total_count": int(row["total_count"] or 0),
             }
             for row in cur.fetchall()
+        }
+
+
+def get_listing_match_summary() -> dict[str, int]:
+    """Summarise stored listings vs strict scenario matches."""
+
+    with get_db() as conn:
+        stored = conn.execute("SELECT COUNT(*) FROM listings WHERE ignored = 0").fetchone()[0]
+        matched_unique = conn.execute(
+            """
+            SELECT COUNT(DISTINCT sm.listing_id)
+            FROM scenario_matches sm
+            JOIN listings l ON l.id = sm.listing_id
+            WHERE sm.visible = 1 AND l.ignored = 0
+            """
+        ).fetchone()[0]
+        matched_rows = conn.execute(
+            """
+            SELECT COUNT(*)
+            FROM scenario_matches sm
+            JOIN listings l ON l.id = sm.listing_id
+            WHERE sm.visible = 1 AND l.ignored = 0
+            """
+        ).fetchone()[0]
+        unmatched = max(int(stored) - int(matched_unique), 0)
+        return {
+            "stored": int(stored),
+            "matched_unique": int(matched_unique),
+            "matched_rows": int(matched_rows),
+            "unmatched": unmatched,
         }
 
 

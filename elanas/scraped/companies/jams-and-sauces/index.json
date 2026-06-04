@@ -1,0 +1,54 @@
+{
+  "updated": "2026-05-17T15:58:25.848731",
+  "product_count": 8,
+  "products": [
+    {
+      "name": "CHEESE TOPPER- Tomato & Chilli",
+      "price": 58.75,
+      "elanas_price": 47,
+      "goods_id": "jam-tomato-chilli"
+    },
+    {
+      "name": "Jam - Grape",
+      "price": 58.75,
+      "elanas_price": 47,
+      "goods_id": "jam-grape"
+    },
+    {
+      "name": "Chillies - Jalapeno's Sliced",
+      "price": 60,
+      "elanas_price": 48,
+      "goods_id": "chillies-jalapenos-sliced-out-of-stock"
+    },
+    {
+      "name": "Olives - Sweet & Sour",
+      "price": 81.25,
+      "elanas_price": 65,
+      "goods_id": "olives-sweet-sour"
+    },
+    {
+      "name": "Green Figs (1 litre)",
+      "price": 214.02,
+      "elanas_price": 174,
+      "goods_id": "green-figs"
+    },
+    {
+      "name": "Guava Halves (1 litre)",
+      "price": 123,
+      "elanas_price": 100,
+      "goods_id": "guava-halves-2"
+    },
+    {
+      "name": "Peach Halves (1 litre)",
+      "price": 112.5,
+      "elanas_price": 90,
+      "goods_id": "peach-halves-2"
+    },
+    {
+      "name": "Quince Slices (1 litre)",
+      "price": 130.38,
+      "elanas_price": 106,
+      "goods_id": "quince-slices-2"
+    }
+  ]
+}

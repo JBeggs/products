@@ -1,0 +1,14 @@
+# Overberg Honey Co — product URLs (one per line), or browse and Save in the UI.
+# Store: https://www.overberghoney.co.za/
+
+https://www.overberghoney.co.za/shop/fynbos-honey-1-5kg/
+https://www.overberghoney.co.za/shop/fynbos-honey-3kg/
+https://www.overberghoney.co.za/shop/bluegum-honey-3kg/
+https://www.overberghoney.co.za/shop/bluegum-honey-1-5kg/
+https://www.overberghoney.co.za/shop/multiflora-honey-3kg/
+https://www.overberghoney.co.za/shop/acacia-honey-3kg/
+https://www.overberghoney.co.za/shop/honey-comb-cassettes/
+https://www.overberghoney.co.za/shop/fynbos-honey-in-a-teddy-bear-500g/
+https://www.overberghoney.co.za/shop/tall-voltive-candle/
+https://www.overberghoney.co.za/shop/square-heart-candle/
+https://www.overberghoney.co.za/shop/triangle-of-balls-beeswax-candles/

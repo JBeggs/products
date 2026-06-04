@@ -97,6 +97,128 @@ DESCRIPTION_EXCLUDE_PATTERNS = [
 ]
 
 
+def format_northernbolt_kit_description(text: str) -> str:
+    """
+    Turn Northern Bolt / INGCO-style single-line kit descriptions into readable blocks.
+
+    Handles: \"Kit includes...:1x ...\", \")1x\" kit lines, \"Product details:\", stuck
+    \"...Ingco\" / \"...Product details\", and spec bullets \"- Item\".
+    """
+    if not text:
+        return ""
+    t = html.unescape(text)
+    t = t.replace("\u00a0", " ").replace("\u2003", " ").replace("\u2002", " ")
+    t = re.sub(r"\s+", " ", t).strip()
+
+    # Intro line then first quantity (Kit includes the following:1x …)
+    t = re.sub(
+        r"(Kit includes[^\d:]{0,50}:|Kit includes:|Combo Kit Includes:|Combo kit includes:)\s*",
+        r"\1\n\n",
+        t,
+        flags=re.I,
+    )
+    # "Includes:1x" without "Kit" prefix
+    t = re.sub(r"((?:Combo\s+)?Kit\s+Includes:)\s*(\d)", r"\1\n\n\2", t, flags=re.I)
+
+    # New kit line after closing paren: ")1x " ")2x "
+    t = re.sub(r"\)\s*(\d+x\s)", r")\n\n\1", t, flags=re.I)
+
+    # "20V 1x Ingco", "set 10 x Abrasive" (qty separated from preceding token by spaces)
+    t = re.sub(
+        r"(?<=[A-Za-z0-9\])])\s+(\d{1,2}\s*x\s+)(?=[A-Za-z0-9\(])",
+        r"\n\n\1",
+        t,
+        flags=re.I,
+    )
+
+    # Word run (3+ letters) directly before "Nx " — Bits1x, set10x, charger3x; avoids "20V 2x"
+    t = re.sub(r"([A-Za-z]{3,})(\d+x\s)", r"\1\n\2", t)
+
+    # Stuck to "Ingco" (caseIngco, mmIngco); do not use bare digit — would break "M14 Ingco" alone
+    t = re.sub(r"([a-z)])(Ingco\s)", r"\1\n\n\2", t, flags=re.I)
+    t = re.sub(r"\b([a-z]{4,})\s+(Ingco\s)", r"\1\n\n\2", t, flags=re.I)
+    # "M14 Ingco Cordless …" (spec value + next product line)
+    t = re.sub(r"(M\d+)\s+(Ingco\s)(?=Cordless)", r"\1\n\n\2", t, flags=re.I)
+    # "185mm Ingco Cordless", ") Ingco" — skip "1x Ingco" / "2x Ingco" (x before space)
+    t = re.sub(r"(?<![0-9])(?<!x)\s+(Ingco\s)(?=[A-Z][a-z-])", r"\n\n\1", t)
+
+    # "Product details:" / "Product details:" with accidental run-on (BrushlessProduct, 20VProduct)
+    t = re.sub(r"\s*(Product\s+details?:)", r"\n\n\1", t, flags=re.I)
+    t = re.sub(r"([a-z0-9])(Product\s+details?:)", r"\1\n\n\2", t, flags=re.I)
+
+    # Spec lines: "motor- Voltage"; skip hyphen immediately after m/b (covers mm-, rpm-, bpm-)
+    t = re.sub(r"(?<![bmBM])(?<=[a-z])(-\s+)(?=[A-Z(])", r"\n- ", t)
+
+    # "chuck system- Built-in …" (m before hyphen would otherwise be skipped)
+    t = re.sub(r"(system)(-\s+)(?=[A-Z])", r"\1\n- ", t, flags=re.I)
+
+    # "22+1+1- Mechanical …"
+    t = re.sub(r"(\+\d+)(-\s+)(?=[A-Z])", r"\1\n- ", t)
+
+    # "20V- No-load", "66Nm- Metal", "115mm- Spindle", "2.5J- SDS", "2A- Rated" (space after hyphen)
+    t = re.sub(r"((?:V|Nm|mm|rpm|bpm|Ah|Hz|J|W))(-\s+)(?=[A-Z(])", r"\1\n- ", t)
+    t = re.sub(r"((?<=\d)A)(-\s+)(?=[A-Z(])", r"\1\n- ", t)
+
+    # "Details:- Something" or "capacity:- Concrete"
+    t = re.sub(r":\s*-\s*", ":\n- ", t)
+
+    # Section title stuck after lowercase (lightMax drilling capacity:)
+    t = re.sub(
+        r"(?<=[a-z0-9)])(Max\s+drilling\s+capacity\s*:)",
+        r"\n\n\1",
+        t,
+        flags=re.I,
+    )
+
+    # "…cutting Cutting capacity:" (run-on section)
+    t = re.sub(
+        r"(?<=[a-z])(\s*)(Cutting\s+capacity\s*:)",
+        r"\n\n\2",
+        t,
+        flags=re.I,
+    )
+
+    # Spec lists use " - Field - Field" (spaces around hyphens). Split; skip ". -" (e.g. abbrev.)
+    for _ in range(24):
+        t2 = re.sub(r"(?<=[^.\n])\s-\s(?=[A-Z0-9(+-])", r"\n- ", t)
+        if t2 == t:
+            break
+        t = t2
+
+    t = re.sub(r"\n{3,}", "\n\n", t)
+    return t.strip()
+
+
+def format_tsawelding_product_description(text: str) -> str:
+    """
+    Normalize TSA Welding / Shopify RTE descriptions: strip app chrome, fix flat JSON-LD
+    blobs (section headers and bullets run together).
+    """
+    if not text:
+        return ""
+    t = html.unescape(text).replace("\u00a0", " ")
+    t = re.sub(r"(?:\n|^)\s*Powered by[\s\S]*$", "", t, flags=re.I)
+    t = re.sub(r"(?:\n|^)\s*Smart Tabs[\s\S]*$", "", t, flags=re.I)
+    t = t.strip()
+
+    if t.count("\n") >= 5:
+        t = re.sub(r"[ \t]+\n", "\n", t)
+        t = re.sub(r"\n{3,}", "\n\n", t)
+        return t.strip()
+
+    one = re.sub(r"[ \t]+", " ", t).strip()
+    one = re.sub(r"(?<=[a-z0-9.%])(\s)(Features\s*:)", r"\n\n\2", one, flags=re.I)
+    one = re.sub(r"(?<=[a-z0-9.%])(\s)(Specifications\s*:)", r"\n\n\2", one, flags=re.I)
+    one = re.sub(r"(?<=[a-z0-9.%])(\s)(What's\s+in\s+the\s+box\s*:)", r"\n\n\2", one, flags=re.I)
+    one = re.sub(r"([:;!?])(\s+)(•\s+)", r"\1\n\3", one)
+    one = re.sub(r"(?<=[a-zA-Z0-9%])\s+(•\s+)", r"\n\1", one)
+    one = re.sub(r"(\.\s+)(-\s+)", r"\1\n\2", one)
+    one = re.sub(r"(What's\s+in\s+the\s+box\s*:)\s*(-\s+)", r"\1\n\2", one, flags=re.I)
+    one = re.sub(r"(?<=[a-z.])\s+(-\s+(?:earth|removable)\b)", r"\n\1", one, flags=re.I)
+    one = re.sub(r"\n{3,}", "\n\n", one)
+    return one.strip()
+
+
 def clean_description(text: str) -> str:
     """Strip unwanted UI text and special chars from description."""
     if not text:

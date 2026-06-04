@@ -427,12 +427,27 @@ def fetch_current_pricing(url: str) -> dict | None:
                 return None
 
             data = extract_product_data(page, debug=False)
+            in_stock = True
+            try:
+                from shared.verify_utils import playwright_page_in_stock
+                in_stock = playwright_page_in_stock(page)
+            except Exception:
+                pass
             browser.close()
             if not data or (not data.get("goodsName") and data.get("salePrice") is None):
                 return None
 
             sale_price_zar = data.get("salePrice")
             sale_price_cents = int(sale_price_zar * 100) if sale_price_zar is not None else 0
+            if sale_price_cents <= 0 and not in_stock:
+                return {
+                    "price": None,
+                    "cost": None,
+                    "source_price": None,
+                    "valid": True,
+                    "in_stock": False,
+                    "unavailable": False,
+                }
             if sale_price_cents <= 0:
                 return None
             sell_price = apply_tiered_markup(sale_price_cents, "game")
@@ -444,6 +459,8 @@ def fetch_current_pricing(url: str) -> dict | None:
                 "cost": round(cost, 2),
                 "source_price": round(source_price, 2),
                 "valid": True,
+                "in_stock": in_stock,
+                "unavailable": False,
             }
     except Exception:
         return None

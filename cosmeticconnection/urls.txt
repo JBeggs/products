@@ -1,0 +1,4 @@
+# Cosmetic Connection product URLs (one per line), or browse and Save in the UI.
+# Store: https://www.cosmeticconnection.co.za/
+
+https://www.cosmeticconnection.co.za/

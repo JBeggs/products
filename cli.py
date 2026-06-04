@@ -28,7 +28,7 @@ def main() -> int:
 
     from shared.suppliers import get_suppliers
 
-    supplier_slugs = [s["slug"] for s in get_suppliers()]
+    supplier_slugs = [s["slug"] for s in get_suppliers() if (s.get("module_name") or "").strip()]
     scrape_p = sub.add_parser("scrape", help="Scrape products from a supplier")
     scrape_p.add_argument(
         "supplier",

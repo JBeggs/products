@@ -1,0 +1,12 @@
+{
+  "updated": "2026-04-23T09:38:25.740583",
+  "product_count": 1,
+  "products": [
+    {
+      "name": "test",
+      "price": 100.0,
+      "manual_price": 100.0,
+      "goods_id": "manual_9b7985db541f"
+    }
+  ]
+}

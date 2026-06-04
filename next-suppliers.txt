@@ -1,4 +1,16 @@
 https://www.northernbolt.co.za/
 https://www.builders.co.za/
-https://dailydiscounts.co.za/checkout/
+https://dailydiscounts.co.za/
 https://soundselect.co.za/
+https://www.tsawelding.co.za/
+https://gimmeonline.co.za/
+https://www.ahm.co.za/
+https://britelighting.co.za
+https://www.agrimark.co.za
+https://www.bulkseed.co.za/
+https://www.seedsandall.co.za/
+https://www.seedsforafrica.co.za/
+https://youngsindustrial.co.za
+https://www.overberghoney.co.za/
+
+# Each URL above has a matching scraper slug in shared/suppliers.py (browse-and-save + urls.txt).
