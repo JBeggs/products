@@ -18,7 +18,7 @@ def get_compare_at_price(sell_price: float) -> float:
 # Configurable via scraper_config.json (see shared.config.get_tier_multipliers)
 
 # Only import suppliers should carry the +20% uplift.
-IMPORT_SUPPLIERS = frozenset({"temu", "ubuy", "aliexpress"})
+IMPORT_SUPPLIERS = frozenset({"temu", "ubuy", "aliexpress", "shein"})
 
 
 def calculate_supplier_cost(sale_price_cents: int, supplier_slug: str | None = None) -> float:

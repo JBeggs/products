@@ -34,6 +34,9 @@ from shared.config import (
     get_company_suppliers,
     save_company_suppliers,
     SUPPLIERS_USING_TIERED_MARKUP,
+    get_supplier_category,
+    save_supplier_category,
+    list_supplier_categories,
 )
 from shared.suppliers import get_supplier, get_suppliers, run_supplier_scrape
 
@@ -364,6 +367,25 @@ SCRAPE_HTML = """
       </div>
     </div>
   </div>
+  <div class="config-section collapsed" id="supplierCategorySection" style="display: none;">
+    <h3 onclick="toggleSupplierCategoryConfig()">▸ Supplier category</h3>
+    <div class="config-body">
+      <p class="help" style="margin-bottom: 0.75rem;">Use categories like <strong>general</strong>, <strong>import</strong>, <strong>electronics</strong>, or define your own.</p>
+      <div class="delivery-fields">
+        <div class="field">
+          <label>Category</label>
+          <select id="supplierCategorySelect"></select>
+        </div>
+        <div class="field">
+          <label>Custom category (optional)</label>
+          <input type="text" id="supplierCategoryCustom" placeholder="e.g. tools, appliances">
+        </div>
+      </div>
+      <div class="config-actions">
+        <button type="button" class="secondary" onclick="saveSupplierCategoryConfig()">Save category</button>
+      </div>
+    </div>
+  </div>
   <div class="controls">
     <button id="startBtn" class="primary" onclick="startScrape()">Start scrape</button>
     <button id="stopBtn" class="danger" onclick="stopScrape()" disabled>Stop scrape</button>
@@ -406,7 +428,7 @@ SCRAPE_HTML = """
         } catch (e) { /* ignore */ }
       }
       sel.innerHTML = '<option value="">Select supplier</option>' + scrapeable.map(s =>
-        '<option value="' + s.slug + '">' + s.display_name + (s.supports_interactive ? ' (browse & save)' : ' (URL list)') + '</option>'
+        '<option value="' + s.slug + '">' + s.display_name + (s.category ? ' [' + s.category + ']' : '') + (s.supports_interactive ? ' (browse & save)' : ' (URL list)') + '</option>'
       ).join('');
       if (scrapeable.length === 1) sel.value = scrapeable[0].slug;
       updateCompanyBar(lockNote);
@@ -482,6 +504,11 @@ SCRAPE_HTML = """
       document.getElementById('proxySection').classList.toggle('collapsed');
       const h3 = document.querySelector('#proxySection h3');
       h3.textContent = document.getElementById('proxySection').classList.contains('collapsed') ? '▸ Proxy (optional)' : '▾ Proxy (optional)';
+    }
+    function toggleSupplierCategoryConfig() {
+      document.getElementById('supplierCategorySection').classList.toggle('collapsed');
+      const h3 = document.querySelector('#supplierCategorySection h3');
+      h3.textContent = document.getElementById('supplierCategorySection').classList.contains('collapsed') ? '▸ Supplier category' : '▾ Supplier category';
     }
     function addTierRow(threshold = '', multiplier = '1.5') {
       const div = document.getElementById('tierRows');
@@ -564,13 +591,16 @@ SCRAPE_HTML = """
       const deliverySection = document.getElementById('deliverySection');
       const pricingSection = document.getElementById('pricingConfig');
       const proxySection = document.getElementById('proxySection');
+      const supplierCategorySection = document.getElementById('supplierCategorySection');
       if (deliverySection) deliverySection.style.display = slug ? 'block' : 'none';
       if (pricingSection) pricingSection.style.display = slug ? 'block' : 'none';
       if (proxySection) proxySection.style.display = slug ? 'block' : 'none';
+      if (supplierCategorySection) supplierCategorySection.style.display = slug ? 'block' : 'none';
       if (slug) {
         updateCompanyBar();
         loadDeliveryConfig(slug);
         loadPricingConfig(slug);
+        loadSupplierCategoryConfig(slug);
       }
     }
     async function loadDeliveryConfig(slug) {
@@ -599,6 +629,56 @@ SCRAPE_HTML = """
       });
       const data = await r.json();
       document.getElementById('msg').textContent = data.ok ? 'Delivery config saved.' : (data.error || 'Save failed.');
+    }
+    async function loadSupplierCategoryConfig(slug) {
+      if (!slug) return;
+      const sel = document.getElementById('supplierCategorySelect');
+      const custom = document.getElementById('supplierCategoryCustom');
+      const r = await fetch('/api/supplier-category?supplier=' + encodeURIComponent(slug));
+      const d = await r.json();
+      const defaults = ['general', 'import', 'electronics'];
+      const seen = {};
+      const options = [];
+      defaults.forEach(function (x) { if (!seen[x]) { seen[x] = true; options.push(x); } });
+      (d.categories || []).forEach(function (x) {
+        const c = String(x || '').trim().toLowerCase();
+        if (c && !seen[c]) { seen[c] = true; options.push(c); }
+      });
+      const active = String((d.category || '')).trim().toLowerCase();
+      if (active && !seen[active]) options.push(active);
+      options.sort();
+      sel.innerHTML = '<option value="">(unset)</option>' +
+        options.map(function (x) { return '<option value="' + x + '">' + x + '</option>'; }).join('') +
+        '<option value="__custom__">custom…</option>';
+      if (active && options.indexOf(active) >= 0) {
+        sel.value = active;
+        custom.value = '';
+      } else if (active) {
+        sel.value = '__custom__';
+        custom.value = active;
+      } else {
+        sel.value = '';
+        custom.value = '';
+      }
+    }
+    async function saveSupplierCategoryConfig() {
+      const slug = document.getElementById('supplierSelect').value;
+      if (!slug) return;
+      const selVal = (document.getElementById('supplierCategorySelect').value || '').trim();
+      const customVal = (document.getElementById('supplierCategoryCustom').value || '').trim();
+      const category = selVal === '__custom__' ? customVal : selVal;
+      const r = await fetch('/api/supplier-category', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ supplier: slug, category: category })
+      });
+      const d = await r.json();
+      document.getElementById('msg').textContent = d.ok ? 'Supplier category saved.' : (d.error || 'Save failed.');
+      if (d.ok) {
+        await loadSuppliers();
+        document.getElementById('supplierSelect').value = slug;
+        updateEditQuicklink();
+      }
     }
     loadSuppliers().then(() => {
       pollStatus();
@@ -639,8 +719,10 @@ COMPANY_SUPPLIERS_HTML = """
     .supplier-grid label { display: flex; align-items: flex-start; gap: 0.5rem; cursor: pointer; font-size: 0.95rem; padding: 0.25rem 0; }
     .supplier-grid input { margin-top: 0.2rem; }
     .hint { font-size: 0.85rem; color: #888; margin-top: 0.5rem; }
-    .search-row { margin: 0.75rem 0; }
+    .search-row { margin: 0.75rem 0; display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; }
     .search-row input { width: 100%; max-width: 360px; padding: 0.5rem 0.75rem; background: #1a1a1a; border: 1px solid #444; border-radius: 6px; color: #e0e0e0; font-size: 0.95rem; }
+    .search-row select { padding: 0.5rem 0.75rem; background: #1a1a1a; border: 1px solid #444; border-radius: 6px; color: #e0e0e0; font-size: 0.9rem; min-width: 160px; }
+    .supplier-category-badge { display: inline-block; margin-left: 0.4rem; padding: 0.1rem 0.4rem; border-radius: 999px; font-size: 0.72rem; color: #9fd; border: 1px solid #355; background: #1b2a2a; text-transform: lowercase; }
   </style>
 </head>
 <body>
@@ -659,6 +741,9 @@ COMPANY_SUPPLIERS_HTML = """
       </div>
       <div class="search-row">
         <input type="search" id="supplierSearch" placeholder="Search suppliers (e.g. buythis)" oninput="filterSupplierChecks()">
+        <select id="supplierCategoryFilter" onchange="filterSupplierChecks()">
+          <option value="">All categories</option>
+        </select>
       </div>
       <div class="supplier-grid" id="supplierChecks"></div>
       <p class="hint">Saves to scraper config for this company. Tiered markup still applies per supplier on the Scrape page.</p>
@@ -721,7 +806,21 @@ COMPANY_SUPPLIERS_HTML = """
       var sr = await fetch('/api/suppliers');
       var all = await sr.json();
       scrapeableList = (all || []).filter(function (s) { return (s.module_name || '').trim(); });
+      var catSel = document.getElementById('supplierCategoryFilter');
+      var categorySet = {};
+      scrapeableList.forEach(function (s) {
+        var c = String((s.category || '')).trim().toLowerCase();
+        if (c) categorySet[c] = true;
+      });
+      var categories = Object.keys(categorySet).sort();
+      catSel.innerHTML = '<option value="">All categories</option>' +
+        categories.map(function (c) { return '<option value="' + escapeHtml(c) + '">' + escapeHtml(c) + '</option>'; }).join('') +
+        '<option value="uncategorized">uncategorized</option>';
       scrapeableList.sort(function (a, b) {
+        var ac = String(a.category || '').toLowerCase();
+        var bc = String(b.category || '').toLowerCase();
+        var byCat = ac.localeCompare(bc, undefined, { sensitivity: 'base' });
+        if (byCat !== 0) return byCat;
         return String(a.display_name || a.slug).localeCompare(String(b.display_name || b.slug), undefined, { sensitivity: 'base' });
       });
       var cr = await fetch('/api/company-suppliers?company=' + encodeURIComponent(company));
@@ -740,10 +839,13 @@ COMPANY_SUPPLIERS_HTML = """
         scrapeableList.forEach(function (s) {
           var slug = s.slug || '';
           var low = slug.toLowerCase();
+          var category = String((s.category || '')).trim().toLowerCase();
           var id = 'sup_' + low.replace(/[^a-z0-9_-]/g, '_');
           var lab = document.createElement('label');
-          lab.innerHTML = '<input type="checkbox" id="' + escapeHtml(id) + '" data-slug="' + escapeHtml(slug) + '"' + (savedSet[low] ? ' checked' : '') + '> ' +
-            '<span>' + escapeHtml(s.display_name || slug) + ' <span style="color:#666">(' + escapeHtml(slug) + ')</span></span>';
+          lab.innerHTML = '<input type="checkbox" id="' + escapeHtml(id) + '" data-slug="' + escapeHtml(slug) + '" data-category="' + escapeHtml(category) + '"' + (savedSet[low] ? ' checked' : '') + '> ' +
+            '<span>' + escapeHtml(s.display_name || slug) + ' <span style="color:#666">(' + escapeHtml(slug) + ')</span>' +
+            (category ? '<span class="supplier-category-badge">' + escapeHtml(category) + '</span>' : '<span class="supplier-category-badge">uncategorized</span>') +
+            '</span>';
           host.appendChild(lab);
         });
       }
@@ -753,16 +855,17 @@ COMPANY_SUPPLIERS_HTML = """
     }
     function filterSupplierChecks() {
       var q = (document.getElementById('supplierSearch') && document.getElementById('supplierSearch').value || '').trim().toLowerCase();
+      var cat = (document.getElementById('supplierCategoryFilter') && document.getElementById('supplierCategoryFilter').value || '').trim().toLowerCase();
       document.querySelectorAll('#supplierChecks label').forEach(function (lab) {
-        if (!q) {
-          lab.style.display = '';
-          return;
-        }
-        var slug = (lab.querySelector('input[data-slug]') && lab.querySelector('input[data-slug]').getAttribute('data-slug') || '').toLowerCase();
+        var inp = lab.querySelector('input[data-slug]');
+        var slug = (inp && inp.getAttribute('data-slug') || '').toLowerCase();
+        var rowCat = (inp && inp.getAttribute('data-category') || '').toLowerCase();
         var text = (lab.textContent || '').toLowerCase();
         var alt = slug.replace(/-/g, '');
         var qAlt = q.replace(/[^a-z0-9]/g, '');
-        lab.style.display = (text.indexOf(q) >= 0 || slug.indexOf(q) >= 0 || alt.indexOf(qAlt) >= 0) ? '' : 'none';
+        var searchMatch = !q || (text.indexOf(q) >= 0 || slug.indexOf(q) >= 0 || alt.indexOf(qAlt) >= 0);
+        var categoryMatch = !cat || (cat === 'uncategorized' ? !rowCat : rowCat === cat);
+        lab.style.display = (searchMatch && categoryMatch) ? '' : 'none';
       });
     }
     function getCheckedSlugs() {
@@ -3460,7 +3563,43 @@ def api_manual_save():
 
 @app.route("/api/suppliers")
 def api_suppliers():
-    return jsonify(get_suppliers())
+    rows = get_suppliers()
+    for row in rows:
+        row["category"] = get_supplier_category(row.get("slug"))
+    return jsonify(rows)
+
+
+@app.route("/api/supplier-category", methods=["GET"])
+def api_supplier_category_get():
+    supplier = (request.args.get("supplier") or "").strip()
+    if not supplier:
+        return jsonify({"category": "", "categories": list_supplier_categories()})
+    info = get_supplier(supplier)
+    if not info:
+        return jsonify({"ok": False, "error": "Unknown supplier"}), 404
+    return jsonify({
+        "ok": True,
+        "supplier": info.slug,
+        "category": get_supplier_category(info.slug),
+        "categories": list_supplier_categories(),
+    })
+
+
+@app.route("/api/supplier-category", methods=["POST"])
+def api_supplier_category_post():
+    data = request.get_json(silent=True) or {}
+    supplier = (data.get("supplier") or "").strip()
+    category = (data.get("category") or "").strip()
+    if not supplier:
+        return jsonify({"ok": False, "error": "supplier required"}), 400
+    info = get_supplier(supplier)
+    if not info:
+        return jsonify({"ok": False, "error": "Unknown supplier"}), 400
+    try:
+        save_supplier_category(info.slug, category or None)
+    except ValueError as e:
+        return jsonify({"ok": False, "error": str(e)}), 400
+    return jsonify({"ok": True, "supplier": info.slug, "category": get_supplier_category(info.slug)})
 
 
 @app.route("/api/companies")

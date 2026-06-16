@@ -1,0 +1,5 @@
+# SHEIN South Africa — product URLs (one per line), or browse and Save in the UI.
+# Store: https://za.shein.com/
+
+https://za.shein.com/Stainless-Steel-Folding-Utility-Knife-Sharp-Surgical-Blade-Portable-Box-Cutter-Fruit-Peeler-Multi-Function-Opener-Folding-Knife-p-426498323.html
+https://za.shein.com/13-In-1-Multifunctional-Pliers-Folding-Pocket-Tool-Portable-Stainless-Steel-Small-Multi-Purpose-Pliers-With-Screwdriver-Bottle-Opener-Suitable-For-Outdoor-Camping-Hiking-Fishing-Survival-Travel-Emergency-Home-Repair-Compact-Durable-Foldable-Daily-Use-For-Men-Fathers-Husbands-Backpacks-Adventurer-p-464302913.html

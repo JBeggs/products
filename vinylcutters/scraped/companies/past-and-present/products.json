@@ -1,6 +1,7 @@
 {
   "products": [
     {
+      "category_id": "eaa35dfa-cc2b-41f0-a6e3-6a4dc79e8a8a",
       "compare_at_price": 15272.09,
       "cost": 12500,
       "description": "Combo Sublimation Printer with Mug &amp; Heat PressKit inclEpson Sublimation Printer4 x 100ml Sublimation ink made in Germany4 x 100 pg Economy Sublimation PaperMug press Dual with Regular and Slim elementHeat Press 38x38cm",
@@ -18,6 +19,9 @@
       "in_stock": true,
       "name": "Combo Sublimation Printer with Mug",
       "price": 13437.5,
+      "production_ids": {
+        "past-and-present": "a901669a-329c-4ab1-b1b8-732811d8229d"
+      },
       "short_description": "Combo Sublimation Printer with Mug & Heat Press",
       "status": "active",
       "stock_quantity": 0,
@@ -31,13 +35,10 @@
       "url": "https://vinylcutters.co.za/products/combo-sublimation-printer-with-mug-heat-press",
       "variants": [],
       "vinylcutters_price": 12500,
-      "weight": 10000,
-      "category_id": "eaa35dfa-cc2b-41f0-a6e3-6a4dc79e8a8a",
-      "production_ids": {
-        "past-and-present": "a901669a-329c-4ab1-b1b8-732811d8229d"
-      }
+      "weight": 10000
     },
     {
+      "category_id": "eaa35dfa-cc2b-41f0-a6e3-6a4dc79e8a8a",
       "compare_at_price": 6291.41,
       "cost": 5000,
       "description": "Epson Sublimation kitKit incl:Epson Printer with bulk ink tanks4 x 100ml Sublimation inks4x 100ml Economy Sublimation paperSublimation ink can be used to print on 1000's of itemsincl Sublimation T-Shirt Transfer paper, Sublimation Sticker Paper,Frames, Clocks, Puzzles, Name Badges, Mugs, Coasters etc etcUSB cable requiredAftermarket inks so warranty void on printer.",
@@ -52,6 +53,9 @@
       "in_stock": true,
       "name": "Combo Sublimation Printer kit",
       "price": 5400,
+      "production_ids": {
+        "past-and-present": "cf44a839-0776-4986-9644-c88909dab249"
+      },
       "short_description": "Combo Sublimation Printer kit",
       "status": "active",
       "stock_quantity": 0,
@@ -65,13 +69,10 @@
       "url": "https://vinylcutters.co.za/products/combo-sublimation-printer-kit",
       "variants": [],
       "vinylcutters_price": 5000,
-      "weight": 10000,
-      "category_id": "eaa35dfa-cc2b-41f0-a6e3-6a4dc79e8a8a",
-      "production_ids": {
-        "past-and-present": "cf44a839-0776-4986-9644-c88909dab249"
-      }
+      "weight": 10000
     },
     {
+      "category_id": "eaa35dfa-cc2b-41f0-a6e3-6a4dc79e8a8a",
       "compare_at_price": 11211,
       "cost": 9000,
       "description": "Combo 8in1 Heat pressInterchangable element38x28cm Heat pressCap Press ElementSide Plate ElementDinner Plate ElementRegular Mug Press cradle with elementSlim Mug ElementCone Mug ElementFlask ElementHeavy Duty Business modelSwing away designSilicon Pressure PadDigital Temp 50-400 deg CelsiusDigital Timer 1sec to 17 minutesDigital Countdown Alarm1yr guarantee1yr guarantee on all metal elementsMug and Plate press elements no guarantee",
@@ -85,6 +86,9 @@
       "in_stock": true,
       "name": "Combo 8in1 28x38cm Heat Press",
       "price": 9720,
+      "production_ids": {
+        "past-and-present": "bf2c2286-86cb-4ecd-928c-971e5cc4217a"
+      },
       "short_description": "Combo 8in1 28x38cm Heat Press",
       "status": "active",
       "stock_quantity": 0,
@@ -98,12 +102,8 @@
       "url": "https://vinylcutters.co.za/products/combo-8in1-28x38cm-heat-press",
       "variants": [],
       "vinylcutters_price": 9000,
-      "weight": 10000,
-      "category_id": "eaa35dfa-cc2b-41f0-a6e3-6a4dc79e8a8a",
-      "production_ids": {
-        "past-and-present": "bf2c2286-86cb-4ecd-928c-971e5cc4217a"
-      }
+      "weight": 10000
     }
   ],
-  "updated": "2026-05-26T14:03:23.056725"
+  "updated": "2026-06-12T08:14:14.506830"
 }

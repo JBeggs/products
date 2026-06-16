@@ -12,5 +12,8 @@ https://www.seedsandall.co.za/
 https://www.seedsforafrica.co.za/
 https://youngsindustrial.co.za
 https://www.overberghoney.co.za/
+https://electromannsa.co.za/
+https://www.robotics.org.za/
+https://www.communica.co.za/
 
 # Each URL above has a matching scraper slug in shared/suppliers.py (browse-and-save + urls.txt).

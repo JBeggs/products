@@ -1,0 +1,3 @@
+# SHEIN South Africa — product URLs (one per line), or browse and Save in the UI.
+# Store: https://za.shein.com/
+

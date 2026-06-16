@@ -244,11 +244,16 @@ def create_edit_blueprint():
     def api_sources():
         """Return all suppliers for Edit Products tabs - from get_sources_for_edit (same source as product loading)."""
         from shared.suppliers import get_supplier, get_sources_for_edit
+        from shared.config import get_supplier_category
         sources_dict = get_sources_for_edit()
         result = []
         for slug in sources_dict:
             info = get_supplier(slug)
-            result.append({"slug": slug, "display_name": (info.display_name if info else slug)})
+            result.append({
+                "slug": slug,
+                "display_name": (info.display_name if info else slug),
+                "category": get_supplier_category(slug),
+            })
         return _no_cache(jsonify(result))
 
     @bp.route("/api/products")
@@ -1776,6 +1781,8 @@ HTML = """
     <div class="supplier-panel-row">
       <label for="supplierJump" class="supplier-jump-label">Supplier</label>
       <select id="supplierJump" class="supplier-jump" title="Jump to supplier" aria-label="Supplier"></select>
+      <label for="supplierCategoryFilter" class="supplier-jump-label">Category</label>
+      <select id="supplierCategoryFilter" class="supplier-jump" title="Filter suppliers by category" aria-label="Supplier category filter"></select>
     </div>
     <div class="tabs-scroll">
       <div class="tabs" id="tabs">
@@ -1876,6 +1883,7 @@ HTML = """
     let sources = [];
     /** Full supplier list from /edit/api/sources before Dashboard company-supplier filter */
     let allEditSources = [];
+    let selectedSupplierCategory = '';
     let categories = [];
     let verifyPolling = null;
     let verifySoldOutItems = [];
@@ -2032,15 +2040,74 @@ HTML = """
       el.style.display = text ? 'block' : 'none';
     }
 
+    const MANUAL_SOURCE_SLUG = 'manual';
+
+    function sourceLabel(s) {
+      return String((s && (s.display_name || s.slug)) || '').toLowerCase();
+    }
+
+    function ensureManualSource(list, full) {
+      const out = Array.isArray(list) ? list.slice() : [];
+      const hasManual = out.some(function (s) {
+        return String((s && s.slug) || '').toLowerCase() === MANUAL_SOURCE_SLUG;
+      });
+      if (hasManual) return out;
+      const manual = (full || []).find(function (s) {
+        return String((s && s.slug) || '').toLowerCase() === MANUAL_SOURCE_SLUG;
+      });
+      if (!manual) return out;
+      out.push(manual);
+      out.sort(function (a, b) {
+        return sourceLabel(a).localeCompare(sourceLabel(b));
+      });
+      return out;
+    }
+
     function filterEditSourcesForCompany(full, allowSet) {
       if (!allowSet) return { list: full.slice(), warn: '' };
       const filtered = full.filter(function (s) {
         return allowSet.has(String(s.slug || '').toLowerCase());
       });
-      if (filtered.length) return { list: filtered, warn: '' };
+      if (filtered.length) return { list: ensureManualSource(filtered, full), warn: '' };
       return {
-        list: full.slice(),
+        list: ensureManualSource(full, full),
         warn: 'Configured suppliers for this company do not match any supplier with saved data; showing all tabs. Update on Dashboard → Configure suppliers.',
+      };
+    }
+
+    function filterSourcesByCategory(list) {
+      const arr = Array.isArray(list) ? list.slice() : [];
+      if (!selectedSupplierCategory) return arr;
+      if (selectedSupplierCategory === 'uncategorized') {
+        return arr.filter(function (s) { return !String((s && s.category) || '').trim(); });
+      }
+      return arr.filter(function (s) {
+        return String((s && s.category) || '').trim().toLowerCase() === selectedSupplierCategory;
+      });
+    }
+
+    function rebuildSupplierCategoryFilterOptions() {
+      const sel = document.getElementById('supplierCategoryFilter');
+      if (!sel) return;
+      const base = ['general', 'import', 'electronics'];
+      const seen = {};
+      const categories = [];
+      base.forEach(function (c) { if (!seen[c]) { seen[c] = true; categories.push(c); } });
+      (allEditSources || []).forEach(function (s) {
+        const c = String((s && s.category) || '').trim().toLowerCase();
+        if (c && !seen[c]) { seen[c] = true; categories.push(c); }
+      });
+      categories.sort();
+      const prev = selectedSupplierCategory;
+      const valid = new Set(['', 'uncategorized'].concat(categories));
+      selectedSupplierCategory = valid.has(prev) ? prev : '';
+      sel.innerHTML = '<option value="">All categories</option>' +
+        categories.map(function (c) { return '<option value="' + escapeAttr(c) + '">' + escapeHtml(c) + '</option>'; }).join('') +
+        '<option value="uncategorized">uncategorized</option>';
+      sel.value = selectedSupplierCategory;
+      sel.onchange = function () {
+        selectedSupplierCategory = String(sel.value || '').trim().toLowerCase();
+        rebuildSupplierTabsForCompany();
       };
     }
 
@@ -2048,10 +2115,13 @@ HTML = """
       const company = getCompany();
       const allowSet = await fetchCompanySupplierAllowSet(company);
       const { list, warn } = filterEditSourcesForCompany(allEditSources, allowSet);
-      sources = list;
+      sources = filterSourcesByCategory(list);
       const parts = [];
       if (allowSet && sources.length && !warn) {
-        parts.push('Tabs show ' + sources.length + ' supplier(s) configured for this company (Dashboard → Configure suppliers).');
+        parts.push('Tabs show ' + sources.length + ' supplier(s) for this company. Manual Entry is always shown here and is separate from Dashboard → Configure suppliers.');
+      }
+      if (selectedSupplierCategory) {
+        parts.push('Category filter: ' + selectedSupplierCategory + '.');
       }
       if (warn) parts.push(warn);
       applyEditSupplierScopeNote(parts.join(' '));
@@ -2099,6 +2169,7 @@ HTML = """
     async function initTabs() {
       const r = await fetch(cacheBust(apiUrl('api/sources')));
       allEditSources = await r.json();
+      rebuildSupplierCategoryFilterOptions();
       loadCategories();
       await rebuildSupplierTabsForCompany();
       loadCountries();

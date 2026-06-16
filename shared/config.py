@@ -29,7 +29,7 @@ SUPPLIERS_USING_TIERED_MARKUP = frozenset({
     "perfectdealz", "takealot", "aliexpress", "game", "loot", "constructionhyper",
     "northernbolt", "builders", "dailydiscounts", "soundselect", "tsawelding", "gimmeonline",
     "nativechild", "blackafrican", "cosmeticconnection",
-    "ahm", "outdoorandvelocity", "buythis", "vinylcutters",
+    "ahm", "outdoorandvelocity", "buythis", "vinylcutters", "shein", "electromann", "robotics", "communica",
 })
 
 # Default tier multipliers: (threshold_cents/100 = R, multiplier)
@@ -40,6 +40,93 @@ DEFAULT_TIER_MULTIPLIERS = [
     {"threshold": 199, "multiplier": 2.25},
     {"threshold": None, "multiplier": 1.5},  # None = infinity
 ]
+
+DEFAULT_SUPPLIER_CATEGORIES: dict[str, str] = {
+    "makro": "general",
+    "temu": "import",
+    "aliexpress": "import",
+    "onedayonly": "import",
+    "myrunway": "import",
+    "ubuy": "import",
+    "perfectdealz": "import",
+    "takealot": "import",
+    "loot": "import",
+    "shein": "import",
+    "electromann": "electronics",
+    "robotics": "electronics",
+    "communica": "electronics",
+}
+
+
+def normalize_supplier_category(value: str | None) -> str:
+    """Normalize supplier category text to lowercase slug-ish format."""
+    if value is None:
+        return ""
+    text = str(value).strip().lower().replace("_", "-")
+    out = []
+    prev_dash = False
+    for ch in text:
+        is_word = ("a" <= ch <= "z") or ("0" <= ch <= "9")
+        if is_word:
+            out.append(ch)
+            prev_dash = False
+            continue
+        if ch in (" ", "-", "/") and not prev_dash and out:
+            out.append("-")
+            prev_dash = True
+    normalized = "".join(out).strip("-")
+    return normalized[:48]
+
+
+def get_supplier_categories() -> dict[str, str]:
+    """Return merged supplier category map (defaults + config overrides)."""
+    cfg = load_scraper_config()
+    raw = cfg.get("supplier_categories") or {}
+    merged = dict(DEFAULT_SUPPLIER_CATEGORIES)
+    if isinstance(raw, dict):
+        for slug, category in raw.items():
+            s = str(slug or "").strip().lower()
+            if not s:
+                continue
+            c = normalize_supplier_category(category)
+            if c:
+                merged[s] = c
+    return merged
+
+
+def get_supplier_category(slug: str) -> str:
+    """Get category for a supplier slug (empty string when unset)."""
+    s = str(slug or "").strip().lower()
+    if not s:
+        return ""
+    return get_supplier_categories().get(s, "")
+
+
+def list_supplier_categories() -> list[str]:
+    """Return distinct known supplier categories, sorted."""
+    cats = set(DEFAULT_SUPPLIER_CATEGORIES.values())
+    for _, category in get_supplier_categories().items():
+        c = normalize_supplier_category(category)
+        if c:
+            cats.add(c)
+    return sorted(cats)
+
+
+def save_supplier_category(slug: str, category: str | None) -> None:
+    """Save or clear supplier category override in scraper config."""
+    s = str(slug or "").strip().lower()
+    if not s:
+        raise ValueError("supplier slug required")
+    c = normalize_supplier_category(category)
+    cfg = load_scraper_config()
+    raw = cfg.get("supplier_categories") or {}
+    category_map = dict(raw) if isinstance(raw, dict) else {}
+    if not c:
+        category_map.pop(s, None)
+    else:
+        category_map[s] = c
+    cfg["supplier_categories"] = category_map
+    save_scraper_config(cfg)
 
 
 def load_scraper_config() -> dict:

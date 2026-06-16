@@ -120,6 +120,17 @@ def _ensure_compare_at_gte_price(payload: dict, *, on_api_rejection: bool = Fals
     return True
 
 
+def _snapshot_has_compare_at(prod_snapshot: dict) -> bool:
+    """True when CRM product already has a non-empty compare_at_price."""
+    cmp = prod_snapshot.get("compare_at_price")
+    if cmp is None or cmp == "":
+        return False
+    try:
+        return float(cmp) > 0
+    except (TypeError, ValueError):
+        return False
+
+
 def _is_compare_at_price_validation_error(status_code: int | None, body: str) -> bool:
     if status_code != 400:
         return False
@@ -709,26 +720,25 @@ def update_product(
         "Content-Type": "application/json",
     }
 
-    # Existence check before image upload; skip when updating fields-only (PATCH handles 404).
+    # Existence check before image upload; always fetch CRM snapshot for compare_at preservation.
     check_url = f"{base_url.rstrip('/')}/v1/products/{product_id}/"
     prod_snapshot: dict | None = None
-    if sync_images:
-        try:
-            check = requests.get(check_url, headers=headers, timeout=15)
-            if check.status_code == 404:
-                print(f"  INFO: Product {product_id[:12]}… gone from prod (404) – will re-create")
+    try:
+        check = requests.get(check_url, headers=headers, timeout=15)
+        if check.status_code == 404:
+            print(f"  INFO: Product {product_id[:12]}… gone from prod (404) – will re-create")
+            return "not_found"
+        if check.status_code == 200:
+            prod_data = check.json()
+            prod_obj = prod_data.get("data", prod_data) if isinstance(prod_data, dict) else prod_data
+            if isinstance(prod_obj, dict):
+                prod_snapshot = prod_obj
+            status_val = (prod_obj.get("status") or "").lower() if isinstance(prod_obj, dict) else ""
+            if status_val in ("archived", "deleted", "inactive"):
+                print(f"  INFO: Product {product_id[:12]}… is {status_val} on prod – will re-create")
                 return "not_found"
-            if check.status_code == 200:
-                prod_data = check.json()
-                prod_obj = prod_data.get("data", prod_data) if isinstance(prod_data, dict) else prod_data
-                if isinstance(prod_obj, dict):
-                    prod_snapshot = prod_obj
-                status_val = (prod_obj.get("status") or "").lower() if isinstance(prod_obj, dict) else ""
-                if status_val in ("archived", "deleted", "inactive"):
-                    print(f"  INFO: Product {product_id[:12]}… is {status_val} on prod – will re-create")
-                    return "not_found"
-        except requests.RequestException:
-            pass
+    except requests.RequestException:
+        pass
 
     description = (data.get("description") or "")[:2000]
     variants = data.get("variants") or []
@@ -742,8 +752,11 @@ def update_product(
         "short_description": (data.get("short_description") or "")[:300],
         "price": str(data.get("price", 0)),
         "cost_price": str(data["cost"]) if data.get("cost") is not None else None,
-        "compare_at_price": str(data["compare_at_price"]) if data.get("compare_at_price") else None,
     }
+    # Respect admin-cleared compare_at: omit from PATCH when CRM snapshot has no compare_at.
+    if prod_snapshot is None or _snapshot_has_compare_at(prod_snapshot):
+        if data.get("compare_at_price"):
+            payload["compare_at_price"] = str(data["compare_at_price"])
     if data.get("stock_quantity") is not None:
         payload["stock_quantity"] = int(data["stock_quantity"])
     if "in_stock" in data:

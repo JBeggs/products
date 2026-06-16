@@ -1,4 +1,25 @@
 # Northern Bolt — add product page URLs here (one per line), or browse and Save in the UI.
 # Store: https://www.northernbolt.co.za/
 
+https://www.northernbolt.co.za/products/ingco-2-in-1-cordless-combo-kit
+https://www.northernbolt.co.za/products/ingco-cordless-multi-tool-heat-gun-combo-kit
+https://www.northernbolt.co.za/products/ingco-cordless-3-piece-combo-kit
+https://www.northernbolt.co.za/products/ingco-4ah-battery-2pc-set-20v-p20s
+https://www.northernbolt.co.za/products/ingco-6-port-battery-charger-20v
+https://www.northernbolt.co.za/products/ingco-li-ion-battery-pack-20v-2-0ah
+https://www.northernbolt.co.za/products/ingco-spare-battery-4ah-for-all-ingco-cordless-tools
+https://www.northernbolt.co.za/products/ingco-5ah-spare-battery-20v-p20s-for-all-ingco-cordless-tools
+https://www.northernbolt.co.za/products/ingco-cordless-rotary-hammer-drill-20v-22mm-tool-only-copy
+https://www.northernbolt.co.za/products/ingco-42v-cordless-work-lamp-2800-lumen
+https://www.northernbolt.co.za/products/ingco-42v-cordless-impact-drill-kit-69nm-p42m
+https://www.northernbolt.co.za/products/ingco-42v-cordless-angle-grinder-1080w-p42m-kit
+https://www.northernbolt.co.za/products/ingco-42v-cordless-rotary-hammer-drill-kit-p42m
+https://www.northernbolt.co.za/products/ingco-42v-cordless-impact-wrench-kit-750nm-p42m
+https://www.northernbolt.co.za/products/ingco-42v-battery-pack-2-5ah-li-ion-p42m
+https://www.northernbolt.co.za/products/ingco-2x-battery-pack-2-5ah-charger-42v-kit
+https://www.northernbolt.co.za/products/ingco-2x-battery-pack-2-0ah-charger-42v-kit
 https://www.northernbolt.co.za/products/ingco-cordless-angle-grinder-20v-115mm-brushless-kit-with-carry-case-copy
+https://www.northernbolt.co.za/products/ingco-cordless-rotary-hammer-drill-20v-22mm-tool-only
+https://www.northernbolt.co.za/products/ingco-cordless-spray-gun-1000ml-20v-tool-only
+https://www.northernbolt.co.za/products/open-for-pre-order-ingco-5pcs-cordless-combo-kit-new-updated-model-ckli20595
+https://www.northernbolt.co.za/products/ingco-inverter-mma-welding-machine-240v-180a

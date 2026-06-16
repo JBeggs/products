@@ -1,0 +1,30 @@
+{
+  "products": [
+    {
+      "compare_at_price": 3396.98,
+      "cost": 3000,
+      "description": "About 20 adults mainly hen's, one roaster and 30 smaller ones",
+      "goods_id": "manual_6b022c5db046",
+      "images": [
+        "images/chickens_for_sale_manual_6b022c5db046_01.jpg"
+      ],
+      "in_stock": false,
+      "manual_price": 3000,
+      "name": "Chickens for Sale - Flock",
+      "price": 3000,
+      "short_description": "Free range chickens looking to sell the whole flock",
+      "status": "active",
+      "stock_quantity": 0,
+      "tags": [
+        "manual"
+      ],
+      "url": "https://manual.local/product/manual_6b022c5db046",
+      "variants": [],
+      "weight": 40000,
+      "dimension_length": 20,
+      "dimension_width": 25,
+      "dimension_height": 30
+    }
+  ],
+  "updated": "2026-06-13T11:17:49.899405"
+}

@@ -13,6 +13,8 @@ VERIFY_TIMEOUT_BY_SOURCE: dict[str, float] = {
     "hekpoorthoneyfarms": 60.0,
     "ahm": 60.0,
     "tsawelding": 60.0,
+    # Playwright + SPA hydration when HTTP verify has no JSON-LD
+    "shein": 60.0,
 }
 
 # One-time Temu Chrome attach + optional login/slider (not counted per product)

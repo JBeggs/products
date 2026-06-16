@@ -35,6 +35,7 @@ Suppliers use one of two session mechanisms:
 | **Daily Discounts** | JSON session | `dailydiscounts/dailydiscounts_session.json` | Same as Makro. |
 | **Sound Select** | JSON session | `soundselect/soundselect_session.json` | Same as Makro. |
 | **TSA Welding** | JSON session | `tsawelding/tsawelding_session.json` | Shopify; same as Makro; skip inject on `challenge` / `captcha` paths. |
+| **SHEIN** | JSON session | `shein/shein_session.json` | [za.shein.com](https://za.shein.com); browse-and-save; PDP URLs use `-p-{id}.html`. Google login needs `allow_popup_for_hosts` (accounts.google, etc.) — same pattern as Takealot/Game. |
 | **Temu** | Custom (Chrome profile) | `temu/chrome_profile/` | Uses `launch_persistent_context` directly, not `GenericScraperConfig`. |
 | **Gumtree** | Custom (Chrome profile + JSON save) | `gumtree/chrome_profile/`, `gumtree/gumtree_session.json` | Interactive Gumtree scraper uses the persistent profile for browsing/OAuth and can also save `storage_state` JSON. |
 

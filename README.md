@@ -346,7 +346,17 @@ Progress appears in a modal while the job runs. Changes are saved to disk after 
 
 **Temu:** Verify uses **real Chrome** on port **9223** (not Playwright automation — the security slider fails there). First run `python temu/setup_verify.py`, complete login/slider in that Chrome window, then **Verify all**. Leave that Chrome open during the batch. Verify waits up to **180s** for Chrome to open on the first Temu run, then **120s per Temu product** (HTTP suppliers stay at 20s). If you see “Timed out after 20s”, restart the products app so the new limits apply.
 
-**All browser sessions (Temu + Junk Mail):** From `products/` run `python setup_browser_sessions.py` to walk through every real-Chrome setup in one go (`--only temu`, `--list`, `--status`).
+**Browser session setup (from `products/`):**
+
+| Command | Covers |
+|---------|--------|
+| `python setup_browser_sessions.py` | **2** CDP suppliers: temu (9223), junkmail (9222) |
+| `python setup_browser_sessions.py --all-suppliers` | **39** session-backed suppliers (CDP + chrome profiles + JSON) |
+| `python setup_browser_sessions.py --all-suppliers --status` | Check which sessions exist on disk (no Chrome) |
+| `python setup_browser_sessions.py --list` | Full registry: kind per supplier |
+| `python setup_browser_sessions.py --only makro,temu` | Subset |
+
+If Temu **Verify all** still shows “Timed out after 20s”, **restart the products app** so [`shared/verify_timeouts.py`](shared/verify_timeouts.py) is loaded (120s per product, 180s pre-warm).
 
 ### Scope
 
@@ -355,7 +365,7 @@ Progress appears in a modal while the job runs. Changes are saved to disk after 
 
 ### Supported suppliers (have `fetch_current_pricing`)
 
-`temu`, `gumtree`, `junkmail`, `aliexpress`, `makro`, `constructionhyper`, `game`, `loot`, `perfectdealz`, `ubuy`, `myrunway`, `onedayonly`, `ahm`, `tsawelding`, `outdoorandvelocity`, `hekpoorthoneyfarms`, `seedsandall`, `brendas`, `elanas`
+`temu`, `gumtree`, `junkmail`, `aliexpress`, `makro`, `constructionhyper`, `game`, `loot`, `perfectdealz`, `ubuy`, `myrunway`, `onedayonly`, `ahm`, `tsawelding`, `outdoorandvelocity`, `hekpoorthoneyfarms`, `seedsandall`, `brendas`, `elanas`, `shein`
 
 Other suppliers are logged as unsupported until a checker is added.
 
@@ -374,6 +384,7 @@ Other suppliers are logged as unsupported until a checker is added.
 | Daily Discounts | `dailydiscounts/urls.txt` | `dailydiscounts/scraped/products.json` |
 | Sound Select | `soundselect/urls.txt` | `soundselect/scraped/products.json` |
 | TSA Welding | `tsawelding/urls.txt` | `tsawelding/scraped/products.json` |
+| SHEIN | `shein/urls.txt` | `shein/scraped/products.json` |
 | Nativechild | `nativechild/urls.txt` | `nativechild/scraped/products.json` |
 | Black African | `blackafrican/urls.txt` | `blackafrican/scraped/products.json` |
 | Cosmetic Connection | `cosmeticconnection/urls.txt` | `cosmeticconnection/scraped/products.json` |

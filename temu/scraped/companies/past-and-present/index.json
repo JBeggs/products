@@ -1,54 +1,201 @@
 {
-  "updated": "2026-05-29T08:54:21.344570",
-  "product_count": 7,
+  "updated": "2026-06-05T11:41:53.596804",
+  "product_count": 28,
   "products": [
     {
       "name": "Smart LED Display Soldering Iron black",
-      "price": 376.2,
-      "temu_price": 209,
+      "price": 374.4,
+      "temu_price": 208,
       "goods_id": "601105315766855",
       "variant": null
     },
     {
       "name": "Constant Temperature Digital Display Adjustable",
-      "price": 268.8,
-      "temu_price": 140,
+      "price": 270.72,
+      "temu_price": 141,
       "goods_id": "606021024067804",
       "variant": null
     },
     {
       "name": "Portable Soldering Iron, Rechargeable Welding",
-      "price": 259.2,
-      "temu_price": 135,
+      "price": 311.04,
+      "temu_price": 162,
       "goods_id": "606046793860117",
       "variant": null
     },
     {
       "name": "1 Mini Portable Handheld Sewing",
-      "price": 320.4,
-      "temu_price": 178,
+      "price": 315,
+      "temu_price": 175,
       "goods_id": "601101616624336",
       "variant": null
     },
     {
       "name": "GOXAWEE Electronic Digital Display Vernier",
-      "price": 110.16,
-      "temu_price": 54,
+      "price": 108.12,
+      "temu_price": 53,
       "goods_id": "601101328087423",
       "variant": null
     },
     {
       "name": "Air Fryer 6L Large Capacity",
-      "price": 676.8,
-      "temu_price": 376,
+      "price": 745.2,
+      "temu_price": 414,
       "goods_id": "605877679551705",
       "variant": null
     },
     {
       "name": "Home Mini Exhaust Fan Set,",
-      "price": 351.0,
-      "temu_price": 195,
+      "price": 354.6,
+      "temu_price": 197,
       "goods_id": "605994935486151",
+      "variant": null
+    },
+    {
+      "name": "1pc/4pcs, Emergency Camping Multitool Card",
+      "price": 136.68,
+      "temu_price": 67,
+      "goods_id": "601099531716263",
+      "variant": null
+    },
+    {
+      "name": "Rapid-Charge Cordless Fabric Shears:Ergonomic Leather-Cutting",
+      "price": 343.8,
+      "temu_price": 191,
+      "goods_id": "601102747937994",
+      "variant": null
+    },
+    {
+      "name": "Mumutan 11-in-1 Stainless Steel Pocket",
+      "price": 57.12,
+      "temu_price": 28,
+      "goods_id": "601105409855816",
+      "variant": null
+    },
+    {
+      "name": "Stainless Steel Mini Keychain -",
+      "price": 79.56,
+      "temu_price": 39,
+      "goods_id": "601105570043707",
+      "variant": null
+    },
+    {
+      "name": "1pc Ultra-Thin Multi-Function Tool Card,",
+      "price": 89.76,
+      "temu_price": 44,
+      "goods_id": "601101690027787",
+      "variant": null
+    },
+    {
+      "name": "SWISS TECH 13 In 1",
+      "price": 236.16,
+      "temu_price": 123,
+      "goods_id": "601099621764133",
+      "variant": null
+    },
+    {
+      "name": "1pc 29-Hole Card Gauge Drill",
+      "price": 87.72,
+      "temu_price": 43,
+      "goods_id": "601105052800489",
+      "variant": null
+    },
+    {
+      "name": "Mini Folding Pocket Knife- Lightweight&",
+      "price": 71.4,
+      "temu_price": 35,
+      "goods_id": "601103840527564",
+      "variant": null
+    },
+    {
+      "name": "6pcs Mini Vegetable Knife Keychain",
+      "price": 168.96,
+      "temu_price": 88,
+      "goods_id": "601102014745665",
+      "variant": null
+    },
+    {
+      "name": "Includes 9V Battery, Capable of Precise Positioning",
+      "price": 241.92,
+      "temu_price": 126,
+      "goods_id": "601100592970510",
+      "variant": null
+    },
+    {
+      "name": "2pcs New Practical Outdoor Camping",
+      "price": 61.2,
+      "temu_price": 30,
+      "goods_id": "601101434904646",
+      "variant": null
+    },
+    {
+      "name": "2pcs Multi Functional Peeler, Kitchen",
+      "price": 116.28,
+      "temu_price": 57,
+      "goods_id": "605695814532145",
+      "variant": null
+    },
+    {
+      "name": "The Hobbyworker Mini Knife type a",
+      "price": 53.04,
+      "temu_price": 26,
+      "goods_id": "601099533423269",
+      "variant": null
+    },
+    {
+      "name": "The Hobbyworker Mini Knife type b",
+      "price": 53.04,
+      "temu_price": 26,
+      "goods_id": "601099533423269",
+      "variant": null
+    },
+    {
+      "name": "The Hobbyworker Mini Knife type c",
+      "price": 53.04,
+      "temu_price": 26,
+      "goods_id": "601099533423269",
+      "variant": null
+    },
+    {
+      "name": "[2pcs Mini Keychain Knife] 2pcs",
+      "price": 102,
+      "temu_price": 50,
+      "goods_id": "601102162696817",
+      "variant": null
+    },
+    {
+      "name": "Mini Folding Knife - EDC",
+      "price": 45.36,
+      "temu_price": 21,
+      "goods_id": "601102278599193",
+      "variant": null
+    },
+    {
+      "name": "1pc Multifunctional Kitchen Knife",
+      "price": 45.36,
+      "temu_price": 21,
+      "goods_id": "601101363808220",
+      "variant": null
+    },
+    {
+      "name": "Durable And Sharp Household Japanese Chef'S Knife",
+      "price": 303.36,
+      "temu_price": 158,
+      "goods_id": "605706031834839",
+      "variant": null
+    },
+    {
+      "name": "Stainless Steel Multi-Function Outdoor Tool,",
+      "price": 36.72,
+      "temu_price": 17,
+      "goods_id": "601103318509889",
+      "variant": null
+    },
+    {
+      "name": "Outdoor Multi-Function Mini Tool",
+      "price": 118.32,
+      "temu_price": 58,
+      "goods_id": "601102741678903",
       "variant": null
     }
   ]

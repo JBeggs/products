@@ -345,8 +345,25 @@ def run_generic_scrape_session(
                 print("  No session. Log in in the browser, then click 'Save session' in the web UI.")
 
             def close_blank_popup(new_page):
+                """Close stray empty tabs; keep OAuth popups (often open as about:blank then redirect)."""
                 try:
-                    if new_page.url in ("about:blank", "") or "about:blank" in new_page.url:
+                    oauth_hosts = tuple(
+                        h.lower()
+                        for h in (getattr(config, "allow_popup_for_hosts", ()) or ())
+                    )
+                    for _ in range(20):
+                        url = (new_page.url or "").strip()
+                        low = url.lower()
+                        if url and url not in ("about:blank", "") and "about:blank" not in low:
+                            return
+                        if oauth_hosts and any(h in low for h in oauth_hosts):
+                            return
+                        try:
+                            new_page.wait_for_timeout(100)
+                        except Exception:
+                            break
+                    url = (new_page.url or "").strip()
+                    if url in ("about:blank", "") or "about:blank" in url:
                         new_page.close()
                 except Exception:
                     pass

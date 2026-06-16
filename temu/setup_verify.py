@@ -5,7 +5,8 @@ Prepare REAL Chrome for Temu Verify all (slider captcha does not work in Playwri
 Usage:
   cd products
   python temu/setup_verify.py
-  python setup_browser_sessions.py          # all CDP setups (Temu + Junk Mail)
+  python setup_browser_sessions.py              # CDP: temu + junkmail
+  python setup_browser_sessions.py --all-suppliers  # all 38 session-backed suppliers
   python setup_browser_sessions.py --only temu
 """
 from __future__ import annotations
