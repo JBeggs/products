@@ -538,7 +538,7 @@
     },
     "shein": {
       "delivery_cost": 150.0,
-      "free_delivery_threshold": 800.0,
+      "free_delivery_threshold": 1050.0,
       "delivery_time": "3 weeks"
     }
   },
@@ -749,19 +749,19 @@
       "shein": [
         {
           "threshold": 30.0,
-          "multiplier": 1.6
+          "multiplier": 1.2
         },
         {
           "threshold": 99.0,
-          "multiplier": 1.5
+          "multiplier": 1.18
         },
         {
           "threshold": 199.0,
-          "multiplier": 1.55
+          "multiplier": 1.16
         },
         {
           "threshold": 500.0,
-          "multiplier": 1.5
+          "multiplier": 1.15
         }
       ],
       "robotics": [
@@ -1201,6 +1201,7 @@
     "perfectdealz": "general",
     "takealot": "general",
     "myrunway": "clothing",
-    "game": "general"
+    "game": "general",
+    "shein": "import"
   }
 }

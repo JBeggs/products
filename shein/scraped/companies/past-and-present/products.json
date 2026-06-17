@@ -1,4 +1,82 @@
 {
-  "products": [],
-  "updated": "2026-06-05T11:49:32.513406"
+  "products": [
+    {
+      "category_id": "7f40178c-0695-4f2c-82ec-3599bdc518cb",
+      "compare_at_price": 1146.07,
+      "cost": 880.8,
+      "description": "Transparent Epoxy Resin Kit, 1:1 Volume Ratio, High Gloss, UV Resistant, Fast Curing, Suitable For Art Creation, Jewelry Making, Crafts, Cup Making \n\nPack size / option: 1LA + 1LB + Packaging Box\n\n1 Litre resin and 1 Litre curing agent",
+      "dimension_height": 30,
+      "dimension_length": 20,
+      "dimension_width": 25,
+      "goods_id": "283741080",
+      "images": [
+        "images/1000ml500ml240ml_tra_283741080_01.webp",
+        "images/1000ml500ml240ml_tra_283741080_02.png"
+      ],
+      "in_stock": true,
+      "min_quantity": 2,
+      "name": "1000ml Transparent Epoxy Resin Kit,",
+      "price": 1012.92,
+      "production_ids": {
+        "past-and-present": "35ee2a4c-c858-4c64-962a-9f94c2405f2b"
+      },
+      "shein_price": 734,
+      "short_description": "1000ml Transparent Epoxy Resin Kit, 1:1 Volume Ratio, High Gloss, UV Resistant, Fast Curing, Suitable For Art Creation, Jewelry Making,..",
+      "status": "active",
+      "stock_quantity": 0,
+      "tags": [
+        "shein",
+        "za-shein"
+      ],
+      "url": "https://za.shein.com/1000ml-500ml-240ml-Transparent-Epoxy-Resin-Kit-1-1-Volume-Ratio-High-Gloss-UV-Resistant-Fast-Curing-Suitable-For-Art-Creation-Jewelry-Making-Crafts-Cup-Making-Kit-Includes-Resin-And-Hardener-p-283741080.html",
+      "variants": [
+        "240ml(120mlA+120mlB)",
+        "500ml(250mlA+250mlB)",
+        "1000ml(500ml A+500ml B)",
+        "1LA + 1LB + Packaging Box"
+      ],
+      "weight": 2500
+    },
+    {
+      "category_id": "7f40178c-0695-4f2c-82ec-3599bdc518cb",
+      "compare_at_price": 572.11,
+      "cost": 404.4,
+      "description": "1000g Bulk UV Resin \u2013 Large Size Cost-Effective Supply For Projects | Crystal Clear, Quick-Curing, & Non-Yellowing For DIY Crafts, Jewelry, Art Projects & Large-Scale Creations \n\nPack size / option: 500g + 500g\n\nFull 1 litre",
+      "dimension_height": 30,
+      "dimension_length": 20,
+      "dimension_width": 25,
+      "goods_id": "60433488",
+      "images": [
+        "images/500g1000g_bulk_uv_re_60433488_01.webp",
+        "images/500g1000g_bulk_uv_re_60433488_02.webp",
+        "images/500g1000g_bulk_uv_re_60433488_03.webp",
+        "images/500g1000g_bulk_uv_re_60433488_04.webp",
+        "images/500g1000g_bulk_uv_re_60433488_05.webp",
+        "images/500g1000g_bulk_uv_re_60433488_06.webp",
+        "images/500g1000g_bulk_uv_re_60433488_07.png"
+      ],
+      "in_stock": true,
+      "min_quantity": 4,
+      "name": "1000g Bulk UV Resin \u2013",
+      "price": 465.06,
+      "production_ids": {
+        "past-and-present": "9f21b871-7ddd-4bf2-8b6b-25782896a330"
+      },
+      "shein_price": 337,
+      "short_description": "1000g Bulk UV Resin \u2013 Large Size Cost-Effective Supply For Projects | Crystal Clear, Quick-Curing, & Non-Yellowing For DIY Crafts, Jewelry,..",
+      "status": "active",
+      "stock_quantity": 0,
+      "tags": [
+        "shein",
+        "za-shein"
+      ],
+      "url": "https://za.shein.com/500g-1000g-Bulk-UV-Resin-Large-Size-Cost-Effective-Supply-For-Projects-Crystal-Clear-Quick-Curing-Non-Yellowing-For-DIY-Crafts-Jewelry-Art-Projects-Large-Scale-Creations-Easy-To-Use-With-Silicone-Molds-Bezels-Ideal-For-Bulk-Projects-Gifts-Protective-Coatings-Perfect-For-Artists-Home-Crafters-p-60433488.html",
+      "variants": [
+        "500g",
+        "500g + 500g"
+      ],
+      "weight": 1000
+    }
+  ],
+  "updated": "2026-06-17T15:37:42.075610"
 }

@@ -586,6 +586,7 @@
       "weight": 1000
     },
     {
+      "category_id": "832d9c9c-8e1d-4d91-92e3-b66ac9520a1d",
       "compare_at_price": 1400.95,
       "cost": 1099,
       "description": "Product details:\n- Brushless motor\n- Voltage: 20V\n- No-load speed: 0-1100rpm\n- Impact frequency: 0-5400bpm\n- Impact energy: 2.0J\n- SDS Plus chuck system\n- Integrated LED work light Maximum drilling capacity:\n- Concrete: 22 mm\n- Steel: 13 mm\n- Wood: 28 mm Includes:\n- 3x Drill bits (6, 8 and 10 mm)\n- 1x Chisel Battery and charger sold separately Packed by colour box.",
@@ -601,6 +602,9 @@
       "name": "Special - Ingco Cordless Rotary",
       "northernbolt_price": 1099,
       "price": 1230.88,
+      "production_ids": {
+        "past-and-present": "fd01e522-5f64-4cd4-b624-8d01a4d08098"
+      },
       "short_description": "Special - Ingco Cordless Rotary Hammer Drill 20V 22mm (Tool only)",
       "status": "active",
       "stock_quantity": 0,
@@ -610,13 +614,10 @@
       ],
       "url": "https://www.northernbolt.co.za/products/ingco-cordless-rotary-hammer-drill-20v-22mm-tool-only",
       "variants": [],
-      "weight": 1500,
-      "category_id": "832d9c9c-8e1d-4d91-92e3-b66ac9520a1d",
-      "production_ids": {
-        "past-and-present": "fd01e522-5f64-4cd4-b624-8d01a4d08098"
-      }
+      "weight": 1500
     },
     {
+      "category_id": "832d9c9c-8e1d-4d91-92e3-b66ac9520a1d",
       "compare_at_price": 736.31,
       "cost": 599,
       "description": "Product details:\n- Voltage: 20V\n- Spray pressure: 0.1-0.2 Bar\n- Max. flow: 800ml/min\n- Max. viscosity: 120DIN-s\n- Container capacity: 1000 ml\n- Adjustable spray amplitude Includes: 1x Viscosity measuring cup\n\n1x Nozzle cleaning needle\n\n2x Copper nozzles (1.5/2.5 mm) Battery and charger sold separately.",
@@ -632,6 +633,9 @@
       "name": "Special - Ingco Cordless Spray",
       "northernbolt_price": 599,
       "price": 670.88,
+      "production_ids": {
+        "past-and-present": "234a1a1d-94ff-4e5c-ac8b-429ed0298d38"
+      },
       "short_description": "Special - Ingco Cordless Spray Gun 1L 20V (Tool only)",
       "status": "active",
       "stock_quantity": 0,
@@ -641,47 +645,10 @@
       ],
       "url": "https://www.northernbolt.co.za/products/ingco-cordless-spray-gun-1000ml-20v-tool-only",
       "variants": [],
-      "weight": 1000,
-      "category_id": "832d9c9c-8e1d-4d91-92e3-b66ac9520a1d",
-      "production_ids": {
-        "past-and-present": "234a1a1d-94ff-4e5c-ac8b-429ed0298d38"
-      }
+      "weight": 1000
     },
     {
-      "compare_at_price": 6329.7,
-      "cost": 4699,
-      "description": "New & Updated\n\nIngco 5 Piece Cordless Combo Kit This Kit includes the following:\n\n1 x Ingco Cordless Impact Wrench 405Nm 20V (CIWLI20451)\n\n1 x Ingco Cordless Impact Drill 66Nm 20V (CIDLI206681)\n\n1 x Ingco Cordless Rotary Hammer Drill 26mm 20V (CRHLI20268)\n\n1 x Ingco Cordless Angle Grinder 1200W 20V 115Mm (CAGLI212025)\n\n1 x Ingco Cordless Work Lamp 450 Lumens 20V ( CWLI2058 )\n\n2 x Ingco Battery Pack 20V (4.0AH)\n\n1 x Ingco Fast Intelligent Charger\n\n3 x Sockets(17, 19, 21mm)\n\n3 x SDS Plus Drill Bits\n\n1 x Chisel\n\n1 x 47 Pcs accessories\n\n25 x Abrasive metal cutting disc 115mm\n\n1x Canvas Bag\n\nIngco Cordless Impact Wrench 405Nm 20V\n\nProduct details:\n- Brushless motor\n- Voltage: 20V\n- Square drive: 1/2\"\n- No-load speed: 0-1800/0-2000/0-2400rpm\n- Impact rate: 0-2200/0-2600/0-3000bpm\n- Fastening torque: 405Nm\n- Breakaway torque: 555Nm\n- Integrated LED work light\n\nIngco Cordless Impact Drill 66Nm 20V\n\nProduct Details:\n- Brushless motor\n- Voltage: 20V\n- No-load speed: 0-500/0-2000rpm\n- Max impact rate: 30000bpm\n- Max torque: 66Nm\n- Metal chuck\n- Chuck capacity: 13mm\n- Torque settings: 22+1+1\n- Mechanical 2-speed gear\n- Spindle lock function\n- Integrated LED work light\n\nIngco Cordless Work Lamp 450 Lumens 20V\n\nProduct details:\n- Voltage: 20V\n- LED Power Dissipation: 8W\n- 2 Brightness Modes LUMENS:\n- High: 450\u00b110%\n- Low: 230\u00b110%\n- Metal Hanger\n- Soft Ergonomic Grip\n- 120\u00b0 Adjustable Angle (Extra -30\u00b0 to adjust)\n\nIngco Cordless Angle Grinder 1200W 20V 115Mm\n\nProduct details:\n- Brushless Motor\n- Voltage: 20V\n- Max input power: 1200W\n- No-load speed: 3000/6000/9000rpm\n- Disc diameter: 115mm\n- Spindle thread: M14\n- Anti-Vibration handle\n\nIngco Cordless Rotary Hammer Drill 26mm 20V\n\nProduct Details:\n- Brushless motor -Voltage: 20V -No-load speed: 0-1100rpm -Impact speed: 0-5000bpm -Impact energy: 2.5J -SDS Plus chuck system -Integrated LED work light Max drilling capacity:\n- Concrete: 26mm\n- Steel: 13mm\n- Wood: 30mm\n\nIngco Li-Ion Battery Pack 20V (4.0AH)\n\nProduct Details:\n- Voltage: 2",
-      "dimension_height": 40,
-      "dimension_length": 40,
-      "dimension_width": 25,
-      "goods_id": "open-for-pre-order-ingco-5pcs-cordless-combo-kit-new-updated-model-ckli20595",
-      "images": [
-        "images/special_ingco_5_pi_open-for-pre-order-ingco-5pcs-_01.png",
-        "images/special_ingco_5_pi_open-for-pre-order-ingco-5pcs-_02.png",
-        "images/special_ingco_5_pi_open-for-pre-order-ingco-5pcs-_03.jpg",
-        "images/special_ingco_5_pi_open-for-pre-order-ingco-5pcs-_04.png",
-        "images/special_ingco_5_pi_open-for-pre-order-ingco-5pcs-_05.png"
-      ],
-      "in_stock": true,
-      "name": "Special - Ingco 5 Piece",
-      "northernbolt_price": 4699,
-      "price": 5262.88,
-      "short_description": "Special - Ingco 5 Piece Cordless Combo Kit - New & Updated - CKLI20595",
-      "status": "active",
-      "stock_quantity": 0,
-      "tags": [
-        "northernbolt",
-        "northern-bolt"
-      ],
-      "url": "https://www.northernbolt.co.za/products/open-for-pre-order-ingco-5pcs-cordless-combo-kit-new-updated-model-ckli20595",
-      "variants": [],
-      "weight": 5000,
       "category_id": "832d9c9c-8e1d-4d91-92e3-b66ac9520a1d",
-      "production_ids": {
-        "past-and-present": "9e4b05d5-cfc2-4b85-b903-17a967466c75"
-      }
-    },
-    {
       "compare_at_price": 2649.36,
       "cost": 1999,
       "description": "Product details:\n- Input voltage: 1 ~ 220\u2013240V\n- Frequency: 50/60Hz\n- Output current: 15\u2013180A\n- Duty cycle: 180A @ 45%\n- No-load voltage: 77V\n- Max output current: 180A\n- Electrode diameter: 1.6\u20134.0mm\n- IGBT Inverter Technology\n- LED display\n- Anti-stick / Hot start / Arc-force Includes: 1x Electrode holder with cable\n\n1x Earth clamp with cable\n\n1x Wire brush\n\n1x Helmet",
@@ -697,6 +664,9 @@
       "name": "Special - Ingco Inverter MMA",
       "northernbolt_price": 1999,
       "price": 2238.88,
+      "production_ids": {
+        "past-and-present": "6bfb0f0f-91fb-4c2f-b174-3802f777f325"
+      },
       "short_description": "Special - Ingco Inverter MMA Welding Machine 240V 180A (MMA18059N)",
       "status": "active",
       "stock_quantity": 0,
@@ -706,12 +676,8 @@
       ],
       "url": "https://www.northernbolt.co.za/products/ingco-inverter-mma-welding-machine-240v-180a",
       "variants": [],
-      "weight": 2500,
-      "category_id": "832d9c9c-8e1d-4d91-92e3-b66ac9520a1d",
-      "production_ids": {
-        "past-and-present": "6bfb0f0f-91fb-4c2f-b174-3802f777f325"
-      }
+      "weight": 2500
     }
   ],
-  "updated": "2026-06-12T08:23:32.220960"
+  "updated": "2026-06-17T14:44:51.682401"
 }
