@@ -537,7 +537,6 @@
       "delivery_cost": 130.0
     },
     "shein": {
-      "delivery_cost": 150.0,
       "free_delivery_threshold": 1050.0,
       "delivery_time": "3 weeks"
     }
