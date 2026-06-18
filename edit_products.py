@@ -955,9 +955,11 @@ def create_edit_blueprint():
                     time.sleep(delay)
 
         try:
+            from shein.scrape_shein import close_shein_verify_session
             from temu.scrape_temu import close_temu_verify_session
             from shared.playwright_verify import close_verify_browser
 
+            close_shein_verify_session()
             close_temu_verify_session()
             close_verify_browser()
         except Exception:
@@ -1021,6 +1023,27 @@ def create_edit_blueprint():
     def api_verify_stop():
         _verify_stop.set()
         return jsonify({"ok": True})
+
+    @bp.route("/api/recalculate-pricing", methods=["POST"])
+    def api_recalculate_pricing():
+        """Recalculate local price/cost from stored source prices + current tiers/import uplift."""
+        try:
+            data = request.get_json() or {}
+            company_slug = (data.get("company_slug") or "").strip()
+            scope = (data.get("scope") or "all").strip()
+            src = (data.get("source") or "").strip()
+            if not company_slug:
+                return jsonify({"ok": False, "error": "company_slug required"})
+            from shared.refresh import recalculate_and_save_products
+
+            summary = recalculate_and_save_products(
+                company_slug,
+                scope=scope,
+                source=src or None,
+            )
+            return jsonify({"ok": True, **summary})
+        except Exception as e:
+            return jsonify({"ok": False, "error": str(e)})
 
     def _run_sync_job(
         targets: list,
@@ -1690,6 +1713,9 @@ HTML = """
     .verify-all-btn { padding: 0.4rem 0.75rem; font-size: 0.9rem; background: #284; color: white; border: 1px solid #396; border-radius: 4px; cursor: pointer; -webkit-tap-highlight-color: transparent; }
     .verify-all-btn:hover { background: #395; }
     .verify-all-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .recalc-pricing-btn { padding: 0.4rem 0.75rem; font-size: 0.9rem; background: #284; color: white; border: 1px solid #396; border-radius: 4px; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+    .recalc-pricing-btn:hover { background: #395; }
+    .recalc-pricing-btn:disabled { opacity: 0.5; cursor: not-allowed; }
     .verify-modal { background: #252525; border: 1px solid #444; border-radius: 8px; padding: 1.25rem; min-width: 520px; max-width: 95vw; max-height: 85vh; display: flex; flex-direction: column; }
     .verify-modal h3 { margin: 0 0 0.75rem 0; font-size: 1rem; }
     .verify-progress { margin-bottom: 0.75rem; }
@@ -1794,6 +1820,7 @@ HTML = """
     <input type="text" id="searchName" placeholder="Search name..." oninput="viewAllSuppliers=false; render()">
     <button type="button" class="view-all-btn" id="viewAllBtn">View all</button>
     <button type="button" class="verify-all-btn" id="verifyAllBtn" onclick="startVerifyAll()" title="Check stock and prices from supplier URLs">Verify all</button>
+    <button type="button" class="recalc-pricing-btn" id="recalcPricingBtn" onclick="recalculatePricing()" title="Recalculate sell price and cost from stored source prices using current import uplift and tier markup">Recalc pricing</button>
     <button type="button" class="view-all-btn" id="refreshBtn" onclick="refreshProducts()" title="Reload products">Refresh</button>
     <span class="last-updated" id="lastUpdated"></span>
     <span class="product-count" id="productCount"></span>
@@ -2814,6 +2841,50 @@ HTML = """
       } catch (e) {}
     }
 
+    async function recalculatePricing() {
+      const company = getCompany();
+      if (!company) {
+        showSyncError('Choose a company in the Company dropdown at the top of this page, then try again.');
+        return;
+      }
+      const scope = viewAllSuppliers ? 'all' : 'source';
+      const label = scope === 'all' ? 'all suppliers' : (source || 'this supplier');
+      showConfirm(
+        'Recalculate pricing',
+        'Update local price and cost from stored source prices using the current import uplift and tier markup for ' + label + '? Then Sync to push changes to production.',
+        async function () {
+          const btn = document.getElementById('recalcPricingBtn');
+          if (btn) btn.disabled = true;
+          try {
+            const body = { company_slug: company, scope: scope };
+            if (scope === 'source') body.source = source;
+            const r = await fetch(apiUrl('api/recalculate-pricing'), {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(body)
+            });
+            const data = await r.json();
+            if (!data.ok) {
+              showSyncError(data.error || 'Recalculate failed');
+              return;
+            }
+            if (data.updated > 0) {
+              await refreshProducts();
+            }
+            const scopeLabel = scope === 'all' ? 'all suppliers' : ((sources.find(function (s) { return s.slug === source; }) || {}).display_name || source || 'this supplier');
+            showInfoModal(
+              data.updated > 0 ? 'Pricing recalculated' : 'No pricing changes',
+              formatRecalcResult(data, scopeLabel)
+            );
+          } catch (e) {
+            showSyncError('Error: ' + e.message);
+          } finally {
+            if (btn) btn.disabled = false;
+          }
+        }
+      );
+    }
+
     async function syncProduct(i) {
       if (syncLoading[i]) return;
       const p = products[i];
@@ -2963,6 +3034,10 @@ HTML = """
     }
 
     function showSyncError(message) {
+      showInfoModal('Sync failed', message || 'Could not sync to production.');
+    }
+
+    function showInfoModal(title, message) {
       const overlay = document.getElementById('modalOverlay');
       const titleEl = document.getElementById('modalTitle');
       const msgEl = document.getElementById('modalMessage');
@@ -2975,8 +3050,8 @@ HTML = """
       if (skipBtn) { skipBtn.style.display = 'none'; skipBtn.onclick = null; }
       if (syncImgBtn) { syncImgBtn.style.display = 'none'; syncImgBtn.onclick = null; }
       btn.style.display = '';
-      titleEl.textContent = 'Sync failed';
-      msgEl.textContent = message || 'Could not sync to production.';
+      titleEl.textContent = title || 'Notice';
+      msgEl.textContent = message || '';
       extraEl.innerHTML = '';
       extraEl.style.display = 'none';
       if (cancelBtn) cancelBtn.style.display = 'none';
@@ -2993,6 +3068,30 @@ HTML = """
       document.addEventListener('keydown', handleKey);
       btn.onclick = close;
       overlay.onclick = (e) => { if (e.target === overlay) close(); };
+    }
+
+    function formatRecalcResult(data, scopeLabel) {
+      const updated = data.updated || 0;
+      const unchanged = data.skipped_unchanged || 0;
+      const noSource = data.skipped_no_source || 0;
+      const notTiered = data.skipped_not_tiered || 0;
+      const importMult = data.import_cost_multiplier;
+      const upliftNote = importMult != null ? ' using import uplift ×' + importMult : '';
+      if (updated > 0) {
+        return 'Updated ' + updated + ' product(s) for ' + scopeLabel + upliftNote + ' and current tier markup.\\n\\nSync selected items to push the new prices to production.';
+      }
+      let msg = 'No local price changes for ' + scopeLabel + '.';
+      if (unchanged > 0) {
+        msg += '\\n\\n' + unchanged + ' product(s) already match' + (importMult != null ? ' import uplift ×' + importMult + ' and' : '') + ' the tier markup saved for this supplier on the Scrape page.';
+      }
+      if (noSource > 0) {
+        msg += '\\n\\n' + noSource + ' skipped (missing stored source price, e.g. temu_price / shein_price).';
+      }
+      if (notTiered > 0) {
+        msg += '\\n\\n' + notTiered + ' skipped (supplier does not use tiered markup).';
+      }
+      msg += '\\n\\nIf you changed tiers or import uplift, save them on Scrape → Tiered markup first. Use View all + Recalc pricing to update import suppliers like SHEIN. Use Verify all to fetch new supplier prices.';
+      return msg;
     }
 
     function showRefreshError(message, url, supplierName) {

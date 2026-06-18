@@ -41,6 +41,9 @@ DEFAULT_TIER_MULTIPLIERS = [
     {"threshold": None, "multiplier": 1.5},  # None = infinity
 ]
 
+# Import suppliers: cost = source price × this before tier markup (was hardcoded 1.2).
+DEFAULT_IMPORT_COST_MULTIPLIER = 1.2
+
 DEFAULT_SUPPLIER_CATEGORIES: dict[str, str] = {
     "makro": "general",
     "temu": "import",
@@ -183,6 +186,75 @@ def _parse_tiers_list(tiers: list) -> list[tuple[float, float]]:
         mult = float(t.get("multiplier", 1.5))
         result.append((float("inf") if th is None else float(th), mult))
     return result
+
+
+def is_import_supplier(supplier_slug: str | None) -> bool:
+    """True when supplier category is import (e.g. temu, shein, aliexpress, ubuy)."""
+    slug = (supplier_slug or "").strip().lower()
+    if not slug:
+        return False
+    return get_supplier_category(slug) == "import"
+
+
+def get_import_cost_multiplier(
+    supplier_slug: str | None = None,
+    company_slug: str | None = None,
+) -> float:
+    """Return import cost uplift for one supplier (source price → cost before tiers). Default 1.2."""
+    slug = (supplier_slug or "").strip().lower()
+    cs = (company_slug or "").strip()
+    cfg = load_scraper_config()
+    if cs and slug:
+        by_company = cfg.get("company_import_cost_multiplier") or {}
+        if isinstance(by_company, dict):
+            company_entry = by_company.get(cs)
+            if isinstance(company_entry, dict):
+                raw = company_entry.get(slug)
+                if raw is not None:
+                    try:
+                        val = float(raw)
+                        if val > 0:
+                            return val
+                    except (TypeError, ValueError):
+                        pass
+    raw = cfg.get("import_cost_multiplier")
+    if raw is not None:
+        try:
+            val = float(raw)
+            if val > 0:
+                return val
+        except (TypeError, ValueError):
+            pass
+    return DEFAULT_IMPORT_COST_MULTIPLIER
+
+
+def save_import_cost_multiplier(
+    multiplier: float,
+    supplier_slug: str,
+    company_slug: str | None = None,
+) -> None:
+    """Save import cost uplift for one supplier only (never company-wide for all imports)."""
+    val = float(multiplier)
+    if val <= 0:
+        raise ValueError("import cost multiplier must be > 0")
+    slug = (supplier_slug or "").strip().lower()
+    if not slug:
+        raise ValueError("supplier slug required")
+    cfg = load_scraper_config()
+    if company_slug and company_slug.strip():
+        cs = company_slug.strip()
+        by_company = dict(cfg.get("company_import_cost_multiplier") or {})
+        company_entry = by_company.get(cs)
+        if not isinstance(company_entry, dict):
+            company_entry = {}
+        company_entry[slug] = val
+        by_company[cs] = company_entry
+        cfg["company_import_cost_multiplier"] = by_company
+    else:
+        supplier_uplifts = dict(cfg.get("supplier_import_cost_multiplier") or {})
+        supplier_uplifts[slug] = val
+        cfg["supplier_import_cost_multiplier"] = supplier_uplifts
+    save_scraper_config(cfg)
 
 
 def save_supplier_tiers(slug: str, tiers: list[dict], company_slug: str | None = None) -> None:

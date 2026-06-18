@@ -105,39 +105,89 @@ def scrape_url(page, url: str, output_dir: Path, debug: bool = False) -> None:
     scrape_current_page(page, output_dir)
 
 
-def fetch_current_pricing(url: str, product: dict | None = None) -> dict | None:
-    """SHEIN PDP is JS-heavy; HTTP verify usually fails — use Playwright + saved session."""
-    from shared.verify_pricing import fetch_retail_pricing_http, pricing_result_from_data
+_shein_verify: dict = {}
 
-    http = fetch_retail_pricing_http(url, SUPPLIER_SLUG, product=product)
-    if http and http.get("source_price"):
-        return http
+
+def _get_shein_verify_page():
+    page = _shein_verify.get("page")
+    if page is not None:
+        try:
+            if not page.is_closed():
+                return page
+        except Exception:
+            pass
+        close_shein_verify_session()
+
+    from playwright.sync_api import sync_playwright
+
+    from shared.generic_session_scraper import LAUNCH_ARGS, USER_AGENT
+    from shared.playwright_utils import PAGE_LOAD_TIMEOUT
+
+    ctx_opts: dict = {
+        "user_agent": USER_AGENT,
+        "viewport": None,
+        "locale": "en-ZA",
+    }
+    if SESSION_FILE.exists() and SESSION_FILE.stat().st_size > 0:
+        ctx_opts["storage_state"] = str(SESSION_FILE)
+
+    pw = sync_playwright().start()
+    browser = pw.chromium.launch(headless=True, args=LAUNCH_ARGS)
+    context = browser.new_context(**ctx_opts)
+    page = context.new_page()
+    page.set_default_navigation_timeout(PAGE_LOAD_TIMEOUT)
+    _shein_verify["playwright"] = pw
+    _shein_verify["browser"] = browser
+    _shein_verify["context"] = context
+    _shein_verify["page"] = page
+    return page
+
+
+def close_shein_verify_session() -> None:
+    context = _shein_verify.pop("context", None)
+    browser = _shein_verify.pop("browser", None)
+    pw = _shein_verify.pop("playwright", None)
+    _shein_verify.pop("page", None)
+    if context is not None:
+        try:
+            context.close()
+        except Exception:
+            pass
+    if browser is not None:
+        try:
+            browser.close()
+        except Exception:
+            pass
+    if pw is not None:
+        try:
+            pw.stop()
+        except Exception:
+            pass
+
+
+def fetch_current_pricing(url: str, product: dict | None = None) -> dict | None:
+    """SHEIN verify: Playwright + saved session, select stored variant before reading price."""
+    from shared.playwright_utils import PAGE_LOAD_TIMEOUT
+    from shared.shein_extract import (
+        extract_shein_product_data,
+        product_variant_hint,
+        select_shein_variant,
+        wait_for_shein_pdp,
+    )
+    from shared.verify_pricing import pricing_result_from_data
+
     if not is_shein_product_url(url):
         return None
+    if not SESSION_FILE.exists() or SESSION_FILE.stat().st_size == 0:
+        return None
     try:
-        from playwright.sync_api import sync_playwright
-
-        from shared.generic_session_scraper import LAUNCH_ARGS, USER_AGENT
-        from shared.playwright_utils import PAGE_LOAD_TIMEOUT
-        from shared.shein_extract import extract_shein_product_data
-
-        ctx_opts: dict = {
-            "user_agent": USER_AGENT,
-            "viewport": None,
-            "locale": "en-ZA",
-        }
-        if SESSION_FILE.exists() and SESSION_FILE.stat().st_size > 0:
-            ctx_opts["storage_state"] = str(SESSION_FILE)
-        with sync_playwright() as p:
-            browser = p.chromium.launch(headless=True, args=LAUNCH_ARGS)
-            context = browser.new_context(**ctx_opts)
-            page = context.new_page()
-            try:
-                page.goto(url, wait_until="domcontentloaded", timeout=PAGE_LOAD_TIMEOUT)
-                data = extract_shein_product_data(page)
-            finally:
-                context.close()
-                browser.close()
+        page = _get_shein_verify_page()
+        page.goto(url, wait_until="domcontentloaded", timeout=PAGE_LOAD_TIMEOUT)
+        wait_for_shein_pdp(page)
+        hint = product_variant_hint(product)
+        if hint:
+            select_shein_variant(page, hint)
+        data = extract_shein_product_data(page)
         return pricing_result_from_data(data, SUPPLIER_SLUG)
     except Exception:
         return None

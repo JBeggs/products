@@ -31,6 +31,9 @@ from shared.config import (
     save_supplier_delivery,
     get_tier_multipliers,
     save_supplier_tiers,
+    get_import_cost_multiplier,
+    save_import_cost_multiplier,
+    is_import_supplier,
     get_company_suppliers,
     save_company_suppliers,
     SUPPLIERS_USING_TIERED_MARKUP,
@@ -327,7 +330,14 @@ SCRAPE_HTML = """
   <div class="config-section collapsed" id="pricingConfig" style="display: none;">
     <h3 onclick="toggleConfig()">▸ Tiered markup (pricing tiers)</h3>
     <div class="config-body">
-      <p class="help" style="margin-bottom: 0.75rem;">Cost tiers: if cost &lt; threshold (R), use multiplier. Last row: threshold empty = R200+.</p>
+      <p class="help" style="margin-bottom: 0.75rem;">Tier multipliers apply to this supplier only. Cost tiers: if cost &lt; threshold (R), use multiplier. Last row: threshold empty = highest band.</p>
+      <div class="delivery-fields" id="importUpliftSection" style="margin-bottom: 0.75rem; display: none;">
+        <div class="field">
+          <label for="importCostMultiplier">Import cost uplift (×) — this supplier only</label>
+          <input type="number" id="importCostMultiplier" step="0.01" min="0.01" value="1.2" autocomplete="off">
+          <span class="help" style="display:block;font-size:0.75rem;color:#777;margin-top:0.25rem;">Only shown for category <strong>import</strong>. Cost = source price × this value, then tier markup. Does not affect other suppliers.</span>
+        </div>
+      </div>
       <div id="tierRows"></div>
       <button type="button" class="secondary" onclick="addTierRow()" style="margin-top: 0.5rem; padding: 0.4rem 0.8rem;">+ Add tier</button>
       <div class="config-actions">
@@ -538,11 +548,22 @@ SCRAPE_HTML = """
       if (company) url += '&company=' + encodeURIComponent(company);
       const r = await fetch(url);
       const data = await r.json();
+      const importSection = document.getElementById('importUpliftSection');
+      const isImport = !!data.is_import_supplier;
+      if (importSection) importSection.style.display = isImport ? 'block' : 'none';
+      const importEl = document.getElementById('importCostMultiplier');
+      if (importEl) {
+        if (isImport && data.import_cost_multiplier != null) {
+          importEl.value = data.import_cost_multiplier;
+        } else {
+          importEl.value = '1.2';
+        }
+      }
       const div = document.getElementById('tierRows');
       div.innerHTML = '';
       const tiers = data.tier_multipliers || [];
       if (tiers.length === 0) {
-        resetPricingConfig();
+        resetPricingConfig(false);
         return;
       }
       tiers.forEach(t => {
@@ -565,6 +586,12 @@ SCRAPE_HTML = """
       const payload = { supplier: slug, tier_multipliers: tiers };
       const company = getCompany();
       if (company) payload.company = company;
+      const importSection = document.getElementById('importUpliftSection');
+      const importEl = document.getElementById('importCostMultiplier');
+      if (importSection && importSection.style.display !== 'none' && importEl) {
+        const importMult = parseFloat(importEl.value);
+        if (!isNaN(importMult) && importMult > 0) payload.import_cost_multiplier = importMult;
+      }
       const res = await fetch('/api/scraper-config', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -574,7 +601,11 @@ SCRAPE_HTML = """
       if (data.ok) document.getElementById('msg').textContent = 'Pricing config saved.';
       else document.getElementById('msg').textContent = data.error || 'Save failed.';
     }
-    function resetPricingConfig() {
+    function resetPricingConfig(resetImport) {
+      if (resetImport !== false) {
+        const importEl = document.getElementById('importCostMultiplier');
+        if (importEl) importEl.value = '1.2';
+      }
       document.getElementById('tierRows').innerHTML = '';
       addTierRow(30, 3.5);
       addTierRow(99, 3.0);
@@ -4174,7 +4205,13 @@ def api_scraper_config_get():
         tiers = get_tier_multipliers(slug, company_slug or None)
         # Return raw format for UI: [{threshold, multiplier}, ...]
         raw = [{"threshold": None if t[0] == float("inf") else t[0], "multiplier": t[1]} for t in tiers]
-        return jsonify({"tier_multipliers": raw})
+        return jsonify({
+            "tier_multipliers": raw,
+            "is_import_supplier": is_import_supplier(slug),
+            "import_cost_multiplier": get_import_cost_multiplier(slug, company_slug or None)
+            if is_import_supplier(slug)
+            else None,
+        })
     return jsonify(load_scraper_config())
 
 
@@ -4184,6 +4221,18 @@ def api_scraper_config_post():
     tiers = data.get("tier_multipliers")
     supplier = (data.get("supplier") or "").strip()
     company_slug = (data.get("company") or "").strip() or None
+    import_mult = data.get("import_cost_multiplier")
+    if import_mult is not None:
+        if not supplier:
+            return jsonify({"ok": False, "error": "supplier required for import cost uplift"})
+        if not is_import_supplier(supplier):
+            return jsonify({"ok": False, "error": "Import cost uplift only applies to import-category suppliers"})
+        try:
+            save_import_cost_multiplier(float(import_mult), supplier, company_slug)
+        except (TypeError, ValueError) as exc:
+            return jsonify({"ok": False, "error": f"Invalid import cost multiplier: {exc}"})
+    if tiers is None:
+        return jsonify({"ok": True})
     if not isinstance(tiers, list):
         return jsonify({"ok": False, "error": "tier_multipliers must be a list"})
     if not supplier:

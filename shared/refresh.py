@@ -405,3 +405,112 @@ def collect_verify_targets(company_slug: str, scope: str = "all", source: str | 
                 "url": url,
             })
     return targets
+
+
+def recalculate_product_from_stored_source(
+    product: dict,
+    source: str,
+    company_slug: str = "",
+) -> dict | None:
+    """Recalculate cost/price from stored {source}_price using current import uplift + tiers."""
+    from shared.config import SUPPLIERS_USING_TIERED_MARKUP
+    from shared.utils import apply_tiered_markup, calculate_supplier_cost
+
+    if source not in SUPPLIERS_USING_TIERED_MARKUP:
+        return None
+    source_key = _source_price_key(source)
+    raw = product.get(source_key)
+    if raw is None:
+        return None
+    try:
+        source_price = float(raw)
+    except (TypeError, ValueError):
+        return None
+    if source_price <= 0:
+        return None
+    cs = (company_slug or "").strip() or None
+    sale_price_cents = int(round(source_price * 100))
+    new_cost = calculate_supplier_cost(sale_price_cents, source, cs)
+    new_price = apply_tiered_markup(sale_price_cents, source, cs)
+    return {
+        "price": round(new_price, 2),
+        "cost": round(new_cost, 2),
+        "source_price": round(source_price, 2),
+    }
+
+
+def recalculate_and_save_products(
+    company_slug: str,
+    scope: str = "all",
+    source: str | None = None,
+) -> dict:
+    """Apply current import uplift + tiers to all products with stored source prices."""
+    from datetime import datetime
+
+    from shared.config import SUPPLIERS_USING_TIERED_MARKUP, get_import_cost_multiplier, is_import_supplier
+    from shared.suppliers import get_sources_for_edit
+
+    cs = (company_slug or "").strip()
+    sources = get_sources_for_edit()
+    slugs = [source] if scope == "source" and source else list(sources.keys())
+    summary = {
+        "updated": 0,
+        "skipped": 0,
+        "skipped_unchanged": 0,
+        "skipped_no_source": 0,
+        "skipped_not_tiered": 0,
+        "errors": [],
+    }
+    if scope == "source" and source and is_import_supplier(source):
+        summary["import_cost_multiplier"] = get_import_cost_multiplier(source, cs or None)
+
+    for slug in slugs:
+        products, path = _load_products_file(slug, cs)
+        if not path:
+            summary["skipped"] += len(products) if products else 0
+            continue
+        changed = False
+        for prod in products:
+            if slug not in SUPPLIERS_USING_TIERED_MARKUP:
+                summary["skipped_not_tiered"] += 1
+                summary["skipped"] += 1
+                continue
+            source_key = _source_price_key(slug)
+            raw = prod.get(source_key)
+            if raw is None:
+                summary["skipped_no_source"] += 1
+                summary["skipped"] += 1
+                continue
+            try:
+                if float(raw) <= 0:
+                    summary["skipped_no_source"] += 1
+                    summary["skipped"] += 1
+                    continue
+            except (TypeError, ValueError):
+                summary["skipped_no_source"] += 1
+                summary["skipped"] += 1
+                continue
+            fresh = recalculate_product_from_stored_source(prod, slug, cs)
+            if not fresh:
+                summary["skipped_no_source"] += 1
+                summary["skipped"] += 1
+                continue
+            notes = _build_price_notes(prod, slug, fresh)
+            if notes:
+                prod["price"] = fresh["price"]
+                prod["cost"] = fresh["cost"]
+                changed = True
+                summary["updated"] += 1
+            else:
+                summary["skipped_unchanged"] += 1
+                summary["skipped"] += 1
+        if changed:
+            try:
+                data = json.loads(path.read_text(encoding="utf-8")) if path.exists() else {}
+            except Exception:
+                data = {}
+            data["products"] = products
+            data["updated"] = datetime.now().isoformat()
+            path.write_text(json.dumps(data, indent=2), encoding="utf-8")
+
+    return summary

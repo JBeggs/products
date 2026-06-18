@@ -17,16 +17,24 @@ def get_compare_at_price(sell_price: float) -> float:
 # Tiered markup uses supplier cost (with optional import uplift), then multiplier.
 # Configurable via scraper_config.json (see shared.config.get_tier_multipliers)
 
-# Only import suppliers should carry the +20% uplift.
+# Legacy alias — prefer shared.config.is_import_supplier (category == import).
 IMPORT_SUPPLIERS = frozenset({"temu", "ubuy", "aliexpress", "shein"})
 
 
-def calculate_supplier_cost(sale_price_cents: int, supplier_slug: str | None = None) -> float:
-    """Return supplier cost in ZAR; +20% uplift only for configured import suppliers."""
+def calculate_supplier_cost(
+    sale_price_cents: int,
+    supplier_slug: str | None = None,
+    company_slug: str | None = None,
+) -> float:
+    """Return supplier cost in ZAR; import suppliers use configurable uplift before tier markup."""
+    from shared.config import get_import_cost_multiplier, get_scrape_company_slug, is_import_supplier
+
     base_cost = sale_price_cents / 100
     slug = (supplier_slug or "").strip().lower()
-    if slug in IMPORT_SUPPLIERS:
-        return round(base_cost * 1.2, 2)
+    if is_import_supplier(slug):
+        cs = company_slug if company_slug is not None else get_scrape_company_slug()
+        mult = get_import_cost_multiplier(slug, cs)
+        return round(base_cost * mult, 2)
     return round(base_cost, 2)
 
 
@@ -34,8 +42,8 @@ def apply_tiered_markup(sale_price_cents: int, supplier_slug: str | None = None,
     """Apply tiered markup over supplier cost. Returns sell price in ZAR. company_slug for company-scoped tiers (or from scrape context)."""
     from shared.config import get_tier_multipliers, get_scrape_company_slug
 
-    cost = calculate_supplier_cost(sale_price_cents, supplier_slug)
     cs = company_slug if company_slug is not None else get_scrape_company_slug()
+    cost = calculate_supplier_cost(sale_price_cents, supplier_slug, cs)
     tiers = get_tier_multipliers(supplier_slug, cs)
     if not tiers:
         raise ValueError(

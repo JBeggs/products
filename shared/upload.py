@@ -10,6 +10,8 @@ from pathlib import Path
 from decimal import Decimal, InvalidOperation
 from urllib.parse import parse_qs, urlparse
 
+from shared.scraped_image import sniff_image_format
+
 try:
     from shared.config import get_supplier_delivery
 except ImportError:
@@ -391,6 +393,19 @@ def _natural_image_sort_key(p: Path) -> tuple:
 
 
 def _guess_image_mime(p: Path) -> str:
+    try:
+        head = p.read_bytes()[:16]
+    except OSError:
+        head = b""
+    sniffed = sniff_image_format(head)
+    if sniffed == "jpeg":
+        return "image/jpeg"
+    if sniffed == "png":
+        return "image/png"
+    if sniffed == "webp":
+        return "image/webp"
+    if sniffed == "gif":
+        return "image/gif"
     if p.suffix.lower() in (".png",):
         return "image/png"
     if p.suffix.lower() in (".webp",):
@@ -684,6 +699,27 @@ def _backend_has_images_from_snapshot(prod_obj: dict | None) -> bool | None:
     return False
 
 
+def _variant_label(entry) -> str | None:
+    if isinstance(entry, str):
+        s = entry.strip()
+        return s or None
+    if isinstance(entry, dict):
+        opt = (entry.get("option") or entry.get("name") or "").strip()
+        if opt:
+            return opt
+        parts = [str(v).strip() for v in entry.values() if v is not None and str(v).strip()]
+        return ", ".join(parts) if parts else None
+    return None
+
+
+def _description_with_variants(description: str, variants: list) -> str:
+    labels = [lbl for v in variants if (lbl := _variant_label(v))]
+    if not labels:
+        return (description or "")[:2000]
+    variants_text = "Available in: " + ", ".join(labels)
+    return f"{description}\n\n{variants_text}".strip()[:2000]
+
+
 def update_product(
     data: dict,
     base_url: str,
@@ -740,11 +776,7 @@ def update_product(
     except requests.RequestException:
         pass
 
-    description = (data.get("description") or "")[:2000]
-    variants = data.get("variants") or []
-    if variants:
-        variants_text = "Available in: " + ", ".join(variants)
-        description = f"{description}\n\n{variants_text}".strip()[:2000]
+    description = _description_with_variants(data.get("description") or "", data.get("variants") or [])
 
     payload = {
         "name": data.get("name", ""),
@@ -998,13 +1030,7 @@ def upload_product(
     # Always use the passed category_id (from API/system). Do not use supplier categories.
     cat_id = category_id
 
-    description = data.get("description", "") or ""
-    variants = data.get("variants") or []
-    if variants:
-        variants_text = "Available in: " + ", ".join(variants)
-        description = f"{description}\n\n{variants_text}".strip()[:2000]
-    else:
-        description = description[:2000]
+    description = _description_with_variants(data.get("description", "") or "", data.get("variants") or [])
 
     stock_qty = data.get("stock_quantity")
     in_stock = data.get("in_stock") if "in_stock" in data else (bool(stock_qty) if stock_qty is not None else False)

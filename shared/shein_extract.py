@@ -229,6 +229,41 @@ SHEIN_PRICE_AND_META_JS = r"""
 }
 """
 
+SHEIN_SELECT_VARIANT_JS = r"""
+(label) => {
+  function clean(text) {
+    return String(text || '').replace(/\s+/g, ' ').trim();
+  }
+  const target = clean(label).toLowerCase();
+  if (!target) return { clicked: false, reason: 'no label' };
+
+  const selectors = [
+    '.product-intro__size-radio[data-attr_value_name]',
+    '.main-sales-attr__color-container .radio-container[role="radio"]',
+    '.product-intro__color .radio-container[role="radio"]',
+  ];
+  for (let s = 0; s < selectors.length; s++) {
+    const nodes = document.querySelectorAll(selectors[s]);
+    for (let i = 0; i < nodes.length; i++) {
+      const el = nodes[i];
+      const candidates = [
+        el.getAttribute('data-attr_value_name'),
+        el.getAttribute('aria-label'),
+        el.textContent,
+      ].map(function (x) { return clean(x).toLowerCase(); }).filter(Boolean);
+      for (let j = 0; j < candidates.length; j++) {
+        const c = candidates[j];
+        if (c === target || c.includes(target) || target.includes(c)) {
+          el.click();
+          return { clicked: true, matched: candidates[0] };
+        }
+      }
+    }
+  }
+  return { clicked: false, reason: 'not found' };
+}
+"""
+
 
 def shein_goods_id_from_url(url: str) -> str:
     """Numeric goods id from ...-p-{id}.html."""
@@ -238,6 +273,42 @@ def shein_goods_id_from_url(url: str) -> str:
     from shared.dom_product_extract import goods_id_from_url
 
     return goods_id_from_url(url)
+
+
+def product_variant_hint(product: dict[str, Any] | None) -> str:
+    """Variant label stored on a scraped product (description line or variants list)."""
+    if not product:
+        return ""
+    desc = product.get("description") or ""
+    m = re.search(r"Pack size / option:\s*(.+)", desc, re.I)
+    if m:
+        return m.group(1).strip()
+    for item in product.get("variants") or []:
+        if isinstance(item, str) and item.strip():
+            return item.strip()
+        if isinstance(item, dict):
+            opt = (item.get("option") or "").strip()
+            if opt:
+                return opt
+    return (product.get("variantSize") or "").strip()
+
+
+def select_shein_variant(page, label: str) -> bool:
+    """Click the size/style option matching label before reading price."""
+    hint = (label or "").strip()
+    if not hint:
+        return False
+    try:
+        result = page.evaluate(SHEIN_SELECT_VARIANT_JS, hint)
+    except Exception:
+        return False
+    if isinstance(result, dict) and result.get("clicked"):
+        try:
+            page.wait_for_timeout(1500)
+        except Exception:
+            pass
+        return True
+    return False
 
 
 def parse_shein_price_from_html(html: str) -> float | None:

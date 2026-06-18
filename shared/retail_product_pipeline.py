@@ -13,6 +13,7 @@ from urllib.parse import urlparse
 import requests
 
 from shared.dom_product_extract import goods_id_from_url
+from shared.scraped_image import save_scraped_gallery_image
 from shared.utils import (
     apply_tiered_markup,
     calculate_supplier_cost,
@@ -203,16 +204,15 @@ def build_and_save_product(
                 img_url = "https:" + img_url if img_url.startswith("//") else img_url
             resp = requests.get(img_url, timeout=15)
             resp.raise_for_status()
-            ext = ".jpg"
-            ct = resp.headers.get("content-type", "")
-            if "png" in ct:
-                ext = ".png"
-            elif "webp" in ct:
-                ext = ".webp"
-            fname = f"{base_prefix}_{i:02d}{ext}"
-            rel_path = f"{IMAGES_DIR}/{fname}"
-            (images_dir / fname).write_bytes(resp.content)
-            image_files.append(rel_path)
+            rel_path = save_scraped_gallery_image(
+                resp.content,
+                images_dir,
+                base_prefix,
+                i,
+                content_type=resp.headers.get("content-type"),
+            )
+            if rel_path:
+                image_files.append(rel_path)
         except Exception:
             continue
 

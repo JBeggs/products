@@ -3,6 +3,7 @@ import unittest
 from shared.shein_extract import (
     parse_shein_price_from_html,
     parse_shein_variants_from_html,
+    product_variant_hint,
     shein_goods_id_from_url,
 )
 
@@ -69,6 +70,17 @@ class SheinExtractTests(unittest.TestCase):
     def test_parse_uv_resin_variants_from_html(self):
         variants = parse_shein_variants_from_html(SAMPLE_UV_RESIN_VARIANTS_HTML)
         self.assertEqual(variants, ["500g", "500g + 500g"])
+
+    def test_product_variant_hint_from_description(self):
+        product = {
+            "description": "Some text\n\nPack size / option: 1LA + 1LB + Packaging Box\n",
+            "variants": ["240ml(120mlA+120mlB)"],
+        }
+        self.assertEqual(product_variant_hint(product), "1LA + 1LB + Packaging Box")
+
+    def test_product_variant_hint_falls_back_to_variant_string(self):
+        product = {"variants": ["500g", "500g + 500g"]}
+        self.assertEqual(product_variant_hint(product), "500g")
 
 
 if __name__ == "__main__":

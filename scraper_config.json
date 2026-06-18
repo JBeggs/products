@@ -1203,5 +1203,11 @@
     "myrunway": "clothing",
     "game": "general",
     "shein": "import"
+  },
+  "company_import_cost_multiplier": {
+    "past-and-present": {
+      "temu": 1.12,
+      "shein": 1.2
+    }
   }
 }
