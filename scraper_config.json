@@ -495,7 +495,8 @@
       "free_delivery_threshold": 650.0
     },
     "northernbolt": {
-      "free_delivery_threshold": 600.0
+      "free_delivery_threshold": 600.0,
+      "delivery_cost": 100.0
     },
     "tsawelding": {
       "delivery_cost": 150.0
@@ -538,6 +539,7 @@
     },
     "shein": {
       "free_delivery_threshold": 1050.0,
+      "delivery_cost": 150.0,
       "delivery_time": "3 weeks"
     }
   },
@@ -564,23 +566,23 @@
       "northernbolt": [
         {
           "threshold": 30.0,
-          "multiplier": 1.25
-        },
-        {
-          "threshold": 99.0,
-          "multiplier": 1.2
-        },
-        {
-          "threshold": 199.0,
-          "multiplier": 1.18
-        },
-        {
-          "threshold": 500.0,
           "multiplier": 1.15
         },
         {
-          "threshold": 1000.0,
+          "threshold": 99.0,
+          "multiplier": 1.14
+        },
+        {
+          "threshold": 199.0,
+          "multiplier": 1.13
+        },
+        {
+          "threshold": 500.0,
           "multiplier": 1.12
+        },
+        {
+          "threshold": 1000.0,
+          "multiplier": 1.1
         }
       ],
       "tsawelding": [

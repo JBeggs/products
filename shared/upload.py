@@ -173,6 +173,24 @@ def _crm_supplier_flat_delivery_cost(data: dict, supplier_delivery: dict | None)
         return None
 
 
+def _crm_cost_price(data: dict, source: str = "") -> str | None:
+    """Django ``cost_price`` for free-delivery threshold checks.
+
+    Import suppliers compare group subtotals to ``free_delivery_threshold`` using the
+    raw source price (e.g. ``shein_price`` R734), not the uplifted ``cost`` (R880.80).
+    """
+    from shared.config import is_import_supplier
+    from shared.refresh import _source_price_key
+
+    slug = (source or "").strip().lower()
+    if slug and is_import_supplier(slug):
+        source_key = _source_price_key(slug)
+        norm = _normalize_non_negative_decimal(data.get(source_key))
+        if norm is not None:
+            return norm
+    return _normalize_non_negative_decimal(data.get("cost"))
+
+
 GUMTREE_REQUIRED_PICKUP_FIELDS = (
     "pickup_street",
     "pickup_suburb",
@@ -783,7 +801,7 @@ def update_product(
         "description": description,
         "short_description": (data.get("short_description") or "")[:300],
         "price": str(data.get("price", 0)),
-        "cost_price": str(data["cost"]) if data.get("cost") is not None else None,
+        "cost_price": _crm_cost_price(data, source or ""),
     }
     # Respect admin-cleared compare_at: omit from PATCH when CRM snapshot has no compare_at.
     if prod_snapshot is None or _snapshot_has_compare_at(prod_snapshot):
@@ -1050,8 +1068,9 @@ def upload_product(
     }
     if data.get("compare_at_price"):
         payload["compare_at_price"] = str(data["compare_at_price"])
-    if data.get("cost") is not None:
-        payload["cost_price"] = str(data["cost"])
+    cost_price = _crm_cost_price(data, supplier_slug)
+    if cost_price is not None:
+        payload["cost_price"] = cost_price
     # Derive supplier_slug: prefer bundle_source; when output_dir is company-scoped (path/.../companies/xxx), use parent of scraped dir
     if bundle_source:
         supplier_slug = bundle_source
